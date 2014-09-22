@@ -23,6 +23,7 @@ struct tuple_t *tuple_create(int tuple_dim) {
 struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     struct tuple_t * newTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
     newTuple->tuple_dimension = tuple_dim;
+    newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim);
     memcpy( newTuple->tuple, tuple, sizeof(char) * sizeof(tuple));
     
     return newTuple;
@@ -35,5 +36,7 @@ void tuple_destroy(struct tuple_t *tuple) {
 }
 
 struct tuple_t *tuple_dup (struct tuple_t *tuple) {
-    return tuple_create2(tuple->tuple_dimension, tuple->tuple);
+    struct tuple_t * duplicatedTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
+    memcpy(duplicatedTuple, tuple, sizeof(struct tuple_t));
+    return duplicatedTuple;
 }
