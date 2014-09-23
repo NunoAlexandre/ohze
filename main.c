@@ -33,5 +33,11 @@ int main(int argc, const char * argv[]) {
     printf("2. First Tuple - first element is '%s' \n", *myTuple->tuple);
     printf("2. Second Tuple - first element is '%s' \n", *copiedTuple->tuple);
     
+    char * firstTupleValue = myTuple->tuple[0];
+
+    printf("1. Pointer to First tuple value is '%s' \n", firstTupleValue);
+    tuple_destroy(myTuple);
+    printf("2. Pointer to First tuple (destryoed) value is '%s' \n", firstTupleValue);
+    
     return 0;
 }
