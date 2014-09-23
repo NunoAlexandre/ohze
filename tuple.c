@@ -13,10 +13,11 @@
 struct tuple_t *tuple_create(int tuple_dim) {
     struct tuple_t * newTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
     
-    newTuple->tuple_dimension = tuple_dim;
-    //acho que nao faz sentido reservar memoria...
-    newTuple->tuple = (char**) malloc (sizeof(char)*tuple_dim);
-    
+    if ( newTuple != NULL ) {
+        newTuple->tuple_dimension = tuple_dim;
+        //acho que nao faz sentido reservar memoria...
+        newTuple->tuple = (char**) malloc (sizeof(char)*tuple_dim);
+    }
     return newTuple;
 }
 
