@@ -26,8 +26,8 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     if ( newTuple != NULL ) {
         newTuple->tuple_dimension = tuple_dim;
         newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim +1);
-        for ( int i=0; i<tuple_dimension; i++) {
-            newTuple->tuple[i] = strdup(tuple->tuple[i];
+        for ( int i=0; i<newTuple->tuple_dimension; i++) {
+            newTuple->tuple[i] = strdup(tuple[i]);
         }
     }
     return newTuple;
@@ -35,8 +35,9 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
 
 void tuple_destroy(struct tuple_t *tuple) {
     free( &(tuple->tuple_dimension));
-    for ( int i = 0; i < tuple->tuple_dimension, i++ ) {
-        free(tuple->tuple[i];
+    int i;
+    for ( i = 0; i < tuple->tuple_dimension; i++ ) {
+        free(tuple->tuple[i]);
     }
     free(tuple->tuple);
     free(tuple);
