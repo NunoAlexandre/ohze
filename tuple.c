@@ -15,29 +15,33 @@ struct tuple_t *tuple_create(int tuple_dim) {
     
     if ( newTuple != NULL ) {
         newTuple->tuple_dimension = tuple_dim;
-        //acho que nao faz sentido reservar memoria...
-        newTuple->tuple = (char**) malloc (sizeof(char)*tuple_dim);
+        newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim);
     }
     return newTuple;
 }
 
 struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     struct tuple_t * newTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
-    newTuple->tuple_dimension = tuple_dim;
-    newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim);
-    memcpy( newTuple->tuple, tuple, sizeof(char) * sizeof(tuple));
     
+    if ( newTuple != NULL ) {
+        newTuple->tuple_dimension = tuple_dim;
+        newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim +1);
+        for ( int i=0; i<tuple_dimension; i++) {
+            newTuple->tuple[i] = strdup(tuple->tuple[i];
+        }
+    }
     return newTuple;
 }
 
 void tuple_destroy(struct tuple_t *tuple) {
     free( &(tuple->tuple_dimension));
+    for ( int i = 0; i < tuple->tuple_dimension, i++ ) {
+        free(tuple->tuple[i];
+    }
     free(tuple->tuple);
     free(tuple);
 }
 
 struct tuple_t *tuple_dup (struct tuple_t *tuple) {
-    struct tuple_t * duplicatedTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
-    memcpy(duplicatedTuple, tuple, sizeof(struct tuple_t));
-    return duplicatedTuple;
+    return tuple_create2(tuple->tuple_dimension, tuple->tuple);
 }
