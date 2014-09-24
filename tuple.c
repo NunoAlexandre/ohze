@@ -32,8 +32,7 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
 }
 
 void tuple_destroy(struct tuple_t *tuple) {
-    int i;
-    for ( i = 0; i < tuple->tuple_dimension; i++ ) {
+    for ( int i = 0; i < tuple->tuple_dimension; i++ ) {
         free(tuple->tuple[i]);
     }
     free( &(tuple->tuple_dimension));

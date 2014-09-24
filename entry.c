@@ -33,7 +33,7 @@ void entry_destroy(struct entry_t *entry){
 /* Funcao que duplica um par chave-valor. */
 struct entry_t *entry_dup(struct entry_t *entry){
     struct entry_t *duplicatedEntry = (struct entry_t*) malloc(sizeof(struct entry_t));
-    memcpy(entry, duplicatedEntry, sizeof (struct entry_t));
+    memcpy(duplicatedEntry, entry, sizeof (struct entry_t));
     return duplicatedEntry;
     
 
