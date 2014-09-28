@@ -8,6 +8,14 @@
 
 #include "tuple-private.h"
 
-char * getTupleKey (struct tuple_t * tuple ) {
+char * tuple_key (struct tuple_t * tuple ) {
     return tuple->tuple[0];
+}
+
+int tuple_size( struct tuple_t * tuple ) {
+    return tuple->tuple_dimension;
+}
+
+char * tuple_element ( struct tuple_t * tuple, int iElement ) {
+    return tuple->tuple[iElement];
 }

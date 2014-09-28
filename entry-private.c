@@ -9,6 +9,10 @@
 #include "entry-private.h"
 #include "tuple-private.h"
 
-char * getEntryKey (struct entry_t * entry) {
-     return getTupleKey(entry->value);
+char * entry_key (struct entry_t * entry) {
+     return tuple_key(entry->value);
+}
+
+struct tuple_t * entry_value ( struct entry_t * entry ) {
+    return entry->value;
 }

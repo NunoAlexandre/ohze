@@ -12,5 +12,8 @@
 #include <stdio.h>
 #include "entry.h"
 
-char * getEntryKey (struct entry_t * entry);
+char * entry_key (struct entry_t * entry);
+struct tuple_t * entry_value ( struct entry_t * entry );
+
+
 #endif /* defined(__SD15_Project__entry_private__) */

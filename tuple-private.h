@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include "tuple.h"
 
-char * getTupleKey (struct tuple_t * tuple );
+char * tuple_key (struct tuple_t * tuple );
+int tuple_size( struct tuple_t * tuple );
+char * tuple_element ( struct tuple_t * tuple, int iElement );
 
 #endif /* defined(__SD15_Project__tuple_private__) */

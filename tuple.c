@@ -7,6 +7,7 @@
 //
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "tuple.h"
 
@@ -33,11 +34,11 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
 
 void tuple_destroy(struct tuple_t *tuple) {
     for ( int i = 0; i < tuple->tuple_dimension; i++ ) {
+        printf("is going to free at index %d with content %s \n", i, tuple->tuple[i]);
         free(tuple->tuple[i]);
     }
     free( &(tuple->tuple_dimension));
-    //for some reason this last free crashes: "pointer being freed was not allocated"
-    //free(tuple);
+    tuple = NULL;
 }
 
 struct tuple_t *tuple_dup (struct tuple_t *tuple) {
