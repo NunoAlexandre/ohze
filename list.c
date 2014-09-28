@@ -67,7 +67,7 @@
             }
             
             //if list is empty...
-            if ( aNode == NULL && list_size(list) == 0 ) {
+            if ( aNode == NULL && list_size(list) <= 0 ) {
                 newNode->next = newNode;
                 newNode->prev = newNode;
                 list->head = newNode;
