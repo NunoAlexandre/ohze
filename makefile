@@ -12,7 +12,9 @@
 
 CC = /usr/bin/gcc
 CC_OPTIONS = 
-LNK_OPTIONS = 
+LNK_OPTIONS =
+
+EXECUTABLE_NAME = SD15_PRODUCT 
 
 
 #
@@ -27,7 +29,7 @@ INCLUDE = -I.\
 # Build SD15-Project
 #
 
-SD15PRODUCT : \
+$(EXECUTABLE_NAME) : \
 		./entry.o\
 		./list.o\
 		./main.o\
@@ -43,7 +45,7 @@ SD15PRODUCT : \
 		./list-private.o\
 		./tuple-private.o\
 		./entry-private.o\
-		-o SD15PRODUCT
+		-o $(EXECUTABLE_NAME)
 
 clean : 
 		rm \
@@ -54,9 +56,9 @@ clean :
 		./list-private.o\
 		./tuple-private.o\
 		./entry-private.o\
-		SD15PRODUCT
+		$(EXECUTABLE_NAME)
 
-install : SD15PRODUCT
+install : $(EXECUTABLE_NAME)
 		
 
 #
