@@ -34,30 +34,25 @@ node_t * node_createEmpty() {
 
 void node_destroy (struct node_t* node ) {
     entry_destroy(node->entry);
-    if ( node->prev != node->next) {
-        free(node->next);
-        free(node->prev);
-    }
-    else {
-        free(node->next);
-    }
+    node->prev = NULL;
+    node->next = NULL;
 }
 
 /*
  * Checks if tuple matches a template.
- * Returns 0 if matches, -1 otherwise.
+ * Returns 1 (true) if matches, 0 otherwise.
  */
-int tupleMatchesTemplate ( struct tuple_t * tuple , struct tuple_t * template ) {
+int tuple_matches_template ( struct tuple_t * tuple , struct tuple_t * template ) {
     if ( tuple_size(tuple) != tuple_size(template) )
-        return -1;
+        return 0;
     
     //Flag to say if the tuple matchs the template.
-    // if doesnt, matches turns -1, otherwise it keeps 0.
-    int matches = 0;
+    // if doesnt, matches turns 0 (false), otherwise it keeps 1.
+    int matches = 1;
     // saves the number of checked elements of the tuple
     int iElement = 0;
     
-    while ( matches==0 && iElement < tuple_size(tuple) ) {
+    while ( matches && iElement < tuple_size(tuple) ) {
         //tuple iElement
         char * tupleElement = tuple_element(tuple, iElement);
         //template iElement
@@ -65,7 +60,7 @@ int tupleMatchesTemplate ( struct tuple_t * tuple , struct tuple_t * template ) 
         
         //if templateElement is not null but not equal to the tupleElement, doesnt match.
         if ( strcmp(templateElement, "NULL") != 0  && strcmp(tupleElement, templateElement) != 0 )
-            matches = -1;
+            matches = 0;
         
         iElement++;
     }
@@ -73,35 +68,6 @@ int tupleMatchesTemplate ( struct tuple_t * tuple , struct tuple_t * template ) 
     return matches;
 }
 
-int list_removeNode(struct list_t * list, node_t * node, int index) {
-    
-    if ( list == NULL || node == NULL )
-        return -1;
-    
-    printf("list_removeNode\n");
-    if ( index == 0 ) {
-        printf("removing the head so redifining it\n");
-        list->head = node->next != NULL ? node->next : node_createEmpty();
-
-    }
-    else if ( index == (list->size-1) ) {
-        list->tail = node->prev != NULL ? node->prev : node_createEmpty();
-    }
-
-    node_t * prevNode = node->prev;
-
-    node_t *nextNode = node->next;
-
-    prevNode->next = nextNode;
-    nextNode->prev = prevNode;
-    
-
-    //node_destroy(node);
-    entry_destroy(node->entry);
-
-    
-    return 0;
-}
 
 void list_print ( struct list_t * list) {
     if ( list->size == 0 ) {
@@ -109,13 +75,14 @@ void list_print ( struct list_t * list) {
     }
     else {
         node_t * nodeToPrint = list->head;
+        //char * nodeKey = node_key(nodeToPrint);
 
         if ( list->size == 1 ) {
             printf("list_print : list has only one element with key: %s \n", entry_key(nodeToPrint->entry));
         }
         else {
              int nodesToPrint = list->size;
-            printf("************* Print list with SIZE: %d\n", nodesToPrint);
+           // printf("************* Print list with SIZE: %d\n", nodesToPrint);
             while ( nodesToPrint--  > 0 ) {
                 printf("node with key: %s and pointer %p\n", entry_key(nodeToPrint->entry), nodeToPrint);
                 nodeToPrint = nodeToPrint->next;

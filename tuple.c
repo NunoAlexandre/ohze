@@ -37,7 +37,6 @@ void tuple_destroy(struct tuple_t *tuple) {
         printf("is going to free at index %d with content %s \n", i, tuple->tuple[i]);
         free(tuple->tuple[i]);
     }
-    free( &(tuple->tuple_dimension));
     tuple = NULL;
 }
 

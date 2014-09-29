@@ -130,6 +130,32 @@ int main(int argc, const char * argv[]) {
     list_add(list, entryA);
     list_print(list);*/
     
+    
+    
+    struct tuple_t * tupleTempalte = tuple_dup(tupleA);
+    tupleTempalte->tuple[0] = strdup("Aane");
+    tupleTempalte->tuple[1] = strdup("NULL");
+    tupleTempalte->tuple[2] = strdup("NULL");
+
+    struct entry_t * matchedEntry = list_get(list, tupleTempalte);
+    
+    printf("MatchedEntry with key %s has key %s\n", tupleTempalte->tuple[0],  entry_key(matchedEntry));
+    
+    printf("BEFORE REMOVE LIST IS \n");
+    list_print(list);
+    list_remove(list, tupleTempalte);
+    printf("AFTER REMOVE LIST IS \n");
+    list_print(list);
+
+    list_destroy(list);
+    list_print(list);
+
+    
+
+   // list_print(list);
+
+    
+    
     return 0;
 }
 

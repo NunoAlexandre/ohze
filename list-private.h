@@ -29,10 +29,11 @@ node_t * node_create( struct node_t * prev, struct node_t* next, struct entry_t 
 node_t * node_createEmpty();
 node_t * node_dup(node_t* node);
 void node_destroy (struct node_t * node);
-int tupleMatchesTemplate ( struct tuple_t * tuple , struct tuple_t * template );
+int tuple_matches_template ( struct tuple_t * tuple , struct tuple_t * template );
 void node_init(node_t* targetNode, node_t * prev, node_t * next, struct entry_t * entry);
 int list_removeNode(struct list_t * list, node_t * node, int index);
-
+int list_put_node(struct list_t* list,  node_t * newNode, node_t* aNode, int beforeOrAfter);
+int list_isEmpty(struct list_t* list);
 void node_move(node_t* from, node_t * dest);
 char * node_key( node_t * node );
 struct entry_t * node_entry(node_t* node);
@@ -42,6 +43,8 @@ void list_size_inc(struct list_t * list) ;
 void list_size_dec( struct list_t * list);
 node_t * list_tail ( struct list_t* list);
 node_t * list_head(struct list_t * list );
+
+node_t *list_get_node(struct list_t *list, struct tuple_t *tup_template);
 
 void list_print ( struct list_t * list) ;
 #endif /* defined(__SD15_Project__list_private__) */
