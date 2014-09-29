@@ -173,7 +173,7 @@ struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
 
 
 
-/**********  Implementation of private-list.h  *********/
+/**********  Implementation of private-list.h  ***********/
 
 /*
  * Creates a node having the prev and next node and its entry.
