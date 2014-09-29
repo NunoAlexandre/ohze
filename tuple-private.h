@@ -3,7 +3,7 @@
 //  SD15-Project
 //
 //  Created by Nuno Alexandre on 24/09/14.
-//  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
+//  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
 #ifndef __SD15_Project__tuple_private__

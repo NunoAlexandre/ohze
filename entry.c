@@ -2,7 +2,7 @@
 //  entry.c
 //  SD_2014
 //
-//  Created by Bruno Mata on 22/09/14.
+//  Created by Grupo SD015 on 22/09/14.
 //
 //
 
@@ -34,4 +34,20 @@ void entry_destroy(struct entry_t *entry){
 /* Funcao que duplica um par chave-valor. */
 struct entry_t *entry_dup(struct entry_t *entry){
     return  entry_create(tuple_dup(entry->value));
+}
+
+/**********  Implementation of entry-private.h   ***********/
+
+/*
+ * Returns the key of a given entry.
+ */
+char * entry_key (struct entry_t * entry) {
+    return tuple_key(entry->value);
+}
+
+/*
+ * Returns the value (tuple) of a given entry.
+ */
+struct tuple_t * entry_value ( struct entry_t * entry ) {
+    return entry->value;
 }

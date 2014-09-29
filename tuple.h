@@ -13,11 +13,13 @@ struct tuple_t {
  */
 struct tuple_t *tuple_create(int tuple_dim);
 
-/* Função idêntica à anterior, mas com uma assinatura diferente.
+/* 
+ * Função idêntica à anterior, mas com uma assinatura diferente.
  */
 struct tuple_t *tuple_create2(int tuple_dim, char **tuple);
 
-/* Função que destrói um bloco de dados e liberta toda a memoria.
+/* 
+ * Função que destrói um bloco de dados e liberta toda a memoria.
  */
 void tuple_destroy(struct tuple_t *tuple);
 

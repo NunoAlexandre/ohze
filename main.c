@@ -2,8 +2,8 @@
 //  main.c
 //  SD
 //
-//  Created by Bruno Mata on 22/09/14.
-//  Copyright (c) 2014 Bruno Mata. All rights reserved.
+//  Created by Grupo SD015 on 22/09/14.
+//  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
 #include <stdio.h>
