@@ -30,7 +30,8 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     struct tuple_t * newTuple = tuple_create(tuple_dim);
     //if it was allocated we just need to copy the tuple values
     if ( newTuple != NULL ) {
-        for ( int i=0; i<newTuple->tuple_dimension; i++) {
+	int i;
+        for ( i=0; i<newTuple->tuple_dimension; i++) {
             newTuple->tuple[i] = strdup(tuple[i]);
         }
     }
@@ -41,10 +42,12 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
  * Função que destrói um bloco de dados e liberta toda a memoria.
  */
 void tuple_destroy(struct tuple_t *tuple) {
-    for ( int i = 0; i < tuple->tuple_dimension; i++ ) {
+    int i;
+    for ( i = 0; i < tuple->tuple_dimension; i++ ) {
         free(tuple->tuple[i]);
     }
-    tuple = NULL;
+    free(tuple->tuple);
+    free(tuple);
 }
 
 /* 
