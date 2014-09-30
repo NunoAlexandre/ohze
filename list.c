@@ -62,9 +62,9 @@ int list_destroy(struct list_t *list) {
  */
 int list_add(struct list_t *list, struct entry_t *entry) {
     //flag to return task success
-    unsigned int taskSucess = -1;
+    int taskSucess = -1;
     //safety check
-    if ( list == NULL || entry == NULL)
+    if ( list == NULL || entry == NULL )
         return taskSucess;
     
     //creates new node empty
@@ -209,8 +209,7 @@ node_t * node_dup(node_t* node) {
  */
 void node_destroy (struct node_t* node ) {
     entry_destroy(node->entry);
-    node->prev = NULL;
-    node->next = NULL;
+    free(node);               
 }
 
 /*
@@ -237,7 +236,7 @@ int tuple_matches_template ( struct tuple_t * tuple , struct tuple_t * template 
         char * templateElement = tuple_element(template, iElement);
         
         //if templateElement is not null but not equal to the tupleElement, doesnt match.
-        if ( strcmp(templateElement, "NULL") != 0  && strcmp(tupleElement, templateElement) != 0 )
+        if ( templateElement != NULL && strcmp(tupleElement, templateElement) != 0 )
             matches = 0;
         
         iElement++;
@@ -435,4 +434,3 @@ void list_print ( struct list_t * list) {
     }
     
 }
-
