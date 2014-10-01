@@ -45,9 +45,6 @@ int list_destroy(struct list_t *list) {
         }
         current = current->next;
     }
-    list->size = 0;
-    list->head = NULL;
-    list->tail = NULL;
     free(list);
     
     return numberOfFreedNodes == numberOfNodes ? 0 : -1;
@@ -260,7 +257,7 @@ int list_insert_node(struct list_t* list,  node_t * newNode, node_t* aNode, int 
     }
     
     //if list is empty...
-    if ( aNode == NULL && list_size(list) <= 0 ) {
+    if ( aNode == NULL && list_isEmpty(list) ) {
         newNode->next = newNode;
         newNode->prev = newNode;
         list->head = newNode;
@@ -348,7 +345,7 @@ node_t * list_matching_node(struct list_t *list, struct tuple_t *tup_template) {
  * Returns 1 (true) if list is empty, 0 its not empty.
  */
 int list_isEmpty(struct list_t* list) {
-    return list_size(list) == 0;
+    return list_size(list) <= 0;
 }
 
 /* Retorna o tamanho (numero de elementos) da lista
