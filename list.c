@@ -115,6 +115,8 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
         node_destroy(nodeToRemove);
         list->head = NULL;
         list->tail = NULL;
+        list_size_dec(list);
+        taskSuccess = 0;
     }
     else {
         //nodeA is the prev of aNode
@@ -142,6 +144,10 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
         node_destroy(nodeToRemove);
         //decrements the list size
         list_size_dec(list);
+        
+        //success
+        taskSuccess = 0;
+
     }
     
     //returns the taskSucess
@@ -180,7 +186,7 @@ node_t * node_create( struct node_t * prev, struct node_t* next, struct entry_t 
     if ( newNode != NULL ) {
         newNode->prev =  prev;
         newNode->next = next;
-        newNode->entry = entry_dup(entry);
+        newNode->entry = entry;
     }
     
     return newNode;
@@ -410,6 +416,7 @@ node_t * list_head(struct list_t * list ) {
  * Method to print the given list.
  */
 void list_print ( struct list_t * list) {
+    printf("************ list_print with size %d\n", list_size(list));
     if ( list->size == 0 ) {
         printf("list_print : list is empty \n");
     }
