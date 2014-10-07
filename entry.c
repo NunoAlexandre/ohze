@@ -27,12 +27,18 @@ struct entry_t *entry_create(struct tuple_t *tuple){
 
 /* Função que destroi um par chave-valor e liberta toda a memoria.
  */
-void entry_destroy(struct entry_t *entry){
-    tuple_destroy(entry->value);
+void entry_destroy(struct entry_t *entry) {
+    if ( entry != NULL) {
+        tuple_destroy(entry->value);
+    }
 }
 
 /* Funcao que duplica um par chave-valor. */
 struct entry_t *entry_dup(struct entry_t *entry){
+    if ( entry == NULL || entry->value == NULL )
+        return NULL;
+    
+    //if entry is valid
     return  entry_create(tuple_dup(entry->value));
 }
 

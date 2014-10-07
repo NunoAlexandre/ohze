@@ -31,6 +31,8 @@ struct list_t *list_create() {
  * Retorna 0 (OK) ou -1 (erro)
  */
 int list_destroy(struct list_t *list) {
+    if ( list == NULL )
+        return -1;
     //current node: starts at the head node
     node_t * current = list_head(list);
     //the number of freed nodes: useful to resolve return value
@@ -40,8 +42,10 @@ int list_destroy(struct list_t *list) {
     
     while ( current != NULL && numberOfFreedNodes < numberOfNodes-1 ) {
         if ( current->prev != NULL ) {
-            node_destroy(current->prev);
-            numberOfFreedNodes++;
+            //if node is destroyed it increments the freed nodes number
+            if ( node_destroy(current->prev)  == 0 ) {
+                numberOfFreedNodes++;
+            }
         }
         current = current->next;
     }
@@ -103,8 +107,12 @@ int list_add(struct list_t *list, struct entry_t *entry) {
  * Retorna 0 (OK) ou -1 (erro)
  */
 int list_remove(struct list_t *list, struct tuple_t *tup_template) {
-    //flag to return task success
     int taskSuccess = -1;
+    //safety check
+    if ( list == NULL || tup_template == NULL)
+        return taskSuccess;
+    
+    //flag to return task success
     //gets a node to remove, that matches tup_template.
     node_t * nodeToRemove = list_matching_node(list, tup_template);
     
@@ -112,11 +120,10 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
         return taskSuccess;
     
     if ( list_size(list) == 1 ) {
-        node_destroy(nodeToRemove);
         list->head = NULL;
         list->tail = NULL;
         list_size_dec(list);
-        taskSuccess = 0;
+        taskSuccess = node_destroy(nodeToRemove);
     }
     else {
         //nodeA is the prev of aNode
@@ -140,13 +147,11 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
             list->head->prev = nodeBefore;
         }
         
-        //by last it destroys the node.
-        node_destroy(nodeToRemove);
+       
         //decrements the list size
         list_size_dec(list);
-        
-        //success
-        taskSuccess = 0;
+        //by last it destroys the node.
+        taskSuccess =  node_destroy(nodeToRemove);
 
     }
     
@@ -204,15 +209,27 @@ node_t * node_create_empty() {
  * Duplicates a node.
  */
 node_t * node_dup(node_t* node) {
+    if ( node == NULL || node->entry == NULL)
+        return NULL;
+    
+    //if node to duplicate is valid
     return node_create(node->prev, node->next, entry_dup(node->entry));
 }
 
 /*
  * Destroyes a node.
+ * Returns 0 (OK) or -1 (error)
  */
-void node_destroy (struct node_t* node ) {
+int node_destroy (struct node_t* node ) {
+    //safety checks in error case 
+    if ( node == NULL || node->entry == NULL )
+        return -1;
+    
     entry_destroy(node->entry);
-    free(node);               
+    free(node);
+    
+    //success
+    return 0;
 }
 
 /*

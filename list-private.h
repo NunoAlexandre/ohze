@@ -45,7 +45,7 @@ node_t * node_dup(node_t* node);
 /*
  * Destroyes a node.
  */
-void node_destroy (struct node_t * node);
+int node_destroy (struct node_t * node);
 /*
  * Method that checks if a certain tuple matches a template.
  * If the tuple and the template have different sizes they dont match.

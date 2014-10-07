@@ -233,5 +233,11 @@ int main() {
     
     printf("Resultados do teste do módulo list: %d em 6\n\n", score);
     
+    struct list_t * newList = list_create();
+    list_destroy(newList);
+    node_dup(NULL);
+    
+    entry_dup(NULL);
+    
     return score;
 }

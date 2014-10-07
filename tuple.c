@@ -15,6 +15,11 @@
  * a estrutura e aloca a memória necessária).
  */
 struct tuple_t *tuple_create(int tuple_dim) {
+    //checks if required dim is valid
+    if ( tuple_dim <= 0)
+        return NULL;
+    
+    //allocs memory
     struct tuple_t * newTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
     
     if ( newTuple != NULL ) {
@@ -27,6 +32,9 @@ struct tuple_t *tuple_create(int tuple_dim) {
  * Função idêntica à anterior, mas com uma assinatura diferente.
  */
 struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
+    if ( tuple_dim <= 0 || tuple == NULL)
+        return NULL;
+    
     struct tuple_t * newTuple = tuple_create(tuple_dim);
     //if it was allocated we just need to copy the tuple values
     if ( newTuple != NULL ) {
@@ -42,12 +50,14 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
  * Função que destrói um bloco de dados e liberta toda a memoria.
  */
 void tuple_destroy(struct tuple_t *tuple) {
-    int i;
-    for ( i = 0; i < tuple->tuple_dimension; i++ ) {
-        free(tuple->tuple[i]);
+    if ( tuple != NULL && tuple->tuple != NULL ) {
+        int i;
+        for ( i = 0; i < tuple->tuple_dimension; i++ ) {
+            free(tuple->tuple[i]);
+        }
+        free(tuple->tuple);
+        free(tuple);
     }
-    free(tuple->tuple);
-    free(tuple);
 }
 
 /* 
@@ -56,6 +66,10 @@ void tuple_destroy(struct tuple_t *tuple) {
  * memória necessária).
  */
 struct tuple_t *tuple_dup (struct tuple_t *tuple) {
+    if ( tuple == NULL || tuple->tuple == NULL)
+        return NULL;
+    
+    //if tuple is valid
     return tuple_create2(tuple->tuple_dimension, tuple->tuple);
 }
 
