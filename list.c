@@ -287,6 +287,11 @@ int list_insert_node(struct list_t* list,  node_t * newNode, node_t* aNode, int 
         list->tail = newNode;
     }
     else {
+      //if there was not specified any relative aNode, if beforeOrAfter says before
+      // the aNode is head, otherwise its tail.
+      if ( aNode == NULL ) {
+         aNode = beforeOrAfter == 0 ? list_head(list) : list_tail(list);         
+      }
         // at this point the list has size >=1 and will add one now.
         // The idea is: aNode has a previous node: nodeA; and a next node: nodeD.
         // the newNode and aNode will be nodeB and nodeC, depending if newNode
