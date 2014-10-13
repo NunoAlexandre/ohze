@@ -118,5 +118,14 @@ node_t * list_head(struct list_t * list );
  */
 void list_print ( struct list_t * list) ;
 
+
+node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template);
+/*
+ * Gets all the elements of the list that match tup_template
+ */
+struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template);
+
+
+struct list_t * list_matching_nodes(struct list_t *list, struct tuple_t *tup_template, int isToGetAllMatchingNodes );
 #endif /* defined(__SD15_Project__list_private__) */
 

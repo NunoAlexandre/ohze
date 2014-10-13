@@ -115,6 +115,7 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
     //flag to return task success
     //gets a node to remove, that matches tup_template.
     node_t * nodeToRemove = list_matching_node(list, tup_template);
+    //list_get_one(list, tup_template);     OR      list_matching_node(list, tup_template);
     
     if ( nodeToRemove == NULL )
         return taskSuccess;
@@ -174,7 +175,7 @@ int node_matches_template(node_t * node, struct tuple_t* template ) {
  */
 struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
     //gets the node that matches the tup_template
-    node_t * matchedNode = list_matching_node(list, tup_template);
+    node_t * matchedNode = list_get_one(list, tup_template);
     //if there is a matched node returns its entry, null otherwise
     return matchedNode == NULL ? NULL : node_entry(matchedNode);
 }
@@ -213,7 +214,7 @@ node_t * node_dup(node_t* node) {
         return NULL;
     
     //if node to duplicate is valid
-    return node_create(node->prev, node->next, entry_dup(node->entry));
+    return node_create(node->prev, node->next, node->entry);
 }
 
 /*
@@ -256,7 +257,7 @@ int tuple_matches_template ( struct tuple_t * tuple , struct tuple_t * template 
         char * templateElement = tuple_element(template, iElement);
         
         //if templateElement is not null but not equal to the tupleElement, doesnt match.
-        if ( templateElement != NULL && strcmp(tupleElement, templateElement) != 0 )
+        if ( templateElement != NULL &&  tupleElement != NULL &&  strcmp(tupleElement, templateElement) != 0 )
             matches = 0;
         
         iElement++;
@@ -362,9 +363,46 @@ node_t * list_matching_node(struct list_t *list, struct tuple_t *tup_template) {
             matchedNode = matchedNode->prev;
         }
     }
-    
     //if there was match it returns the entry of the matchedNode, NULL otherwise.
     return thereWasAMatch ? matchedNode : NULL;
+}
+
+/*
+ * Method that searches for a matching node with tup_template
+ * and returns it if exists or NULL if it doesnt.
+ */
+struct list_t * list_matching_nodes(struct list_t *list, struct tuple_t *tup_template, int getJustOne ) {
+    
+    //safety check
+    if ( list == NULL || list_isEmpty(list) || tup_template == NULL )
+        return NULL;
+    
+    
+    struct list_t * newList = list_create();
+    if ( newList == NULL )
+        return NULL;
+    //pointer node to iterare
+    node_t * matchedNode = list_head(list);
+    //number of nodes to check matching
+    unsigned int nodesToCheck = list_size(list);
+    // flag to let then know if there was a match (true = 1, false = 0)
+    //It will move forward until it currentNode matches the template
+    while ( nodesToCheck-- > 0 ) {
+        if ( node_matches_template(matchedNode, tup_template) ) {
+            //since thereWasAMatch, there are no need to check more nodes
+            list_add(newList, node_entry(matchedNode));
+            
+            if (  getJustOne ) {
+                nodesToCheck = 0;
+            }
+        }
+        else {
+            //since the currentNode didnt match it moves forward
+            matchedNode = matchedNode->prev;
+        }
+    }
+    //if there was match it returns the entry of the matchedNode, NULL otherwise.
+    return newList;
 }
 
 
@@ -373,7 +411,7 @@ node_t * list_matching_node(struct list_t *list, struct tuple_t *tup_template) {
  * Returns 1 (true) if list is empty, 0 its not empty.
  */
 int list_isEmpty(struct list_t* list) {
-    return list_size(list) <= 0;
+    return list == NULL || list_size(list) <= 0;
 }
 
 /* Retorna o tamanho (numero de elementos) da lista
@@ -431,7 +469,20 @@ node_t * list_tail ( struct list_t* list) {
  * Method that returns the head of the given list.
  */
 node_t * list_head(struct list_t * list ) {
-    return list->head;
+    return list != NULL ? list->head : NULL;
+}
+
+
+node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template) {
+    struct list_t * matching_nodes = list_matching_nodes(list, tup_template, 1);
+    printf("list_get_one : with _nodes is %s and with _node is %s\n", node_key(list_head(matching_nodes)), node_key(list_matching_node(list, tup_template)));
+    return list_head(matching_nodes);
+}
+/*
+ * Gets all the elements of the list that match tup_template
+ */
+struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template) {
+    return list_matching_nodes(list, tup_template, 0);
 }
 
 /*
