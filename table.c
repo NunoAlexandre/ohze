@@ -80,7 +80,43 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
  * os tuplos que estejam de acordo com o template.
  * Em caso de erro, devolve NULL
  */
-struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int keep_tuples, int one_or_all);
+struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int keep_tuples, int one_or_all) {
+    
+    if ( table == NULL || tup_template == NULL )
+        return NULL;
+    
+    //gets the slot index where to search or -1 (must search on every slots)
+    int slotIndex =  table_slot_index(table, tuple_key(tup_template));
+    
+    struct list_t * allMatchingNodes;
+    
+    if ( slotIndex == -1) {
+        
+        //must have it own space where to add all the nodes found on every slots of the table.
+        allMatchingNodes = list_create();
+        //iterates over all slots of the table.
+        int i;
+        for ( i = 0; i <= table_size(table); i++) {
+            struct list_t * list_to_search = table_slot_list(table, i);
+            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
+            
+            //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
+            // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
+            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , 1, 0 );
+        }
+    
+    }
+    else {
+        //there is just one slot to search from
+        struct list_t * list_to_search = table_slot_list(table, slotIndex);
+        //once this slot was the only to be searched from,
+        //allMatchingNodes is this table_slot_list matching nodes.
+        allMatchingNodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
+    }
+
+    return allMatchingNodes;
+
+}
 
 /* Função para remover um ou todos os tuplos da tabela que estejam
  * de acordo com o template tup_template, e libertar a memória
@@ -89,7 +125,13 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
  * todos os tuplos que estejam de acordo com o template.
  * Devolve: 0 (ok), -1 (nenhum tuplo encontrado; outros erros)
  */
-int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_all);
+int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_all) {
+    //gets all the matching nodes at the table with tup_template, not keeping them at the origin slot.
+    struct list_t * allMatchingNodes = table_get(table, tup_template, 0, one_or_all);
+    
+    //returns the success of destroying the list with all of them.
+    return list_destroy(allMatchingNodes);
+}
 
 /* Devolve o número de elementos na tabela.
  */
@@ -107,6 +149,9 @@ struct list_t * table_slot_list ( table_t * table, int index ) {
     return table->bucket[index];
 }
 
+/*
+ * Having a table and a string key it returns the index for it or -1 if key is null
+ */
 int table_slot_index ( table_t * table, char * key ) {
     //gets the hascode of key
     int hashcode = table_hashcode(table, key);
