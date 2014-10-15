@@ -102,29 +102,18 @@ int list_add(struct list_t *list, struct entry_t *entry) {
     return taskSucess;
 }
 
-/* Elimina da lista um elemento (tuplo) de acordo com o padrão
- * tup_template.
- * Retorna 0 (OK) ou -1 (erro)
- */
-int list_remove(struct list_t *list, struct tuple_t *tup_template) {
+int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
+    
     int taskSuccess = -1;
     //safety check
-    if ( list == NULL || tup_template == NULL)
+    if ( list == NULL || nodeToRemove == NULL)
         return taskSuccess;
-    
-    //flag to return task success
-    //gets a node to remove, that matches tup_template.
-    node_t * nodeToRemove = list_matching_node(list, tup_template);
-    //list_get_one(list, tup_template);     OR      list_matching_node(list, tup_template);
-    
-    if ( nodeToRemove == NULL )
-        return taskSuccess;
+
     
     if ( list_size(list) == 1 ) {
         list->head = NULL;
         list->tail = NULL;
         list_size_dec(list);
-        taskSuccess = node_destroy(nodeToRemove);
     }
     else {
         //nodeA is the prev of aNode
@@ -148,17 +137,38 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
             list->head->prev = nodeBefore;
         }
         
-       
+        
         //decrements the list size
         list_size_dec(list);
-        //by last it destroys the node.
-        taskSuccess =  node_destroy(nodeToRemove);
-
+        
     }
+    
+    //by last, the task success depends on the node_destroy success or is
+    // success by it self if node must not be destroyed
+    taskSuccess = mustDestroy ? node_destroy(nodeToRemove) : 0;
+
     
     //returns the taskSucess
     return taskSuccess;
+
 }
+/* Elimina da lista um elemento (tuplo) de acordo com o padrão
+ * tup_template.
+ * Retorna 0 (OK) ou -1 (erro)
+ */
+int list_remove(struct list_t *list, struct tuple_t *tup_template) {
+    int taskSuccess = -1;
+    //safety check
+    if ( list == NULL || tup_template == NULL)
+        return taskSuccess;
+    
+    //searchs on the list 1 Node matching tup_template and wants to remove it.
+    //Saves the dup of the matched node to know if it was found.
+    node_t * removedNode = list_get_one (list, tup_template, 1);
+    
+    //if the removedNode is not null then it was found and removed successfully.
+    return removedNode != NULL ? 0 : -1;
+  }
 
 /*
  * Method that cheks if a certain node matches a template.
@@ -175,7 +185,7 @@ int node_matches_template(node_t * node, struct tuple_t* template ) {
  */
 struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
     //gets the node that matches the tup_template
-    node_t * matchedNode = list_get_one(list, tup_template);
+    node_t * matchedNode = list_get_one(list, tup_template, 0);
     //if there is a matched node returns its entry, null otherwise
     return matchedNode == NULL ? NULL : node_entry(matchedNode);
 }
@@ -335,51 +345,44 @@ int list_insert_node(struct list_t* list,  node_t * newNode, node_t* aNode, int 
     return 0;
 }
 
-/*
- * Method that searches for a matching node with tup_template
- * and returns it if exists or NULL if it doesnt.
- */
-node_t * list_matching_node(struct list_t *list, struct tuple_t *tup_template) {
-    
-    //safety check
-    if ( list == NULL || list_isEmpty(list) || tup_template == NULL )
-        return NULL;
-    
-    //pointer node to iterare
-    node_t * matchedNode = list_head(list);
-    //number of nodes to check matching
-    unsigned int nodesToCheck = list_size(list);
-    // flag to let then know if there was a match (true = 1, false = 0)
-    unsigned int thereWasAMatch = 0;
-    //It will move forward until it currentNode matches the template
-    while ( nodesToCheck-- > 0 ) {
-        if ( node_matches_template(matchedNode, tup_template) ) {
-            //since thereWasAMatch, there are no need to check more nodes
-            nodesToCheck = 0;
-            thereWasAMatch = 1;
-        }
-        else {
-            //since the currentNode didnt match it moves forward
-            matchedNode = matchedNode->prev;
-        }
-    }
-    //if there was match it returns the entry of the matchedNode, NULL otherwise.
-    return thereWasAMatch ? matchedNode : NULL;
+int list_insert_to_tail ( struct list_t * list, node_t* node) {
+    return list_insert_node(list, node, NULL, 1);
+}
+int list_insert_to_head ( struct list_t * list, node_t* node) {
+    return list_insert_node(list, node, NULL, 0);
 }
 
 /*
- * Method that searches for a matching node with tup_template
- * and returns it if exists or NULL if it doesnt.
+ * Method that moves (not destroying ) a node fromList toList.
  */
-struct list_t * list_matching_nodes(struct list_t *list, struct tuple_t *tup_template, int getJustOne ) {
+int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node ) {
     
+    if ( fromList == NULL || toList == NULL || node == NULL)
+        return -1;
+    
+    //there are to tasks to archieve: remove fromList and insert from List.
+    //if after both taskSuccess is keeps 0 both succeded (both gave success return)
+    int taskSuccess = 0;
+    //if it must be removed from the original list we only need to
+    // remove it from the original list without destroying it
+    //and had it to the tail of the matching nodes list (found order)
+    taskSuccess+= list_remove_node(fromList, node, 0);
+    //now the matchedNode is out of the list and can be
+    //inserted to the matching nodes list
+    taskSuccess+= list_insert_to_tail ( toList, node );
+
+    //returns the taskSuccess (0 ok, -1 error)
+    return taskSuccess == 0 ? taskSuccess : -1;
+}
+
+struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int mustRemove, int getJustOne ) {
     //safety check
-    if ( list == NULL || list_isEmpty(list) || tup_template == NULL )
+    if ( list_isEmpty(list) || tup_template == NULL )
         return NULL;
     
     
-    struct list_t * newList = list_create();
-    if ( newList == NULL )
+    struct list_t * matching_nodes = list_create();
+    if ( matching_nodes == NULL )
         return NULL;
     //pointer node to iterare
     node_t * matchedNode = list_head(list);
@@ -389,10 +392,17 @@ struct list_t * list_matching_nodes(struct list_t *list, struct tuple_t *tup_tem
     //It will move forward until it currentNode matches the template
     while ( nodesToCheck-- > 0 ) {
         if ( node_matches_template(matchedNode, tup_template) ) {
-            //since thereWasAMatch, there are no need to check more nodes
-            list_add(newList, node_entry(matchedNode));
-            
-            if (  getJustOne ) {
+            //the action to be taken now depends on  the mustRemove option.
+            if ( mustRemove ) {
+                //simply moves (1 -takes and 2 - inserts) matchedNode from list (1) to matchind_nodes (2).
+                list_move_node ( list, matching_nodes, matchedNode);
+            }
+            else {
+                //since we want the node on both lists we just add the (new equal) node.
+                list_add(matching_nodes, node_entry(matchedNode));
+            }
+            //if it must get just one it stops to check.
+            if ( getJustOne ) {
                 nodesToCheck = 0;
             }
         }
@@ -402,7 +412,8 @@ struct list_t * list_matching_nodes(struct list_t *list, struct tuple_t *tup_tem
         }
     }
     //if there was match it returns the entry of the matchedNode, NULL otherwise.
-    return newList;
+    return matching_nodes;
+
 }
 
 
@@ -473,16 +484,15 @@ node_t * list_head(struct list_t * list ) {
 }
 
 
-node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template) {
-    struct list_t * matching_nodes = list_matching_nodes(list, tup_template, 1);
-    printf("list_get_one : with _nodes is %s and with _node is %s\n", node_key(list_head(matching_nodes)), node_key(list_matching_node(list, tup_template)));
+node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template, int mustRemove) {
+    struct list_t * matching_nodes = list_matching_nodes(list, tup_template, mustRemove, 1);
     return list_head(matching_nodes);
 }
 /*
  * Gets all the elements of the list that match tup_template
  */
-struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template) {
-    return list_matching_nodes(list, tup_template, 0);
+struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template, int mustRemove) {
+    return list_matching_nodes(list, tup_template, mustRemove, 0);
 }
 
 /*
