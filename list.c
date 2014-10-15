@@ -54,32 +54,21 @@ int list_destroy(struct list_t *list) {
     return numberOfFreedNodes == numberOfNodes ? 0 : -1;
 }
 
+int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion ) {
 
-/* Adiciona uma entry na lista. Como a lista deve ser ordenada,
- * a nova entry deve ser colocada no local correto.
- *  A ordenação da lista deve ser por ordem decrescente das 
- * chaves alfanuméricas dos valores inseridos.
- * Retorna 0 (OK) ou -1 (erro)
- */
-int list_add(struct list_t *list, struct entry_t *entry) {
     //flag to return task success
     int taskSucess = -1;
-    //safety check
-    if ( list == NULL || entry == NULL )
-        return taskSucess;
     
-    //creates new node empty
-    node_t * newNode = node_create(NULL, NULL, entry);
     //safety check
     if ( newNode == NULL)
         return taskSucess;
     
     //pointer iterate
-    node_t * currentNode = list_head(list);
+    node_t * currentNode = addWithCriterion ? list_head(list) : list_tail(list);
     //flag to indicate if the new node must be inserted before (0) or after (1)
     unsigned int positionToPut = 1;
     //while the new entry is not frist (DESC alfabethic order)
-    unsigned int nodesToCheck = list_size(list);
+    unsigned int nodesToCheck = addWithCriterion ? list_size(list) : 0;
     //searches for the node proper node to choose where to be inserted.
     while ( positionToPut != 0 && nodesToCheck > 0 ) {
         //if new node has key higher than current node, it must me put before it
@@ -100,6 +89,27 @@ int list_add(struct list_t *list, struct entry_t *entry) {
     
     //returns task success indication (0/1)
     return taskSucess;
+
+}
+
+/* Adiciona uma entry na lista. Como a lista deve ser ordenada,
+ * a nova entry deve ser colocada no local correto.
+ *  A ordenação da lista deve ser por ordem decrescente das 
+ * chaves alfanuméricas dos valores inseridos.
+ * Retorna 0 (OK) ou -1 (erro)
+ */
+int list_add(struct list_t *list, struct entry_t *entry) {
+    //flag to return task success
+    int taskSucess = -1;
+    //safety check
+    if ( list == NULL || entry == NULL )
+        return taskSucess;
+    
+    //creates new node empty
+    node_t * newNode = node_create(NULL, NULL, entry);
+    
+    //returns the success value of adding the node with criterion to the list.
+    return list_add_node(list, newNode, 1);
 }
 
 int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
@@ -164,7 +174,7 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
     
     //searchs on the list 1 Node matching tup_template and wants to remove it.
     //Saves the dup of the matched node to know if it was found.
-    node_t * removedNode = list_get_one (list, tup_template, 1);
+    node_t * removedNode = list_get_one (list, tup_template, 0);
     
     //if the removedNode is not null then it was found and removed successfully.
     return removedNode != NULL ? 0 : -1;
@@ -185,7 +195,7 @@ int node_matches_template(node_t * node, struct tuple_t* template ) {
  */
 struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
     //gets the node that matches the tup_template
-    node_t * matchedNode = list_get_one(list, tup_template, 0);
+    node_t * matchedNode = list_get_one(list, tup_template, 1);
     //if there is a matched node returns its entry, null otherwise
     return matchedNode == NULL ? NULL : node_entry(matchedNode);
 }
@@ -353,29 +363,70 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
 }
 
 /*
- * Method that moves (not destroying ) a node fromList toList.
+ * Moves all nodes from the fromList to the toList.
+ * The way to move it depends on the mustMoveWithCriterium:
+ * se 1/YES - uses list_add that uses its own insert criterium, 0/NO - moves to the tail of toList.
  */
-int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node ) {
+int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int mustMoveWithCriterium, int keepAtOrigin ) {
     
-    if ( fromList == NULL || toList == NULL || node == NULL)
+    if ( fromList == NULL || toList == NULL )
         return -1;
     
-    //there are to tasks to archieve: remove fromList and insert from List.
-    //if after both taskSuccess is keeps 0 both succeded (both gave success return)
-    int taskSuccess = 0;
-    //if it must be removed from the original list we only need to
-    // remove it from the original list without destroying it
-    //and had it to the tail of the matching nodes list (found order)
-    taskSuccess+= list_remove_node(fromList, node, 0);
-    //now the matchedNode is out of the list and can be
-    //inserted to the matching nodes list
-    taskSuccess+= list_insert_to_tail ( toList, node );
+    int nodesToMove = list_size(fromList);
+    node_t * currentNode = list_head(fromList);
+    
+    while ( nodesToMove-- > 0 ) {
+        //moves currentNode to toList and if error (-1) returns it.
+        if ( list_move_node(fromList, toList, currentNode, mustMoveWithCriterium, keepAtOrigin ) == -1 ) {
+            return -1;
+        }
+        //once we are iterating from head to tail the currentNode is now the new fromList head
+        currentNode = list_head(fromList);
+    }
+    
+    // if it got to here there were no errors so it returns success
+    return 0;
 
+}
+
+
+/*
+ * Method that moves (not destroying ) a node fromList toList.
+ * Returns 0 if moved successfully, -1 if error.
+ */
+int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
+                    int moveWithCriterium,  int keepAtOrigin ) {
+  
+    //task success flag
+    int taskSuccess = -1;
+    
+    //safety checks
+    if ( fromList == NULL || toList == NULL || node == NULL)
+        return taskSuccess;
+    
+   
+    if ( keepAtOrigin ) {
+        //if node must be kept at the fromList (origin) we use list_add that
+        //adds to toList a new node with the entry of node
+        list_add(toList, node_entry(node));
+    }
+    else {
+        //there are to tasks to archieve: remove fromList and insert from List.
+        //if after both taskSuccess is keeps 0 both succeded (both gave success return)
+        int taskSuccess = 0;
+        //if it must be removed from the original list we only need to
+        // remove it from the original list without destroying it.
+        taskSuccess+= list_remove_node(fromList, node, 0 );
+        //now the matchedNode is out of the list and can be inserted
+        //or added (depending on mustMoveWithCritirion option ) to the matching nodes list
+        taskSuccess+= list_add_node(toList, node, moveWithCriterium);
+
+    }
     //returns the taskSuccess (0 ok, -1 error)
     return taskSuccess == 0 ? taskSuccess : -1;
 }
 
-struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int mustRemove, int getJustOne ) {
+struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int keepAtOrigin, int getJustOne ) {
     //safety check
     if ( list_isEmpty(list) || tup_template == NULL )
         return NULL;
@@ -392,15 +443,10 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     //It will move forward until it currentNode matches the template
     while ( nodesToCheck-- > 0 ) {
         if ( node_matches_template(matchedNode, tup_template) ) {
-            //the action to be taken now depends on  the mustRemove option.
-            if ( mustRemove ) {
-                //simply moves (1 -takes and 2 - inserts) matchedNode from list (1) to matchind_nodes (2).
-                list_move_node ( list, matching_nodes, matchedNode);
-            }
-            else {
-                //since we want the node on both lists we just add the (new equal) node.
-                list_add(matching_nodes, node_entry(matchedNode));
-            }
+            //if moves the matchedNode from list to matching_nodes
+            // without criterium and matchedNode keepAtOrigin or not.
+            list_move_node(list, matching_nodes, matchedNode, 0, keepAtOrigin);
+            
             //if it must get just one it stops to check.
             if ( getJustOne ) {
                 nodesToCheck = 0;
@@ -484,8 +530,8 @@ node_t * list_head(struct list_t * list ) {
 }
 
 
-node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template, int mustRemove) {
-    struct list_t * matching_nodes = list_matching_nodes(list, tup_template, mustRemove, 1);
+node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template, int keepAtOrigin) {
+    struct list_t * matching_nodes = list_matching_nodes(list, tup_template, keepAtOrigin, 1);
     return list_head(matching_nodes);
 }
 /*

@@ -128,5 +128,11 @@ struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_templa
 
 struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int mustRemove, int getJustOne );
 
+int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
+                    int mustMoveWithCriterium, int mustRemoveFromOrigin );
+
+int list_move_nodes (struct  list_t * fromList, struct list_t * toList,
+                     int mustMoveWithCriterium,  int mustRemoveFromOrigin);
+
 #endif /* defined(__SD15_Project__list_private__) */
 
