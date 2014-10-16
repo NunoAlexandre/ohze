@@ -114,11 +114,13 @@ int list_add(struct list_t *list, struct entry_t *entry) {
 
 int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
     
-    int taskSuccess = -1;
+
     //safety check
     if ( list == NULL || nodeToRemove == NULL)
-        return taskSuccess;
+        return TASK_FAILED;
 
+    //success flag, fail as a start since nothing was done yet
+    int taskSuccess = TASK_FAILED;
     
     if ( list_size(list) == 1 ) {
         list->head = NULL;
@@ -147,7 +149,6 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
             list->head->prev = nodeBefore;
         }
         
-        
         //decrements the list size
         list_size_dec(list);
         
@@ -155,7 +156,7 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
     
     //by last, the task success depends on the node_destroy success or is
     // success by it self if node must not be destroyed
-    taskSuccess = mustDestroy ? node_destroy(nodeToRemove) : 0;
+    taskSuccess = mustDestroy ? node_destroy(nodeToRemove) : TASK_SUCCEEDED;
 
     
     //returns the taskSucess
@@ -167,17 +168,17 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
  * Retorna 0 (OK) ou -1 (erro)
  */
 int list_remove(struct list_t *list, struct tuple_t *tup_template) {
-    int taskSuccess = -1;
+    //as a start the taskSuccess is failed (nothing done yet)
     //safety check
     if ( list == NULL || tup_template == NULL)
-        return taskSuccess;
+        return TASK_FAILED;
     
-    //searchs on the list 1 Node matching tup_template and wants to remove it.
-    //Saves the dup of the matched node to know if it was found.
-    node_t * removedNode = list_get_one (list, tup_template, 0);
+    //searchs on the list 1 Node matching tup_template and
+    //simply deletes it when finds it, returning null if succedded
+    node_t * removedNode = list_get_one (list, tup_template, JUST_DELETE_NODES);
     
-    //if the removedNode is not null then it was found and removed successfully.
-    return removedNode != NULL ? 0 : -1;
+    //if the removedNode is null then it was removed successfully.
+    return removedNode == NULL ? TASK_SUCCEEDED : TASK_FAILED;
   }
 
 /*
@@ -195,7 +196,7 @@ int node_matches_template(node_t * node, struct tuple_t* template ) {
  */
 struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
     //gets the node that matches the tup_template
-    node_t * matchedNode = list_get_one(list, tup_template, 1);
+    node_t * matchedNode = list_get_one(list, tup_template, KEEP_AT_ORIGIN);
     //if there is a matched node returns its entry, null otherwise
     return matchedNode == NULL ? NULL : node_entry(matchedNode);
 }
@@ -395,46 +396,46 @@ int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int must
  * Returns 0 if moved successfully, -1 if error.
  */
 int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
-                    int moveWithCriterium,  int keepAtOrigin ) {
+                    int moveWithCriterium,  int whatToDoWithTheNode ) {
   
-    //task success flag
-    int taskSuccess = -1;
-    
     //safety checks
     if ( fromList == NULL || toList == NULL || node == NULL)
-        return taskSuccess;
+        return TASK_FAILED;
     
-   
-    if ( keepAtOrigin ) {
+    //if taskSuccess keeps 0 means all taks succeded
+    int taskSuccess = 0;
+
+    if ( whatToDoWithTheNode == KEEP_AT_ORIGIN ) {
         //if node must be kept at the fromList (origin) we use list_add that
         //adds to toList a new node with the entry of node
-        list_add(toList, node_entry(node));
+        taskSuccess+=list_add(toList, node_entry(node));
     }
-    else {
-        //there are to tasks to archieve: remove fromList and insert from List.
-        //if after both taskSuccess is keeps 0 both succeded (both gave success return)
-        int taskSuccess = 0;
+    else if ( whatToDoWithTheNode == DONT_KEEP_AT_ORIGIN ) {
         //if it must be removed from the original list we only need to
         // remove it from the original list without destroying it.
-        taskSuccess+= list_remove_node(fromList, node, 0 );
+        taskSuccess+= list_remove_node(fromList, node, NOT_DESTROY );
         //now the matchedNode is out of the list and can be inserted
         //or added (depending on mustMoveWithCritirion option ) to the matching nodes list
         taskSuccess+= list_add_node(toList, node, moveWithCriterium);
-
+    }
+    else if ( whatToDoWithTheNode == JUST_DELETE_NODES ) {
+       taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
     }
     //returns the taskSuccess (0 ok, -1 error)
-    return taskSuccess == 0 ? taskSuccess : -1;
+    return taskSuccess == 0 ? TASK_SUCCEEDED : TASK_FAILED;
 }
 
-struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int keepAtOrigin, int getJustOne ) {
+struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template,
+                                     int whatToDoWithTheNode, int getJustOne )
+{
     //safety check
     if ( list_isEmpty(list) || tup_template == NULL )
         return NULL;
     
     
+    //the list where to save all the matching nodes found on this list.
     struct list_t * matching_nodes = list_create();
-    if ( matching_nodes == NULL )
-        return NULL;
+       
     //pointer node to iterare
     node_t * matchedNode = list_head(list);
     //number of nodes to check matching
@@ -444,8 +445,8 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     while ( nodesToCheck-- > 0 ) {
         if ( node_matches_template(matchedNode, tup_template) ) {
             //if moves the matchedNode from list to matching_nodes
-            // without criterium and matchedNode keepAtOrigin or not.
-            list_move_node(list, matching_nodes, matchedNode, 0, keepAtOrigin);
+            // with adding criterion and matchedNode whatToDoWithTheNode or not.
+            list_move_node(list, matching_nodes, matchedNode, 1, whatToDoWithTheNode);
             
             //if it must get just one it stops to check.
             if ( getJustOne ) {

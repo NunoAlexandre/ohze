@@ -30,6 +30,29 @@ typedef struct node_t {
     struct entry_t *entry;
 } node_t;
 
+
+/*
+ * Defining constants
+ */
+
+//constants on Adding/Moving nodes
+#define ADD_WITH_CRITERION 1
+#define MOVE_WITH_CRITERION ADD_WITH_CRITERION
+#define ADD_WITHOUT_CRITERION 0
+#define MOVE_WITHOUT_CRITERION ADD_WITHOUT_CRITERION
+#define KEEP_AT_ORIGIN 2
+#define DONT_KEEP_AT_ORIGIN 1
+#define JUST_DELETE_NODES 0
+#define MUST_DESTROY 1
+#define NOT_DESTROY 0
+//constants on flags values
+#define TASK_SUCCEEDED 0
+#define TASK_FAILED -1
+
+
+
+
+
 /*
  * Creates a node having the prev and next node and its entry.
  */
