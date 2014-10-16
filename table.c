@@ -88,6 +88,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
     //gets the slot index where to search or -1 (must search on every slots)
     int slotIndex =  table_slot_index(table, tuple_key(tup_template));
     
+    //the list with all matching nodes that will then be returned
     struct list_t * allMatchingNodes;
     
     if ( slotIndex == -1) {
@@ -102,7 +103,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
-            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , 1, 0 );
+            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITHOUT_CRITERION, DONT_KEEP_AT_ORIGIN );
         }
     
     }
@@ -115,7 +116,6 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
     }
 
     return allMatchingNodes;
-
 }
 
 /* Função para remover um ou todos os tuplos da tabela que estejam
@@ -127,10 +127,10 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
  */
 int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_all) {
     //gets all the matching nodes at the table with tup_template, not keeping them at the origin slot.
-    struct list_t * allMatchingNodes = table_get(table, tup_template, 0, one_or_all);
+    struct list_t * allMatchingNodes = table_get(table, tup_template, JUST_DELETE_NODES, one_or_all);
     
-    //returns the success of destroying the list with all of them.
-    return list_destroy(allMatchingNodes);
+    //since we choosed to JUST_DELETE_NODES on get, allMatchingNodes must be empty
+    return list_isEmpty(allMatchingNodes) ? TASK_SUCCEEDED : TASK_FAILED;
 }
 
 /* Devolve o número de elementos na tabela.
@@ -138,9 +138,6 @@ int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_al
 int table_size(struct table_t *table) {    
     return table != NULL ? table->size : -1;
 }
-
-
-
 
 
 /************************* Table-private implementation *****************/
