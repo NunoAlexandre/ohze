@@ -5,17 +5,17 @@
 #include "entry.h"
 
 /* Define os possíveis opcodes da mensagem */
-#define OC_OUT		10
-#define OC_IN		20
-#define OC_IN_ALL   	30
-#define OC_COPY		40
-#define OC_COPY_ALL	50
-#define OC_SIZE		60
+#define OC_OUT		10  //insere um tuplo
+#define OC_IN		20  //lê e remove 1 tuplo
+#define OC_IN_ALL   30  //lê e remove TODOS
+#define OC_COPY		40  //lê e copia 1 tuplo
+#define OC_COPY_ALL	50  //lê e copia TODOS
+#define OC_SIZE		60  //obtém tamanho?
 
 /* Define códigos para os possíveis conteúdos da mensagem */
-#define CT_TUPLE  100
-#define CT_ENTRY  200
-#define CT_RESULT 300
+#define CT_TUPLE  100   //mensagem de tuplo
+#define CT_ENTRY  200   //mensagem de entry
+#define CT_RESULT 300   //mensgem com resultado da operação
 
 /* Estrutura que representa uma mensagem genérica a ser transmitida.
  * Esta mensagem pode ter vários tipos de conteúdos.
@@ -59,4 +59,5 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size);
 /* Liberta a memoria alocada na função buffer_to_message
  */
 void free_message(struct message_t *msg);
+
 #endif
