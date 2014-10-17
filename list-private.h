@@ -31,10 +31,10 @@ typedef struct node_t {
 } node_t;
 
 
+
 /*
  * Defining constants
  */
-
 //constants on Adding/Moving nodes
 #define ADD_WITH_CRITERION 1
 #define MOVE_WITH_CRITERION ADD_WITH_CRITERION

@@ -22,6 +22,7 @@ typedef struct table_t {
 } table_t;
 
 
+
 int table_slot_index ( table_t * table, char * key );
 
 /*

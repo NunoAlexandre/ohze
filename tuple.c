@@ -22,6 +22,7 @@ struct tuple_t *tuple_create(int tuple_dim) {
     //allocs memory
     struct tuple_t * newTuple = (struct tuple_t*) malloc (sizeof(struct tuple_t));
     
+    
     if ( newTuple != NULL ) {
         newTuple->tuple_dimension = tuple_dim;
         newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim);

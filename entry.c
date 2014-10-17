@@ -13,6 +13,7 @@
 #include <string.h> // memcpy
 
 
+
 /* Função que cria um novo par chave-valor (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
  */

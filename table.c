@@ -92,7 +92,6 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
     struct list_t * allMatchingNodes;
     
     if ( slotIndex == -1) {
-        
         //must have it own space where to add all the nodes found on every slots of the table.
         allMatchingNodes = list_create();
         //iterates over all slots of the table.
@@ -105,7 +104,6 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
             list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITHOUT_CRITERION, DONT_KEEP_AT_ORIGIN );
         }
-    
     }
     else {
         //there is just one slot to search from

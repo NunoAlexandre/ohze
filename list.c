@@ -22,7 +22,6 @@ struct list_t *list_create() {
         newList->head = NULL;
         newList->tail = NULL;
     }
-    
     return newList;
 }
 

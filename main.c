@@ -212,6 +212,7 @@ int testRemoveMeio() {
     (list_get(list, tdups[3]) == entries[3]) &&
     (list_size(list) == 2);
     
+    
     tuple_destroy(t);
     list_destroy(list);
     
@@ -230,6 +231,7 @@ int main() {
     score += testRemoveCabeca();
     score += testRemoveCauda();
     score += testRemoveMeio();
+    
     
     printf("Resultados do teste do módulo list: %d em 6\n\n", score);
     
