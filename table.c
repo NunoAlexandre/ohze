@@ -103,6 +103,11 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
             list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITHOUT_CRITERION, DONT_KEEP_AT_ORIGIN );
+            
+            //if its just to get one and list is not empty it found one so it stops
+            if ( one_or_all == 0 && ! list_isEmpty(allMatchingNodes)) {
+                i = table_size(table);
+            }
         }
     }
     else {
