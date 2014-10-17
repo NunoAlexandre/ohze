@@ -367,7 +367,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
  * The way to move it depends on the mustMoveWithCriterium:
  * se 1/YES - uses list_add that uses its own insert criterium, 0/NO - moves to the tail of toList.
  */
-int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int mustMoveWithCriterium, int keepAtOrigin ) {
+int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int mustMoveWithCriterium, int whatToDoWithTheNode ) {
     
     if ( fromList == NULL || toList == NULL )
         return -1;
@@ -377,7 +377,7 @@ int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int must
     
     while ( nodesToMove-- > 0 ) {
         //moves currentNode to toList and if error (-1) returns it.
-        if ( list_move_node(fromList, toList, currentNode, mustMoveWithCriterium, keepAtOrigin ) == -1 ) {
+        if ( list_move_node(fromList, toList, currentNode, mustMoveWithCriterium, whatToDoWithTheNode ) == -1 ) {
             return -1;
         }
         //once we are iterating from head to tail the currentNode is now the new fromList head
