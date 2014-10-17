@@ -95,9 +95,10 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         //must have it own space where to add all the nodes found on every slots of the table.
         allMatchingNodes = list_create();
         //iterates over all slots of the table.
-        int i;
-        for ( i = 0; i <= table_size(table); i++) {
-            struct list_t * list_to_search = table_slot_list(table, i);
+        int slotsToCheck = table_size(table);
+        int index =0;
+        while ( slotsToCheck-- > 0 ) {
+            struct list_t * list_to_search = table_slot_list(table, index);
             struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
@@ -106,8 +107,9 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             
             //if its just to get one and list is not empty it found one so it stops
             if ( one_or_all == 0 && ! list_isEmpty(allMatchingNodes)) {
-                i = table_size(table);
+                slotsToCheck = 0;
             }
+            index++;
         }
     }
     else {
