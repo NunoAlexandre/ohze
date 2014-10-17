@@ -26,4 +26,5 @@ void entry_destroy(struct entry_t *entry);
 /* Funcao que duplica um par chave-valor. */
 struct entry_t *entry_dup(struct entry_t *entry);
 
+
 #endif

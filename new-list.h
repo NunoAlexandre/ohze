@@ -30,29 +30,6 @@ typedef struct node_t {
     struct entry_t *entry;
 } node_t;
 
-
-
-/*
- * Defining constants
- */
-//constants on Adding/Moving nodes
-#define ADD_WITH_CRITERION 1
-#define MOVE_WITH_CRITERION ADD_WITH_CRITERION
-#define ADD_WITHOUT_CRITERION 0
-#define MOVE_WITHOUT_CRITERION ADD_WITHOUT_CRITERION
-#define KEEP_AT_ORIGIN 2
-#define DONT_KEEP_AT_ORIGIN 1
-#define JUST_DELETE_NODES 0
-#define MUST_DESTROY 1
-#define NOT_DESTROY 0
-//constants on flags values
-#define TASK_SUCCEEDED 0
-#define TASK_FAILED -1
-
-
-
-
-
 /*
  * Creates a node having the prev and next node and its entry.
  */
@@ -89,13 +66,13 @@ int tuple_matches_template ( struct tuple_t * tuple , struct tuple_t * template 
 int list_insert_node(struct list_t* list,  node_t * newNode, node_t* aNode, int beforeOrAfter);
 
 /*
- * Method that gets a node from the given list that matches the tup_template.
- * It returns the first matching node (head to tail) or NULL if none match.
+ * Method that searches for all_or_n (all is 0, n is any number > 0) matching nodes with tup_template
+ * and returns al list with them it if exists or NULL if it doesnt.
  */
-node_t *list_matching_node(struct list_t *list, struct tuple_t *tup_template);
+struct list_t * list_matching_node(struct list_t *list, struct tuple_t *tup_template, int all_or_n);
 
 /*
- * Checks if list is empty. 
+ * Checks if list is empty.
  * Returns 1 if its empty, 0 otherwise.
  */
 int list_isEmpty(struct list_t* list);
@@ -106,7 +83,7 @@ int list_isEmpty(struct list_t* list);
 int list_size(struct list_t *list);
 
 /*
- * Method that returns the key of the node. 
+ * Method that returns the key of the node.
  * Delegates the request to the type of entry it uses.
  */
 char * node_key( node_t * node );
@@ -115,7 +92,7 @@ char * node_key( node_t * node );
  */
 struct entry_t * node_entry(node_t* node);
 /*
- * Method that compares two entry keys with strcmp 
+ * Method that compares two entry keys with strcmp
  * on the same order than the parameters are received.
  */
 int entry_keys_compare(struct entry_t * entryA, struct entry_t* entryB);
@@ -142,20 +119,13 @@ node_t * list_head(struct list_t * list );
 void list_print ( struct list_t * list) ;
 
 
-node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template, int mustRemove);
+struct list_t * list_get_n ( struct list_t * list, struct tuple_t * tup_template, int n );
+
+node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template);
 /*
  * Gets all the elements of the list that match tup_template
  */
-struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template, int mustRemove);
-
-
-struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int mustRemove, int getJustOne );
-
-int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
-                    int mustMoveWithCriterium, int mustRemoveFromOrigin );
-
-int list_move_nodes (struct  list_t * fromList, struct list_t * toList,
-                     int mustMoveWithCriterium,  int mustRemoveFromOrigin);
+struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_template);
 
 #endif /* defined(__SD15_Project__list_private__) */
 
