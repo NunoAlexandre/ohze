@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include "entry.h"
 
+
+struct entry_t *entry_create2(struct tuple_t *tuple, long long timestamp );
+
+
 /*
  * Returns the key of a given entry.
  */
@@ -22,6 +26,11 @@ char * entry_key (struct entry_t * entry);
  */
 struct tuple_t * entry_value ( struct entry_t * entry );
 
+long long entry_timestamp (struct entry_t * entry );
+
+int entry_serialize(struct entry_t * entry, char **buffer);
+
+struct entry_t *entry_deserialize(char *buffer, int buffer_size);
 
 
 #endif /* defined(__SD15_Project__entry_private__) */

@@ -26,7 +26,7 @@
  * TUPLE	DIMENSION	ELEMENTSIZE	ELEMENTDATA	...
  *		[4 bytes]	 [4 bytes]	[ES bytes]
  * ENTRY	TIMESTAMP 	DIMENSION	ELEMENTSIZE ELEMENTDATA
- *		[8 bytes] 	[4 bytes]	 [4 bytes]	[ES bytes]	...
+ *		          [8 bytes] 	[4 bytes]	 [4 bytes]	[ES bytes]	...
  * RESULT	RESULT
  *		[4 bytes]
  *
@@ -40,4 +40,6 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size);
 /* Liberta a memoria alocada na função buffer_to_message
  */
 void free_message(struct message_t *msg);
+
+
 

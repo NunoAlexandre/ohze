@@ -131,7 +131,7 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     int buffer_size = tuple_size_bytes(tuple);
     
     //allocs memory
-    buffer[0] = (char *) malloc ( buffer_size );
+    *buffer = (char *) malloc ( buffer_size );
     //to insert to the buffer
     int offset = 0;
     
