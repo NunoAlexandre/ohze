@@ -20,10 +20,13 @@
 struct table_t *table_create(int n) {
     table_t * newTable = ( table_t* ) malloc ( sizeof ( table_t ) );
     
-    if ( newTable ) {
+    if ( newTable != NULL ) {
         //should I do this malloc and if yes should check if null?
         newTable->bucket =(struct list_t**) malloc ( (sizeof (struct list_t*) * n) );
         newTable->size = n;
+        int i = 0;
+        for (i = 0; i < n; i++)
+            newTable->bucket[i] = list_create();
     }
     
     return newTable;
@@ -37,7 +40,8 @@ void table_destroy(struct table_t *table) {
     
     int i;
     for (i = 0; i < table->size; i++ ) {
-        list_destroy(table->bucket[i]);
+        if ( table->bucket[i] != NULL )
+            list_destroy(table->bucket[i]);
     }
     
     free(table->bucket);
@@ -49,6 +53,7 @@ void table_destroy(struct table_t *table) {
  * Devolve 0 (ok) ou -1 (out of memory, outros erros)
  */
 int table_put(struct table_t *table, struct tuple_t *tuple) {
+    
     int slot_index = table_slot_index(table, tuple_key(tuple));
     
     if ( slot_index == -1)
@@ -95,10 +100,12 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         //must have it own space where to add all the nodes found on every slots of the table.
         allMatchingNodes = list_create();
         //iterates over all slots of the table.
-        int slotsToCheck = table_size(table);
+        int slotsToCheck = table_slots(table);
         int index =0;
         while ( slotsToCheck-- > 0 ) {
             struct list_t * list_to_search = table_slot_list(table, index);
+            printf("## slot %d has %d nodes\n", index, list_size(list_to_search));
+
             struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
@@ -106,7 +113,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITHOUT_CRITERION, DONT_KEEP_AT_ORIGIN );
             
             //if its just to get one and list is not empty it found one so it stops
-            if ( one_or_all == 0 && ! list_isEmpty(allMatchingNodes)) {
+            if ( one_or_all == 1 && list_isEmpty(allMatchingNodes) == 0) {
                 slotsToCheck = 0;
             }
             index++;
@@ -138,10 +145,22 @@ int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_al
     return list_isEmpty(allMatchingNodes) ? TASK_SUCCEEDED : TASK_FAILED;
 }
 
+int table_slots ( struct table_t * table ) {
+    return table != NULL ? table->size : -1;
+}
+
 /* Devolve o número de elementos na tabela.
  */
-int table_size(struct table_t *table) {    
-    return table != NULL ? table->size : -1;
+int table_size(struct table_t *table) {
+    
+    int totalNumberOfElement = 0;
+    int i =0;
+    
+    for ( i = 0; i < table_slots(table); i++) {
+        totalNumberOfElement += list_size(table_slot_list(table, i));
+    }
+    
+    return totalNumberOfElement;
 }
 
 
@@ -157,8 +176,8 @@ struct list_t * table_slot_list ( table_t * table, int index ) {
 int table_slot_index ( table_t * table, char * key ) {
     //gets the hascode of key
     int hashcode = table_hashcode(table, key);
-    //if the hascode is not -1 (error flag) it returns the mod hashcode table_size
-    return hashcode != -1 ? hashcode % table_size(table) : -1;
+    //if the hascode is not -1 (error flag) it returns the mod hashcode table_slots
+    return hashcode != -1 ? hashcode % table_slots(table) : -1;
 }
 /*
  * Method that gets a table and a tuple key and returns the proper table index.

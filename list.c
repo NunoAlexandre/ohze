@@ -418,6 +418,7 @@ int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * 
         taskSuccess+= list_add_node(toList, node, moveWithCriterium);
     }
     else if ( whatToDoWithTheNode == JUST_DELETE_NODES ) {
+        printf("whatToDoWithTheNode == JUST_DELETE_NODES\n");
        taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
     }
     //returns the taskSuccess (0 ok, -1 error)

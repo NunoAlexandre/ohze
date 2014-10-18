@@ -32,5 +32,6 @@ int entry_serialize(struct entry_t * entry, char **buffer);
 
 struct entry_t *entry_deserialize(char *buffer, int buffer_size);
 
+int entry_size_bytes ( struct entry_t * entry);
 
 #endif /* defined(__SD15_Project__entry_private__) */

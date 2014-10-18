@@ -186,6 +186,13 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
     int tupleSize_nl = 0;
     memcpy(&tupleSize_nl, buffer+offset, TUPLE_DIMENSION_SIZE );
     int tupleSize = ntohl(tupleSize_nl);
+    
+    
+    //checks size
+    if ( tupleSize != 3)
+        return NULL;
+    
+    printf("### tupleSize is %d \n", tupleSize);
     //creates a tuple to create with the content from the buffer
     struct tuple_t * tuple = tuple_create(tupleSize);
     //moves  offset

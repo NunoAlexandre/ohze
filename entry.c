@@ -76,6 +76,15 @@ long long entry_timestamp (struct entry_t * entry ) {
     return entry->timestamp;
 }
 
+int entry_size_bytes ( struct entry_t * entry) {
+    
+    if ( entry == NULL || entry->value == NULL)
+        return -1;
+
+    return TIMESTAMP_SIZE + tuple_size_bytes(entry->value);
+}
+
+
 int entry_serialize(struct entry_t * entry, char **serialized_entry) {
     //safety checks
     if ( entry == NULL || entry->value == NULL )

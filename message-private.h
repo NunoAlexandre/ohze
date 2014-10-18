@@ -7,9 +7,18 @@
 //
 
 #include <stdio.h>
+#include "tuple-private.h"
+#include "tuple.h"
+#include "entry-private.h"
+#include "entry.h"
 
 #define OPCODE_SIZE 2
 #define C_TYPE_SIZE 2
+//types of message contents
+#define C_TYPE_TUPLE CT_TUPLE
+#define C_TYPE_ENTRY CT_ENTRY
+#define C_TYPE_RESULT CT_RESULT
+// sets the bytes size of size flags
 #define TUPLE_DIMENSION_SIZE 4
 #define TUPLE_ELEMENTSIZE_SIZE 4
 #define TIMESTAMP_SIZE 8
@@ -33,3 +42,6 @@ static long long swap_bytes_64(long long number)
     
     return new_number;
 }
+
+int message_size_bytes ( struct message_t * msg );
+int message_content_size_bytes ( struct message_t * msg );
