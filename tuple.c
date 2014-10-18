@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "tuple.h"
+#include "message-private.h"
+#include <assert.h>
 
 /* Função que cria um novo tuplo (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
@@ -78,22 +80,135 @@ struct tuple_t *tuple_dup (struct tuple_t *tuple) {
 /*********   Implementation of tuple-private.h    **********/
 
 /*
- * Method that returns the key of a given tuple.
- */
-char * tuple_key (struct tuple_t * tuple ) {
-    return tuple->tuple[0];
-}
-
-/*
- * Method that returns the size of a given tuple.
- */
-int tuple_size( struct tuple_t * tuple ) {
-    return tuple->tuple_dimension;
-}
-
-/*
  * Method that returns the iElement of a given tuple.
  */
 char * tuple_element ( struct tuple_t * tuple, int iElement ) {
     return tuple->tuple[iElement];
 }
+
+/*
+ * Method that returns the key of a given tuple.
+ */
+char * tuple_key (struct tuple_t * tuple ) {
+    return tuple_element(tuple,0);
+}
+
+/*
+ * Method that returns the size of a given tuple.
+ */
+int tuple_size ( struct tuple_t * tuple ) {
+    return tuple->tuple_dimension;
+}
+
+
+
+int tuple_size_bytes ( struct tuple_t* tuple) {
+    
+    int nBytes = 0;
+    // [dim][size_e1][bytes_e1][size_e2][bytes_e2][size_e3][bytes_e3]
+    nBytes+= TUPLE_DIMENSION_SIZE;
+    
+    int i;
+    for ( i = 0; i < tuple_size(tuple); i++) {
+        //sums the number of bytes needed to alloc for each element of the tuple
+        nBytes+= TUPLE_ELEMENTSIZE_SIZE + strlen(tuple_element(tuple,i));
+        printf("reading %d tuple element that is %s\n", i, tuple_element(tuple,i));
+    }
+    
+    return nBytes;
+}
+
+//format has to be:
+// [dim][size_e1][bytes_e1][size_e2][bytes_e2][size_e3][bytes_e3]
+//    4       4             var         4               var          4          4
+// total size is 4*5 + sum lenght of e1,e2,e3
+int tuple_serialize(struct tuple_t *tuple, char **buffer) {
+    
+    if ( tuple == NULL)
+        return -1;
+    
+    //bytes size needed to be alloc
+    int buffer_size = tuple_size_bytes(tuple);
+    
+    //allocs memory
+    buffer[0] = (char *) malloc ( buffer_size );
+    //to insert to the buffer
+    int offset = 0;
+    
+    //1. insert tuple dimension
+    int tuple_dim_htonl = htonl(tuple_size(tuple));
+    //insert to buffer
+    memcpy((buffer[0]+offset), &tuple_dim_htonl, TUPLE_DIMENSION_SIZE);
+    //moves offset
+    offset+=TUPLE_DIMENSION_SIZE;
+    
+    printf("****A: tuple_dim is %d and tuple_dim_htonl is %d\n", tuple_size(tuple), ntohl(tuple_dim_htonl));
+    
+    int i;
+    for ( i = 0; i < tuple_size(tuple); i++) {
+        
+        char* currentElementValue = tuple_element(tuple, i);
+        long currentElementSize = strlen(currentElementValue);
+        
+        // 1. first inserts element size
+        int tuple_elementSizeI_htonl = htonl(currentElementSize);
+        //insert to buffer
+        memcpy((buffer[0]+offset), &tuple_elementSizeI_htonl, TUPLE_ELEMENTSIZE_SIZE);
+        //moves offset
+        offset+=TUPLE_ELEMENTSIZE_SIZE;
+        //2. then inserts the string itself
+        memcpy((buffer[0]+offset), currentElementValue, currentElementSize);
+        offset+=currentElementSize;
+    }
+    
+    printf("tuple_serialize: buffer size is %d and offset is %d\n", buffer_size, offset);
+    //to make sure its working
+    assert(buffer_size == offset);
+    
+    return buffer_size;
+}
+
+
+/*
+ *  Gets a buffer with the format:
+ *  [dim][size_e1][bytes_e1][size_e2][bytes_e2][size_e3][bytes_e3]
+ */
+struct tuple_t *tuple_deserialize(char *buffer, int size) {
+    
+   
+    if ( buffer == NULL )
+        return NULL;
+    
+    //offset to read from the buffer
+    int offset = 0;
+    
+    //1. gets the tuple dim (first part of the buffer)
+    int tupleSize_nl = 0;
+    memcpy(&tupleSize_nl, buffer+offset, TUPLE_DIMENSION_SIZE );
+    int tupleSize = ntohl(tupleSize_nl);
+    //creates a tuple to create with the content from the buffer
+    struct tuple_t * tuple = tuple_create(tupleSize);
+    //moves  offset
+    offset+=TUPLE_DIMENSION_SIZE;
+    
+    //char *tdata[tupleSize] = {"   ", "2014", "Fixe!"};
+    
+    //2.gets first element size
+    int i;
+    for ( i = 0; i < tupleSize; i++ ) {
+        //1. gets i element size
+        int elementSize_nl = 0;
+        memcpy(&elementSize_nl, buffer+offset, TUPLE_ELEMENTSIZE_SIZE );
+        offset+= TUPLE_ELEMENTSIZE_SIZE;
+        int elementSize = ntohl(elementSize_nl);
+        //2. sets the i element value into the tuple
+        char * elementValue = (char*) malloc(elementSize);
+        memcpy(elementValue, (buffer+offset), elementSize);
+        tuple->tuple[i] = strdup(elementValue);
+        offset+=elementSize;
+    }
+    
+    //returns it
+    return tuple;
+}
+

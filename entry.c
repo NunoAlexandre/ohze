@@ -17,7 +17,7 @@
 /* Função que cria um novo par chave-valor (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
  */
-struct entry_t *entry_create(struct tuple_t *tuple){
+struct entry_t *entry_create(struct tuple_t *tuple) {
     struct entry_t *newEntry = (struct entry_t*) malloc(sizeof(struct entry_t));
     if ( newEntry != NULL ) {
         newEntry->timestamp = 0;
