@@ -107,8 +107,14 @@ int list_add(struct list_t *list, struct entry_t *entry) {
     //creates new node empty
     node_t * newNode = node_create(NULL, NULL, entry);
     
+    printf("                            @ it will add %s  - now list has %d elements\n", entry_key(entry), list_size(list));
+    
     //returns the success value of adding the node with criterion to the list.
-    return list_add_node(list, newNode, 1);
+    int succ = list_add_node(list, newNode, 1);
+    
+    printf("                            @ just added and now list has %d elements\n", list_size(list));
+
+    return succ;
 }
 
 int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
@@ -440,23 +446,24 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     node_t * matchedNode = list_head(list);
     //number of nodes to check matching
     unsigned int nodesToCheck = list_size(list);
-    // flag to let then know if there was a match (true = 1, false = 0)
+    
     //It will move forward until it currentNode matches the template
     while ( nodesToCheck-- > 0 ) {
+        
+        //in case of a match and a node is removed
+        node_t * nextNode = matchedNode->next;
         if ( node_matches_template(matchedNode, tup_template) ) {
             //if moves the matchedNode from list to matching_nodes
             // with adding criterion and matchedNode whatToDoWithTheNode or not.
-            list_move_node(list, matching_nodes, matchedNode, 1, whatToDoWithTheNode);
+            list_move_node(list, matching_nodes, matchedNode, MOVE_WITH_CRITERION, whatToDoWithTheNode);
             
             //if it must get just one it stops to check.
             if ( getJustOne ) {
                 nodesToCheck = 0;
             }
         }
-        else {
-            //since the currentNode didnt match it moves forward
-            matchedNode = matchedNode->prev;
-        }
+        //since the currentNode didnt match it moves forward
+        matchedNode = nextNode;
     }
     //if there was match it returns the entry of the matchedNode, NULL otherwise.
     return matching_nodes;

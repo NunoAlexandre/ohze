@@ -62,15 +62,11 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
     int taskSuccess = -1;
     
     struct list_t * target_list = table_slot_list(table, slot_index);
-    //if list is already created for slot_index
-    if ( target_list != NULL ) {
-        taskSuccess = list_add(target_list, entry_create(tuple));
-    }
-    else {
-        //list is empty
-        table->bucket[slot_index] = list_create();
-        taskSuccess = list_add(table->bucket[slot_index], entry_create(tuple));
-    }
+  
+   // printf("                                            it will add %s to %d\n", tuple_key(tuple), slot_index);
+    taskSuccess = list_add(target_list, entry_create(tuple));
+  
+  
     
     
     return taskSuccess;
@@ -120,6 +116,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         }
     }
     else {
+        //printf("// tup_template had key\n");
         //there is just one slot to search from
         struct list_t * list_to_search = table_slot_list(table, slotIndex);
         //once this slot was the only to be searched from,
@@ -176,6 +173,8 @@ struct list_t * table_slot_list ( table_t * table, int index ) {
 int table_slot_index ( table_t * table, char * key ) {
     //gets the hascode of key
     int hashcode = table_hashcode(table, key);
+    
+    printf("It will put the %s at slot index %d\n", key,hashcode != -1 ? hashcode % table_slots(table) : -1);
     //if the hascode is not -1 (error flag) it returns the mod hashcode table_slots
     return hashcode != -1 ? hashcode % table_slots(table) : -1;
 }
