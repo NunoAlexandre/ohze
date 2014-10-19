@@ -70,7 +70,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     else if ( message->c_type == CT_RESULT ) {
         printf("message_serialize_content : RESULT C_TYPE \n");
         
-        buffer[0] = (char*) malloc ( RESULT_SIZE );
+        buffer[0] = (char*) calloc( 1,  RESULT_SIZE );
         int result_to_network = htonl(message->content.result);
         memcpy(buffer[0], &result_to_network, RESULT_SIZE);
         buffer_size = RESULT_SIZE;
@@ -112,7 +112,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
     //allocs the memory
-    msg_buf[0] = (char*) malloc ( msg_buffer_size );
+    msg_buf[0] = (char*) calloc (1, msg_buffer_size );
     
     //offset
     int offset = 0;
@@ -130,7 +130,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     offset+=C_TYPE_SIZE;
     
     //buffer to serialize the message content
-    char ** message_serialized_content = (char**) malloc ( sizeof(char*));
+    char ** message_serialized_content = (char**) calloc(1, sizeof(char*));
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, message_serialized_content);
     
