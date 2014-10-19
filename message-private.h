@@ -1,3 +1,6 @@
+#ifndef SD15_Product_message_private_h
+#define SD15_Product_message_private_h
+
 //
 //  message-private.h
 //  SD15-Product
@@ -11,6 +14,7 @@
 #include "tuple.h"
 #include "entry-private.h"
 #include "entry.h"
+#include "message.h"
 
 #define OPCODE_SIZE 2
 #define C_TYPE_SIZE 2
@@ -24,7 +28,7 @@
 #define TIMESTAMP_SIZE 8
 #define ENTRY_DIMENSION_SIZE 4
 #define ENTRY_ELEMENTSIZE_SIZE 4
-#define RESULT_SIZE	4
+#define RESULT_SIZE 	4
 
 
 static long long swap_bytes_64(long long number)
@@ -43,5 +47,8 @@ static long long swap_bytes_64(long long number)
     return new_number;
 }
 
-int message_size_bytes ( struct message_t * msg );
-int message_content_size_bytes ( struct message_t * msg );
+int message_size_bytes (  struct message_t * msg );
+int message_content_size_bytes (  struct message_t * msg );
+
+
+#endif
