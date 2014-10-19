@@ -5,7 +5,7 @@
 //  message-private.h
 //  SD15-Product
 //
-//  Created by Bruno Mata on 17/10/14.
+//  Created by Grupo SD015 on 17/10/14.
 //  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
@@ -50,5 +50,6 @@ static long long swap_bytes_64(long long number)
 int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
 
+unsigned long string_positive_number ( char* numberAsString );
 
 #endif

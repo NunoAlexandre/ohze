@@ -2,8 +2,8 @@
 //  table-private.h
 //  SD15-Product
 //
-//  Created by Nuno Alexandre on 09/10/14.
-//  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
+//  Created by Grupo SD015 on 09/10/14.
+//  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
 #ifndef SD15_Product_table_private_h

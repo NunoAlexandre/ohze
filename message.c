@@ -2,8 +2,8 @@
 //  message.c
 //  SD15-Product
 //
-//  Created by Nuno Alexandre on 07/10/14.
-//  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
+//  Created by Grupo SD015 on 07/10/14.
+//  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
 #include <stdio.h>
@@ -55,21 +55,13 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     int buffer_size = 0;
     
     
-    puts("message_serialize_content\n");
-    
     if ( message->c_type == CT_TUPLE ) {
-        printf("message_serialize_content : TUPLE C_TYPE \n");
-
        buffer_size = tuple_serialize(message->content.tuple, buffer);
     }
     else  if ( message->c_type == CT_ENTRY ) {
-        printf("message_serialize_content : ENTRY C_TYPE \n");
-
         buffer_size = entry_serialize(message->content.entry, buffer);
     }
     else if ( message->c_type == CT_RESULT ) {
-        printf("message_serialize_content : RESULT C_TYPE \n");
-        
         buffer[0] = (char*) calloc( 1,  RESULT_SIZE );
         int result_to_network = htonl(message->content.result);
         memcpy(buffer[0], &result_to_network, RESULT_SIZE);
@@ -173,11 +165,7 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     offset+=C_TYPE_SIZE;
     //sets it
     message->c_type = ctype_host;
-    
-    printf("***AAA opcode is %d\n", message->opcode); //10 - insere tuplo
-     printf("***AAA c_type is %d\n", message->c_type); //100 - tem um tuplo
-    
-    
+        
     //sets the content
     if ( ctype_host == CT_TUPLE ) {
         message->content.tuple = tuple_deserialize(msg_buf+offset, msg_size-offset);

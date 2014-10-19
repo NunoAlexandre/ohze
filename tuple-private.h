@@ -2,7 +2,7 @@
 //  tuple-private.h
 //  SD15-Project
 //
-//  Created by Nuno Alexandre on 24/09/14.
+//  Created by Grupo SD015 on 24/09/14.
 //  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 

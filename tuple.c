@@ -2,7 +2,7 @@
 //  tuple.c
 //  sd15project
 //
-//  Created by Nuno Alexandre on 22/09/14.
+//  Created by Grupo SD015 on 22/09/14.
 //  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
@@ -111,7 +111,6 @@ int tuple_size_bytes ( struct tuple_t* tuple) {
     for ( i = 0; i < tuple_size(tuple); i++) {
         //sums the number of bytes needed to alloc for each element of the tuple
         nBytes+= TUPLE_ELEMENTSIZE_SIZE + strlen(tuple_element(tuple,i));
-        printf("reading %d tuple element that is %s\n", i, tuple_element(tuple,i));
     }
     
     return nBytes;
@@ -141,11 +140,10 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     //moves offset
     offset+=TUPLE_DIMENSION_SIZE;
     
-    printf("****A: tuple_dim is %d and tuple_dim_htonl is %d\n", tuple_size(tuple), ntohl(tuple_dim_htonl));
-    
+    //serializes each element following the patter [elemSize][elemContent]
     int i;
     for ( i = 0; i < tuple_size(tuple); i++) {
-        
+        //gets tuple element information
         char* currentElementValue = tuple_element(tuple, i);
         long currentElementSize = strlen(currentElementValue);
         
@@ -160,7 +158,6 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
         offset+=currentElementSize;
     }
     
-    printf("tuple_serialize: buffer size is %d and offset is %d\n", buffer_size, offset);
     //to make sure its working
     assert(buffer_size == offset);
     
@@ -186,12 +183,6 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
     memcpy(&tupleSize_nl, buffer+offset, TUPLE_DIMENSION_SIZE );
     int tupleSize = ntohl(tupleSize_nl);
     
-    
-    //checks size
-    if ( tupleSize != 3)
-        return NULL;
-    
-    printf("### tupleSize is %d \n", tupleSize);
     //creates a tuple to create with the content from the buffer
     struct tuple_t * tuple = tuple_create(tupleSize);
     //moves  offset
@@ -207,8 +198,15 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         memcpy(&elementSize_nl, buffer+offset, TUPLE_ELEMENTSIZE_SIZE );
         offset+= TUPLE_ELEMENTSIZE_SIZE;
         int elementSize = ntohl(elementSize_nl);
+        
+        //memory security check !!!: if elementSize is bigger then space to
+        // read from buffer operation is canceled
+        if ( offset + elementSize > size)
+            return NULL;
+        
         //2. sets the i element value into the tuple
         char * elementValue = (char*) calloc(1, elementSize);
+        
         memcpy(elementValue, (buffer+offset), elementSize);
         tuple->tuple[i] = strdup(elementValue);
         //free(elementValue);

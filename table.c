@@ -2,8 +2,8 @@
 //  table.c
 //  SD15-Product
 //
-//  Created by Nuno Alexandre on 09/10/14.
-//  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
+//  Created by Grupo SD015 on 09/10/14.
+//  Copyright (c) 2014 Grupo SD015. All rights reserved.
 //
 
 #include <stdio.h>
@@ -99,14 +99,14 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         int slotsToCheck = table_slots(table);
         int index =0;
         while ( slotsToCheck-- > 0 ) {
+            //gets the list to search from
             struct list_t * list_to_search = table_slot_list(table, index);
-            printf("## slot %d has %d nodes\n", index, list_size(list_to_search));
 
             struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
-            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITHOUT_CRITERION, DONT_KEEP_AT_ORIGIN );
+            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITH_CRITERION, DONT_KEEP_AT_ORIGIN );
             
             //if its just to get one and list is not empty it found one so it stops
             if ( one_or_all == 1 && list_isEmpty(allMatchingNodes) == 0) {
@@ -116,8 +116,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         }
     }
     else {
-        //printf("// tup_template had key\n");
-        //there is just one slot to search from
+        //this is the only slot list to search from
         struct list_t * list_to_search = table_slot_list(table, slotIndex);
         //once this slot was the only to be searched from,
         //allMatchingNodes is this table_slot_list matching nodes.
@@ -173,8 +172,6 @@ struct list_t * table_slot_list ( table_t * table, int index ) {
 int table_slot_index ( table_t * table, char * key ) {
     //gets the hascode of key
     int hashcode = table_hashcode(table, key);
-    
-    printf("It will put the %s at slot index %d\n", key,hashcode != -1 ? hashcode % table_slots(table) : -1);
     //if the hascode is not -1 (error flag) it returns the mod hashcode table_slots
     return hashcode != -1 ? hashcode % table_slots(table) : -1;
 }

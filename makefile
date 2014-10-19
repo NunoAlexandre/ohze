@@ -13,9 +13,6 @@ CC_OPTIONS =
 LNK_OPTIONS = 
 
 
-#O nome do executavel
-EXECUTABLE_NAME = SD15_PRODUCT 
-
 #
 # INCLUDE directories for SD15-Product
 #
@@ -24,32 +21,54 @@ INCLUDE = -I.\
 		-ISD15-Project
 
 
+
+#O nome do executavel
+EXECUTABLE_MESSAGE = SD15_MESSAGE
+EXECUTABLE_TABLE = SD15_TABLE
 #
 # Build SD15-Product
 #
 
-$(EXECUTABLE_NAME) : \
+$(EXECUTABLE_MESSAGE) : \
 		./entry.o\
 		./list.o\
-		./main.o\
 		./tuple.o\
+		./test_message.o\
 		./message.o\
 		./table.o
 	$(CC) $(LNK_OPTIONS) \
 		./entry.o\
 		./list.o\
-		./main.o\
 		./tuple.o\
+		./test_message.o\
 		./message.o\
 		./table.o\
-		-o $(EXECUTABLE_NAME)
+		-o $(EXECUTABLE_MESSAGE)
+
+$(EXECUTABLE_TABLE) : \
+		./entry.o\
+		./list.o\
+		./tuple.o\
+		./test_table.o\
+		./message.o\
+		./table.o
+	$(CC) $(LNK_OPTIONS) \
+		./entry.o\
+		./list.o\
+		./tuple.o\
+		./test_table.o\
+		./message.o\
+		./table.o\
+		-o $(EXECUTABLE_TABLE)
+
 
 clean : 
 		rm \
 		./*.o\
-		$(EXECUTABLE_NAME)
+		$(EXECUTABLE_TABLE) \
+		$(EXECUTABLE_MESSAGE)
 
-install : $(EXECUTABLE_NAME)
+install : $(EXECUTABLE_TABLE) $(EXECUTABLE_MESSAGE)
 
 #
 # Build the parts of SD15-Product
@@ -66,24 +85,29 @@ install : $(EXECUTABLE_NAME)
 	$(CC) $(CC_OPTIONS) SD15-Project/list.c -c $(INCLUDE) -o ./list.o
 
 
-# Item # 3 -- main --
-./main.o : SD15-Project/main.c
-	$(CC) $(CC_OPTIONS) SD15-Project/main.c -c $(INCLUDE) -o ./main.o
-
-
-# Item # 4 -- tuple --
+# Item # 3 -- tuple --
 ./tuple.o : SD15-Project/tuple.c
 	$(CC) $(CC_OPTIONS) SD15-Project/tuple.c -c $(INCLUDE) -o ./tuple.o
 
 
-# Item # 5 -- message --
+# Item # 4 -- test_message --
+./test_message.o : testes_projeto2-GRUPO015/test_message.c
+	$(CC) $(CC_OPTIONS) testes_projeto2-GRUPO015/test_message.c -c $(INCLUDE) -o ./test_message.o
+
+
+# Item # 5 -- test_table --
+./test_table.o : testes_projeto2-GRUPO015/test_table.c
+	$(CC) $(CC_OPTIONS) testes_projeto2-GRUPO015/test_table.c -c $(INCLUDE) -o ./test_table.o
+
+
+# Item # 6 -- message --
 ./message.o : SD15-Project/message.c
 	$(CC) $(CC_OPTIONS) SD15-Project/message.c -c $(INCLUDE) -o ./message.o
 
 
-# Item # 6 -- table --
+# Item # 7 -- table --
 ./table.o : SD15-Project/table.c
 	$(CC) $(CC_OPTIONS) SD15-Project/table.c -c $(INCLUDE) -o ./table.o
 
 
-##### END OF MAKEFILE SD015 ####
+##### END MAKEFILE GRUPO SD015 ####
