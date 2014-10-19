@@ -33,4 +33,6 @@ int table_hashcode (table_t * table, char * key);
 
 struct list_t * table_slot_list ( table_t * table, int index );
 
+int table_slots ( struct table_t * table );
+
 #endif

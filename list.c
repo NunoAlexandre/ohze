@@ -246,8 +246,8 @@ int node_destroy (struct node_t* node ) {
     if ( node == NULL || node->entry == NULL )
         return -1;
     
-    entry_destroy(node->entry);
-    free(node);
+   // entry_destroy(node->entry);
+   // free(node);
     
     //success
     return 0;

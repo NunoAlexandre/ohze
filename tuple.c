@@ -27,7 +27,11 @@ struct tuple_t *tuple_create(int tuple_dim) {
     
     if ( newTuple != NULL ) {
         newTuple->tuple_dimension = tuple_dim;
-        newTuple->tuple = (char**) malloc (sizeof(char*)*tuple_dim);
+        newTuple->tuple = (char**) calloc(tuple_dim, sizeof(char*));
+        int i;
+       // for ( i = 0; <= tuple_dim; i++) {
+       //
+    //    }
     }
     return newTuple;
 }
@@ -212,6 +216,7 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         char * elementValue = (char*) malloc(elementSize);
         memcpy(elementValue, (buffer+offset), elementSize);
         tuple->tuple[i] = strdup(elementValue);
+        free(elementValue);
         offset+=elementSize;
     }
     
