@@ -108,12 +108,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     if ( msg == NULL )
         return -1;
-    
-    //msg_buf = (char**) malloc ( sizeof(char*)*4);
-    if ( msg_buf == NULL)
-        assert(2==1);
-    
-    puts("allocad memory\n");
+        
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
     //allocs the memory
@@ -135,7 +130,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     offset+=C_TYPE_SIZE;
     
     //buffer to serialize the message content
-    char ** message_serialized_content = (char**) malloc ( sizeof(char*)*4);
+    char ** message_serialized_content = (char**) malloc ( sizeof(char*));
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, message_serialized_content);
     

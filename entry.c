@@ -42,6 +42,7 @@ void entry_destroy(struct entry_t *entry) {
     if ( entry != NULL) {
         tuple_destroy(entry->value);
     }
+    free(entry);
 }
 
 /* Funcao que duplica um par chave-valor. */
@@ -91,7 +92,7 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
         return -1;
     
     //the tuple serialized (to buffer)
-    char **serialized_tuple = (char ** ) malloc ( sizeof(char*) * 5);
+    char **serialized_tuple = (char ** ) calloc( 1, sizeof(char*));
     //serializes the tuple and gets its size
     int serialized_tuple_size = tuple_serialize(entry_value(entry), serialized_tuple);
     
@@ -102,7 +103,7 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
     int offset = 0;
     
     //allocs the needed space for the buffer
-    serialized_entry[0] = (char*) malloc ( serialized_entry_size );
+    serialized_entry[0] = (char*) calloc(1, ( serialized_entry_size ));
     
     //converts the timestamp (long long) to network format
     long long timestamp_to_network = swap_bytes_64(entry_timestamp(entry));

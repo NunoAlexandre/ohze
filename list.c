@@ -9,6 +9,7 @@
 #include "list.h"
 #include "list-private.h"
 #include "tuple-private.h"
+#include "entry-private.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -98,23 +99,23 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
  * Retorna 0 (OK) ou -1 (erro)
  */
 int list_add(struct list_t *list, struct entry_t *entry) {
+    
     //flag to return task success
-    int taskSucess = -1;
+    int taskSucess = TASK_FAILED;
     //safety check
     if ( list == NULL || entry == NULL )
         return taskSucess;
     
     //creates new node empty
     node_t * newNode = node_create(NULL, NULL, entry);
+    //adds the nodes and saves task success
+    taskSucess = list_add_node(list, newNode, MOVE_WITH_CRITERION);
+    //if something went wrong it frees the new node
+    if ( taskSucess == TASK_FAILED)
+        free ( newNode);
     
-    printf("                            @ it will add %s  - now list has %d elements\n", entry_key(entry), list_size(list));
     
-    //returns the success value of adding the node with criterion to the list.
-    int succ = list_add_node(list, newNode, 1);
-    
-    printf("                            @ just added and now list has %d elements\n", list_size(list));
-
-    return succ;
+    return taskSucess;
 }
 
 int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
@@ -156,14 +157,18 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
         
         //decrements the list size
         list_size_dec(list);
-        
     }
     
     //by last, the task success depends on the node_destroy success or is
     // success by it self if node must not be destroyed
-    taskSuccess = mustDestroy ? node_destroy(nodeToRemove) : TASK_SUCCEEDED;
+    if ( mustDestroy ) {
+        entry_destroy(node_entry(nodeToRemove));
+        taskSuccess = node_destroy(nodeToRemove);
+    }
+    else {
+        taskSuccess = TASK_SUCCEEDED;
+    }
 
-    
     //returns the taskSucess
     return taskSuccess;
 
@@ -250,13 +255,12 @@ node_t * node_dup(node_t* node) {
 int node_destroy (struct node_t* node ) {
     //safety checks in error case 
     if ( node == NULL || node->entry == NULL )
-        return -1;
+        return TASK_FAILED;
     
-  //  entry_destroy(node->entry);
-  //  free(node);
+    free(node);
     
     //success
-    return 0;
+    return TASK_SUCCEEDED;
 }
 
 /*

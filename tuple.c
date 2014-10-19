@@ -212,6 +212,7 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         char * elementValue = (char*) malloc(elementSize);
         memcpy(elementValue, (buffer+offset), elementSize);
         tuple->tuple[i] = strdup(elementValue);
+        //free(elementValue);
         offset+=elementSize;
     }
     
