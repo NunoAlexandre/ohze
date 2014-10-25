@@ -129,6 +129,8 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     //adds the content into the buffer
     memcpy(msg_buf[0]+offset, *message_serialized_content, message_serialized_content_size);
     
+    free(message_serialized_content);
+    
     if ( msg_buf == NULL)
         assert(2==1);
 
@@ -154,6 +156,8 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     //sets it
     message->opcode = opcode_host;
     
+
+    
     //same to c_type
     //gets the opcode
     int ctype_network = 0;
@@ -174,7 +178,7 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     }
     else if ( ctype_host == CT_ENTRY ) {
         message->content.entry = entry_deserialize(msg_buf+offset, msg_size-offset);
-        if ( message->content.tuple == NULL )
+        if ( message->content.entry == NULL )
             return NULL;
     }
     else if ( ctype_host == CT_RESULT ) {
@@ -190,9 +194,11 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
             message->content.result = result_host;
         }
         else {
+                free_message(message);
                 return NULL;
         }
     }
+
     
     return message;
 }
