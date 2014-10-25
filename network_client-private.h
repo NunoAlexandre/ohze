@@ -9,6 +9,9 @@
 #ifndef SD15_Product_network_client_private_h
 #define SD15_Product_network_client_private_h
 
+
+/* the struct server_t has an ip adress, 
+ a port number and a sock file descriptor*/
 type struct server_t {
     char * ip_address;
     int port;
