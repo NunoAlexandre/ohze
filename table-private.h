@@ -10,6 +10,7 @@
 #define SD15_Product_table_private_h
 
 #include "list.h"
+#include "table.h"
 #include <string.h>
 #include <stdio.h>
 
