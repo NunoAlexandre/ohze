@@ -18,10 +18,7 @@
 
 #define OPCODE_SIZE 2
 #define C_TYPE_SIZE 2
-//types of message contents
-#define C_TYPE_TUPLE CT_TUPLE
-#define C_TYPE_ENTRY CT_ENTRY
-#define C_TYPE_RESULT CT_RESULT
+
 // sets the bytes size of size flags
 #define TUPLE_DIMENSION_SIZE 4
 #define TUPLE_ELEMENTSIZE_SIZE 4
