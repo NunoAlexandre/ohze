@@ -7,7 +7,7 @@
 //
 
 #include <stdio.h>
-
+#include "inet.h"
 
 int socket();
 
