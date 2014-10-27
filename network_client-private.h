@@ -12,11 +12,11 @@
 
 /* the struct server_t has an ip adress, 
  a port number and a sock file descriptor*/
-type struct server_t {
+struct server_t {
     char * ip_address;
     int port;
-    int sockedfd;
-}
+    int socketfd;
+};
 
 
 #endif

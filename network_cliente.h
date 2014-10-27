@@ -10,8 +10,10 @@
 #define _NETWORK_CLIENT_H
 
 #include "message-private.h"
+#include "network_client-private.h"
 
 struct server_t; //a definer pelo grupo em network_client-private.h
+
 /* Esta função deve:
  * - estabelecer a ligação com o servidor;
  * - address_port é uma string no formato <hostname>:<port>
