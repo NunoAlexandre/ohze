@@ -16,11 +16,18 @@
 
 
 
-int write_all ( int connection_socket_fd, int operation_code, int content_type ) {
-
-    int messagesToSend = 0;
+int server_sends_result (int connection_socket_fd, table_t * server, int opcode, int content_type, int value) {
+    struct message_t * messageToSend = message_create_with_result(opcode, content_type, value);
     
+    //buffer message
+    char ** messageToSend_buffer;
+    int messageToSend_size = message_to_buffer(messageToSend, messageToSend_buffer);
+    int message_buffer_size_n = htonl(messageToSend_size);
     
+    //sends the size of the message
+    write(connection_socket_fd, &message_buffer_size_n, RESULT_SIZE);
+    //and sends the message
+    write(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
     
     return TASK_SUCCEEDED;
 }
@@ -36,32 +43,77 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
     //creates the message buffer to send to the cliente
     char ** messageToSend_ready;
     message_to_buffer(messageToSend, messageToSend_ready);
-    int message_size = htonl(message_size_bytes(messageToSend));
+    int message_size_n = htonl(message_size_bytes(messageToSend));
     //sends the size of the message
-    write(connection_socket_fd, &message_size, RESULT_SIZE);
+    write(connection_socket_fd, &message_size_n, RESULT_SIZE);
     //and sends the message
     write(connection_socket_fd, *messageToSend_ready, strlen(*messageToSend_ready));
     
     return TASK_SUCCEEDED;
 }
 
-/*
- * Gets a matching node from the server table and sends it to the cliente.
- *
- */
-int server_get_send_tuple ( int connection_socket_fd, table_t * server, struct message_t * cliente_request ) {
+int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes) {
     
-    int whatToDoWithTheNode = cliente_request->opcode == OC_IN ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
+    //1. sends a message to the client letting him now how many nodes it will receive
+    int nodes_to_receive_n = htonl(list_size(matching_nodes));
+    write(connection_socket_fd, &nodes_to_receive_n, RESULT_SIZE);
     
-    struct list_t * list_matching_node = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, 1);
+    //then, for each tuple of the list it will send it
+    int tuplesToSend = list_size(matching_nodes);
+    struct node_t * currentNode = list_head(matching_nodes);
     
-    struct tuple_t * matched_tuple = entry_value(node_entry((list_head(list_matching_node))));
+    while ( tuplesToSend-- > 0 ) {
+        //sends the tuple
+        server_send_tuple(connection_socket_fd, opcode, entry_value(node_entry(currentNode)));
+        //moves the node pointer
+        currentNode = currentNode->next;
+    }
     
-    //returns the success of sending the tuple to the cliente.
-    return server_send_tuple(connection_socket_fd, cliente_request->opcode, matched_tuple);
+    return TASK_SUCCEEDED;
 }
 
+int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_message ) {
+    
+    struct tuple_t * tuple_to_add = client_message->content.tuple;
+    
+    int taskSuccess = table_put(server,  tuple_to_add);
+    
+    return server_sends_result(connection_socket_fd, server, client_message->opcode+1, client_message->c_type, taskSuccess );
+}
 
+/*
+ * Gets one_or_all matching node(s) from the server table and sends it/them to the cliente.
+ *
+ */
+int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all) {
+    
+    // first it has to know what must happen to the matching nodes
+    int whatToDoWithTheNode = cliente_request->opcode == OC_IN ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
+    // gets the matching nodes
+    struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
+    
+    if ( one_or_all == 1 ) {
+        struct tuple_t * matched_tuple = entry_value(node_entry((list_head(matching_nodes))));
+        server_send_tuple(connection_socket_fd, cliente_request->opcode, matched_tuple);
+    }
+    else {
+        //sends all the matching nodes
+        server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes);
+    }
+    
+    //destroyes the list matching nodes to free memory
+    if ( ! list_isEmpty(matching_nodes))
+        list_destroy(matching_nodes);
+    
+    //returns the success of sending the tuple to the cliente.
+    return TASK_SUCCEEDED;
+}
+
+int server_sends_size ( int connection_socket_fd, table_t * server ) {
+    
+    int server_table_size = table_size(server);
+    return server_sends_result(connection_socket_fd, server, OC_SIZE+1, CT_RESULT, server_table_size);
+}
 
 /*
  * Recebe um socket fd de comunicação e uma messagem que contem
@@ -77,40 +129,41 @@ int send_response (struct table_t * server, int connection_socket_fd, struct mes
     // Dependendo do tipo de mensagem a enviar.
     switch ( cliente_request->opcode ) {
             
-        //inserir um tuplo à tabela
-        case OC_OUT:
-        {
-            struct tuple_t * tuple_to_add = cliente_request->content.tuple;
-            taskSuccess = table_put(server,  tuple_to_add);
-            //sends a message back saying if it was added
-            break;
-        }
         //devolve um matching tuple
         case OC_IN:
         case OC_COPY :
-        {
-            taskSuccess = server_get_send_tuple(connection_socket_fd, server, cliente_request);
-            break;
-        }
-        //devolve uma sequencia de matching tuplos
-        case OC_IN_ALL :
-        case OC_COPY_ALL  :
-            //does what it should
-            break;
+        case OC_IN_ALL:
+        case OC_COPY_ALL :
+            {
+                int one_or_all = cliente_request->opcode == OC_IN || cliente_request->opcode == OC_COPY;
+                taskSuccess = server_get_send_tuples(connection_socket_fd, server, cliente_request, one_or_all );
+                break;
+            }
             
-       
+            //inserir um tuplo à tabela
+        case OC_OUT:
+            {
+                taskSuccess = server_put(connection_socket_fd, server, cliente_request);
+                //sends a message back saying if it was added
+                break;
+            }
         //devolve o numero de elements da tabela
         case OC_SIZE:
+            taskSuccess = server_sends_size(connection_socket_fd, server);
             //does what it should
             break;
 
             
         default:
+        {
+            printf("Cliente asked a wrong operation\n");
+            taskSuccess = TASK_FAILED;
             break;
+        }
     }
     
     
-    return TASK_SUCCEEDED;
+    return taskSuccess;
     
 }
 

@@ -11,9 +11,12 @@
 
 #include "message-private.h"
 
-int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tupleToSend );
+int server_sends_result (int connection_socket_fd, table_t * server, int opcode, int content_type, int value);
 
-int server_get_send_tuple ( int connection_socket_fd, table_t * server, struct message_t * cliente_request );
+int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_message );
+int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes);
+int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all);
+int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tupleToSend );
 
 int write_all ( int connection_socket_fd, int operation_code, int content_type );
 
