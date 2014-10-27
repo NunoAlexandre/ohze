@@ -486,7 +486,7 @@ int list_isEmpty(struct list_t* list) {
  * Retorna -1 em caso de erro.
  */
 int list_size(struct list_t *list) {
-    return list == NULL ? -1 : list->size;
+    return list == NULL ? 0 : list->size;
 }
 
 /*

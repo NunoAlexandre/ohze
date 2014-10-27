@@ -14,6 +14,7 @@
 #include "tuple.h"
 #include "tuple-private.h"
 #include "entry-private.h"
+#import "list-private.h"
 #include <assert.h>
 
 struct message_t * message_create () {
@@ -66,7 +67,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
     
     if ( msg == NULL) {
         puts ("message_content_size_bytes but msg is NULL");
-        return -1;
+        return TASK_FAILED;
         
     }
     
@@ -84,7 +85,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
     }
     else {
         printf("Unrecognized message content type\n");
-        content_size_bytes = -1;
+        content_size_bytes = TASK_FAILED;
     }
     
     return content_size_bytes;
@@ -109,7 +110,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     }
     else {
         printf("message_serialize_content : invalide C_TYPE\n");
-        buffer_size=-1;
+        buffer_size=TASK_FAILED;
     }
     
     return buffer_size;
@@ -118,7 +119,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
 
 /* Converte o conteúdo de uma message_t num char*, retornando o tamanho do
  * buffer alocado para a mensagem serializada como um array de
- * bytes, ou -1 em caso de erro.
+ * bytes, ou TASK_FAILED em caso de erro.
  *
  * A mensagem serializada deve ter o seguinte formato:
  *
@@ -139,7 +140,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
 int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     if ( msg == NULL )
-        return -1;
+        return TASK_FAILED;
         
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
@@ -171,9 +172,6 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     free(message_serialized_content);
     
-    if ( msg_buf == NULL)
-        assert(2==1);
-
     
     return msg_buffer_size;
 }

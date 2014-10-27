@@ -16,16 +16,21 @@
 
 
 
-int server_sends_result (int connection_socket_fd, table_t * server, int opcode, int content_type, int value) {
+int server_send_result (int connection_socket_fd, int opcode, int content_type, int value) {
     struct message_t * messageToSend = message_create_with_result(opcode, content_type, value);
     
     //buffer message
     char ** messageToSend_buffer;
     int messageToSend_size = message_to_buffer(messageToSend, messageToSend_buffer);
+    
+    if ( messageToSend_size <= 0 || messageToSend_size > MAX_MSG) {
+        return TASK_FAILED;
+    }
+    
     int message_buffer_size_n = htonl(messageToSend_size);
     
     //sends the size of the message
-    write(connection_socket_fd, &message_buffer_size_n, RESULT_SIZE);
+    write(connection_socket_fd, &message_buffer_size_n, BUFFER_INTEGER_SIZE);
     //and sends the message
     write(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
     
@@ -40,14 +45,20 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
     
     //creates the message that will be sent.
     struct message_t * messageToSend = message_create_with_tuple(opcode+1, CT_TUPLE, tupleToSend);
+    if ( messageToSend == NULL)
+        return TASK_FAILED;
+    
     //creates the message buffer to send to the cliente
-    char ** messageToSend_ready;
-    message_to_buffer(messageToSend, messageToSend_ready);
-    int message_size_n = htonl(message_size_bytes(messageToSend));
+    char ** messageToSend_buffer;
+    int message_size_n = htonl(message_to_buffer(messageToSend, messageToSend_buffer));
+    
+    if ( message_size_n <= 0 || message_size_n > MAX_MSG)
+        return TASK_FAILED;
+    
     //sends the size of the message
-    write(connection_socket_fd, &message_size_n, RESULT_SIZE);
+    write(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE);
     //and sends the message
-    write(connection_socket_fd, *messageToSend_ready, strlen(*messageToSend_ready));
+    write(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
     
     return TASK_SUCCEEDED;
 }
@@ -55,8 +66,10 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
 int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes) {
     
     //1. sends a message to the client letting him now how many nodes it will receive
+    // if there are no tuples to send it sends "0/zero" to the cliente and stops here.
     int nodes_to_receive_n = htonl(list_size(matching_nodes));
-    write(connection_socket_fd, &nodes_to_receive_n, RESULT_SIZE);
+    write(connection_socket_fd, &nodes_to_receive_n, BUFFER_INTEGER_SIZE);
+    
     
     //then, for each tuple of the list it will send it
     int tuplesToSend = list_size(matching_nodes);
@@ -72,13 +85,20 @@ int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * ma
     return TASK_SUCCEEDED;
 }
 
-int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_message ) {
+int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_msg ) {
     
-    struct tuple_t * tuple_to_add = client_message->content.tuple;
+    //safety check
+    if ( server == NULL || client_msg->content.tuple == NULL )
+        return TASK_FAILED;
     
-    int taskSuccess = table_put(server,  tuple_to_add);
+    struct tuple_t * tuple_to_add = client_msg->content.tuple;
     
-    return server_sends_result(connection_socket_fd, server, client_message->opcode+1, client_message->c_type, taskSuccess );
+    //if both tasks perform successefully taskSuccess will keep steady.
+    int taskSuccess = TASK_SUCCEEDED;
+    taskSuccess = table_put(server,  tuple_to_add);
+    taskSuccess+= server_send_result(connection_socket_fd, client_msg->opcode+1, client_msg->c_type, taskSuccess );
+    
+    return taskSuccess == TASK_SUCCEEDED ? TASK_SUCCEEDED : TASK_FAILED;
 }
 
 /*
@@ -87,32 +107,38 @@ int server_put (int connection_socket_fd, struct table_t * server, struct messag
  */
 int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all) {
     
+    //flag to give task return
+    int taskSuccess = TASK_FAILED;
+    
     // first it has to know what must happen to the matching nodes
     int whatToDoWithTheNode = cliente_request->opcode == OC_IN ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
+    
     // gets the matching nodes
     struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
     
     if ( one_or_all == 1 ) {
-        struct tuple_t * matched_tuple = entry_value(node_entry((list_head(matching_nodes))));
-        server_send_tuple(connection_socket_fd, cliente_request->opcode, matched_tuple);
+        struct tuple_t * matched_tuple = list_isEmpty(matching_nodes) ? NULL : entry_value(node_entry((list_head(matching_nodes))));
+        taskSuccess = server_send_tuple(connection_socket_fd, cliente_request->opcode, matched_tuple);
     }
     else {
         //sends all the matching nodes
-        server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes);
+        taskSuccess = server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes);
     }
     
     //destroyes the list matching nodes to free memory
-    if ( ! list_isEmpty(matching_nodes))
+    if ( ! list_isEmpty(matching_nodes) )
         list_destroy(matching_nodes);
     
     //returns the success of sending the tuple to the cliente.
-    return TASK_SUCCEEDED;
+    return taskSuccess;
 }
 
-int server_sends_size ( int connection_socket_fd, table_t * server ) {
+int server_send_table_size ( int connection_socket_fd, table_t * server ) {
     
     int server_table_size = table_size(server);
-    return server_sends_result(connection_socket_fd, server, OC_SIZE+1, CT_RESULT, server_table_size);
+    int taskSuccess = server_send_result(connection_socket_fd, OC_SIZE+1, CT_RESULT, server_table_size);
+    
+    return taskSuccess;
 }
 
 /*
@@ -129,42 +155,45 @@ int send_response (struct table_t * server, int connection_socket_fd, struct mes
     // Dependendo do tipo de mensagem a enviar.
     switch ( cliente_request->opcode ) {
             
-        //devolve um matching tuple
+            //all the cases that involve get elements from the server table
         case OC_IN:
         case OC_COPY :
         case OC_IN_ALL:
         case OC_COPY_ALL :
-            {
-                int one_or_all = cliente_request->opcode == OC_IN || cliente_request->opcode == OC_COPY;
-                taskSuccess = server_get_send_tuples(connection_socket_fd, server, cliente_request, one_or_all );
-                break;
-            }
+        {
+            int one_or_all = cliente_request->opcode == OC_IN || cliente_request->opcode == OC_COPY;
+            taskSuccess = server_get_send_tuples(connection_socket_fd, server, cliente_request, one_or_all );
+            break;
+        }
             
             //inserir um tuplo à tabela
         case OC_OUT:
-            {
-                taskSuccess = server_put(connection_socket_fd, server, cliente_request);
-                //sends a message back saying if it was added
-                break;
-            }
-        //devolve o numero de elements da tabela
+        {
+            taskSuccess = server_put(connection_socket_fd, server, cliente_request);
+            //sends a message back saying if it was added
+            break;
+        }
+            //devolve o numero de elements da tabela
         case OC_SIZE:
-            taskSuccess = server_sends_size(connection_socket_fd, server);
+        {
+            taskSuccess = server_send_table_size(connection_socket_fd, server);
             //does what it should
             break;
-
+        }
             
         default:
         {
-            printf("Cliente asked a wrong operation\n");
+            printf("Client asked a wrong operation\n");
             taskSuccess = TASK_FAILED;
             break;
         }
     }
-    
-    
     return taskSuccess;
-    
+}
+
+int server_sends_error_msg( int connection_socket_fd ) {
+    while( server_send_result(connection_socket_fd, OP_ERROR, CT_RESULT, TASK_FAILED) != TASK_FAILED) ;
+    return TASK_SUCCEEDED;
 }
 
 /* Esta função é a correspondente à send_receive do network_client.
@@ -175,37 +204,49 @@ int send_response (struct table_t * server, int connection_socket_fd, struct mes
  * de erro.
  */
 int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
-
+    
+    //flag
+    int taskSuccess = TASK_FAILED;
     //where the request message will be stored
     char * request_msg [MAX_MSG];
     //number of bytes of the request message
-    int request_msg_size = 0;
+    long request_msg_size = 0;
     
-    /*
-     reads a request from the cliente
-     */
-    if((request_msg_size = read(connection_socket_fd,request_msg, MAX_MSG)) < 0){
+    //gets the request_msg_size that will be received after this
+    if ((request_msg_size = read(connection_socket_fd,&request_msg_size, BUFFER_INTEGER_SIZE)) < 0) {
         perror("Erro ao receber dados do cliente");
         close(connection_socket_fd);
-        return TASK_FAILED;
+        return taskSuccess;
+    }
+    //converts to host format
+    request_msg_size = ntohl(request_msg_size);
+    
+    //reads a message from the client
+    if( read(connection_socket_fd,request_msg, request_msg_size) != request_msg_size ) {
+        perror("Erro ao receber dados do cliente");
+        close(connection_socket_fd);
+        return taskSuccess;
     }
     
     // sets the end of the msg
     request_msg[request_msg_size] = '\0';
     
     //converts the serialized message to a struct message_t
-    struct message_t * cliente_request = buffer_to_message(*request_msg, request_msg_size);
-  
+    struct message_t * cliente_request = buffer_to_message(*request_msg, (int)request_msg_size);
     
-    if ( send_response(server_table, connection_socket_fd, cliente_request) == TASK_FAILED ) {
-        return TASK_FAILED;
+    
+    /**** Sends the proper response to the cliente  ****/
+    taskSuccess = send_response(server_table, connection_socket_fd, cliente_request);
+    
+    //if something went wrong it sends an error msg
+    if ( taskSuccess == TASK_FAILED ) {
+        server_sends_error_msg(connection_socket_fd);
     }
     
-    // Fecha socket referente a esta conex„o
+    // Fecha socket referente a esta conexao
     close(connection_socket_fd);
     
-    
-    return TASK_SUCCEEDED;
+    return taskSuccess;
 }
 
 
@@ -215,4 +256,3 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
  * deve libertar essa memoria.
  */
 int network_close(int socketfd );
-

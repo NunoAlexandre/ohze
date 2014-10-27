@@ -63,12 +63,8 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
     
     struct list_t * target_list = table_slot_list(table, slot_index);
   
-   // printf("                                            it will add %s to %d\n", tuple_key(tuple), slot_index);
     taskSuccess = list_add(target_list, entry_create(tuple));
   
-  
-    
-    
     return taskSuccess;
 }
 
@@ -148,6 +144,9 @@ int table_slots ( struct table_t * table ) {
 /* Devolve o número de elementos na tabela.
  */
 int table_size(struct table_t *table) {
+    
+    if ( table == NULL || table->bucket ==  NULL)
+        return 0;
     
     int totalNumberOfElement = 0;
     int i =0;

@@ -16,6 +16,8 @@
 #include "entry.h"
 #include "message.h"
 
+#define OP_ERROR -99
+#define BUFFER_INTEGER_SIZE 4
 #define OPCODE_SIZE 2
 #define C_TYPE_SIZE 2
 
