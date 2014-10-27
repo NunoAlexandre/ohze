@@ -16,7 +16,47 @@
 #include "entry-private.h"
 #include <assert.h>
 
+struct message_t * message_create () {
+    struct message_t * new_message = (struct message_t*) malloc ( sizeof(struct message_t) );
+    return new_message;
+}
 
+struct message_t * message_create_with_tuple ( int opcode, int content_type, struct tuple_t * tuple  ) {
+    struct message_t * new_message = message_create();
+    
+    if ( new_message != NULL ) {
+        new_message->opcode = opcode;
+        new_message->c_type = content_type;
+        new_message->content.tuple = tuple;
+    }
+    
+    return new_message;
+}
+
+struct message_t * message_create_with_entry ( int opcode, int content_type, struct entry_t * entry  ) {
+    
+    struct message_t * new_message = message_create();
+    
+    if ( new_message != NULL ) {
+        new_message->opcode = opcode;
+        new_message->c_type = content_type;
+        new_message->content.entry = entry;
+    }
+    
+    return new_message;
+}
+
+struct message_t * message_create_with_result ( int opcode, int content_type, int result  ) {
+    struct message_t * new_message = message_create();
+    
+    if ( new_message != NULL ) {
+        new_message->opcode = opcode;
+        new_message->c_type = content_type;
+        new_message->content.result = result;
+    }
+    
+    return new_message;
+}
 
 int message_size_bytes ( struct message_t * msg ) {
     return OPCODE_SIZE + C_TYPE_SIZE + message_content_size_bytes(msg);

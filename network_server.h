@@ -11,13 +11,18 @@
 
 #include "message-private.h"
 
+int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tupleToSend );
+
+int server_get_send_tuple ( int connection_socket_fd, table_t * server, struct message_t * cliente_request );
+
+int write_all ( int connection_socket_fd, int operation_code, int content_type );
+
 /*
  * Recebe um socket fd de comunicação e uma messagem que contem 
  * um pedido por um cliente e processa o pedido e 
  * age em conformidade, enviando uma resposta de volta.
  */
-int send_response (int connection_socket_fd, struct message_t *cliente_request);
-
+int send_response (struct table_t server, int connection_socket_fd, struct message_t *cliente_request);
 /* Esta função é a correspondente à send_receive do network_client.
  * - Recebe um pedido do cliente
  * - Processa a o pedido (deserealiza) e
@@ -30,7 +35,7 @@ int network_receive_send(int connection_socket_fd);
  * network_connect(). Se network_connect() alocou memoria, a função
  * deve libertar essa memoria.
  */
-int network_close(struct server_t *server);
+int network_close(int socketfd );
 
 
 #endif
