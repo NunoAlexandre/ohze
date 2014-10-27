@@ -11,32 +11,20 @@
 
 #include "message-private.h"
 
-int socket();
-
-int bind();
-
-int listen();
-
-int accept();
-
-/* Esta função deve:
- * - estabelecer a ligação com o servidor;
- * - address_port é uma string no formato <hostname>:<port>
- * (exemplo: 10.10.10.10:10000)
- * - retornar toda a informacão necessária (e.g., descritor da
- * socket) na estrutura server_t
+/*
+ * Recebe um socket fd de comunicação e uma messagem que contem 
+ * um pedido por um cliente e processa o pedido e 
+ * age em conformidade, enviando uma resposta de volta.
  */
-struct server_t *network_connect(const char *address_port);
+int send_response (int connection_socket_fd, struct message_t *cliente_request);
 
 /* Esta função é a correspondente à send_receive do network_client.
- * - Obter o descritor da ligação (socket) da estrutura server_t;
- * - enviar a mensagem msg ao servidor;
- * - receber uma resposta do servidor;
- * - retornar a mensagem obtida como resposta ou NULL em caso
- * de erro.
+ * - Recebe um pedido do cliente
+ * - Processa a o pedido (deserealiza) e
+ * - Envia uma resposta apropriada ao cliente.
+ * - Retorna 0 em caso de successo ou -1 em caso de erro.
  */
-struct message_t *network_receive_send(struct server_t *server,
-                                       struct message_t *msg);
+int network_receive_send(int connection_socket_fd);
 
 /* A funcao network_close() deve fechar a ligação estabelecida por
  * network_connect(). Se network_connect() alocou memoria, a função

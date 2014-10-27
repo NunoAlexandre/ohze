@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "inet.h"
 #include "table-private.h"
+#include "network_server.h"
 
 int server_run ( int portnumber ) {
     
@@ -62,6 +63,7 @@ int server_run ( int portnumber ) {
              //5. receive_send
             // Handles requests from the cliente
             // and gives a proper response.
+        printf("is waiting for client requests\n");
     }
 
     
@@ -70,4 +72,14 @@ int server_run ( int portnumber ) {
     close(socket_fd);
 
     return TASK_SUCCEEDED;
+}
+
+
+
+
+
+int main() {
+    
+    server_run(1300);
+
 }
