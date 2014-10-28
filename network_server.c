@@ -64,13 +64,6 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
 }
 
 int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes) {
-    
-    //1. sends a message to the client letting him now how many nodes it will receive
-    // if there are no tuples to send it sends "0/zero" to the cliente and stops here.
-    int nodes_to_receive_n = htonl(list_size(matching_nodes));
-    write(connection_socket_fd, &nodes_to_receive_n, BUFFER_INTEGER_SIZE);
-    
-    
     //then, for each tuple of the list it will send it
     int tuplesToSend = list_size(matching_nodes);
     struct node_t * currentNode = list_head(matching_nodes);
@@ -116,17 +109,15 @@ int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct 
     // gets the matching nodes
     struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
     
-    if ( one_or_all == 1 ) {
-        struct tuple_t * matched_tuple = list_isEmpty(matching_nodes) ? NULL : entry_value(node_entry((list_head(matching_nodes))));
-        taskSuccess = server_send_tuple(connection_socket_fd, cliente_request->opcode, matched_tuple);
-    }
-    else {
-        //sends all the matching nodes
-        taskSuccess = server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes);
-    }
+    // sends a message to the client letting him now how many nodes it will receive
+    // if there are no tuples to send it sends "0/zero" to the cliente and stops here.    
+    server_send_result (connection_socket_fd, cliente_request->opcode, CT_RESULT, list_size(matching_nodes));
     
+    // Then, if there are no nodes nothing will happen, otherwise it will send the tuple(s). 
+    taskSuccess = server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes);
+   
     //destroyes the list matching nodes to free memory
-    if ( ! list_isEmpty(matching_nodes) )
+    if ( matching_nodes != NULL )
         list_destroy(matching_nodes);
     
     //returns the success of sending the tuple to the cliente.
