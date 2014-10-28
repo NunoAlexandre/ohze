@@ -14,7 +14,22 @@
 #include "tuple-private.h"
 #include "tuple.h"
 
+int write_all(int socket_fd, char *buf, int len) {
 
+    int bufsize = len;
+    
+    while(len>0) {
+        int res = write(sock, buf, len); 
+        if(res<0) {
+             if(errno==EINTR) continue;
+             perror(“write failed:”);
+             return res;
+         }
+         buf += res;
+         len -= res;
+     }
+ return bufsize;
+}
 
 int server_send_result (int connection_socket_fd, int opcode, int content_type, int value) {
     struct message_t * messageToSend = message_create_with_result(opcode, content_type, value);
@@ -30,9 +45,10 @@ int server_send_result (int connection_socket_fd, int opcode, int content_type, 
     int message_buffer_size_n = htonl(messageToSend_size);
     
     //sends the size of the message
-    write(connection_socket_fd, &message_buffer_size_n, BUFFER_INTEGER_SIZE);
+  
+    write_all(connection_socket_fd, &message_buffer_size_n, BUFFER_INTEGER_SIZE);
     //and sends the message
-    write(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
+    write_all(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
     
     return TASK_SUCCEEDED;
 }
@@ -56,9 +72,9 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
         return TASK_FAILED;
     
     //sends the size of the message
-    write(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE);
+    write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE);
     //and sends the message
-    write(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
+    write_all(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
     
     return TASK_SUCCEEDED;
 }
