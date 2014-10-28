@@ -198,32 +198,39 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
     //flag
     int taskSuccess = TASK_FAILED;
     //where the request message will be stored
-    char * request_msg [MAX_MSG];
+    char * request_msg[MAX_MSG];
     //number of bytes of the request message
-    long request_msg_size = 0;
+    int request_msg_size = 0;
     
     //gets the request_msg_size that will be received after this
-    if ((request_msg_size = read(connection_socket_fd,&request_msg_size, BUFFER_INTEGER_SIZE)) < 0) {
-        perror("Erro ao receber dados do cliente");
+    if ( ((request_msg_size = read_all(connection_socket_fd,&request_msg_size, BUFFER_INTEGER_SIZE))) != BUFFER_INTEGER_SIZE ) {
+        perror("network_server > receive_send > error reading message size from client.");
         close(connection_socket_fd);
-        return taskSuccess;
+        return TASK_FAILED;
     }
     //converts to host format
-    request_msg_size = ntohl(request_msg_size);
+    if ( (request_msg_size = ntohl(request_msg_size) ) <= 0 ) {
+        close(connection_socket_fd);
+        return TASK_FAILED;
+    }
     
     //reads a message from the client
-    if( read(connection_socket_fd,request_msg, request_msg_size) != request_msg_size ) {
-        perror("Erro ao receber dados do cliente");
+    if( (read_all(connection_socket_fd,request_msg, request_msg_size) != request_msg_size)  ) {
+        perror("network_server > receive_send > error reading message from client.");
         close(connection_socket_fd);
-        return taskSuccess;
+        return TASK_FAILED;
     }
     
     // sets the end of the msg
     request_msg[request_msg_size] = '\0';
     
     //converts the serialized message to a struct message_t
-    struct message_t * cliente_request = buffer_to_message(*request_msg, (int)request_msg_size);
+    struct message_t * cliente_request = buffer_to_message(*request_msg, request_msg_size);
     
+    if ( cliente_request == NULL ) {
+        close(connection_socket_fd);
+        return TASK_FAILED;
+    }
     
     /**** Sends the proper response to the cliente  ****/
     taskSuccess = send_response(server_table, connection_socket_fd, cliente_request);
@@ -233,7 +240,7 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
         server_sends_error_msg(connection_socket_fd);
     }
     
-    // Fecha socket referente a esta conexao
+    // Once all the operation is done the socket is closed.
     close(connection_socket_fd);
     
     return taskSuccess;

@@ -12,6 +12,12 @@
 #include "list-private.h"
 #include "message-private.h"
 
+/*
+ * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
+ * The only case it doesn't happen is if some EINTR EPIPE happens.
+ * Returns the number of bytes written so if its different
+ * than nbytesToWrite something went wrong.
+ */
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
     
     int bufsize = bytesToWrite;
@@ -27,6 +33,31 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
         buffer += writtenBytes;
         //bytes to write
         bytesToWrite -= writtenBytes;
+    }
+    return bufsize;
+}
+
+/*
+ * Ensures that all nbytesToRead are readed from the socket
+ * and moved into the buffer.
+ * Returns the number of bytes copied so if its different
+ * than nbytesToRead something went wrong.
+ */
+int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
+    
+    int bufsize = nBytesToRead;
+    
+    while ( nBytesToRead > 0 ) {
+        int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
+        if ( nReadedBytes < 0 ) {
+            if(errno==EINTR) continue;
+            perror("network_server > write_all > failed");
+            return nReadedBytes;
+        }
+        //moves buffer pointer
+        buffer += nReadedBytes;
+        //bytes to write
+        nBytesToRead -= nReadedBytes;
     }
     return bufsize;
 }
