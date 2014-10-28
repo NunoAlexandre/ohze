@@ -14,19 +14,21 @@
 #include "tuple-private.h"
 #include "tuple.h"
 
-int write_all(int socket_fd, char *buf, int len) {
+int write_all(int socket_fd, char *buf, int bytesToWrite) {
 
     int bufsize = len;
     
     while(len>0) {
-        int res = write(sock, buf, len); 
-        if(res<0) {
+        int writtenBytes = write(sock, buf, len); 
+        if(writtenBytes<0) {
              if(errno==EINTR) continue;
              perror(“write failed:”);
-             return res;
+             return writtenBytes;
          }
-         buf += res;
-         len -= res;
+         //moves buffer pointer
+         buf += writtenBytes;
+         //bytes to write 
+         bytesToWrite -= writtenBytes;
      }
  return bufsize;
 }
@@ -46,9 +48,14 @@ int server_send_result (int connection_socket_fd, int opcode, int content_type, 
     
     //sends the size of the message
   
-    write_all(connection_socket_fd, &message_buffer_size_n, BUFFER_INTEGER_SIZE);
+    if ( write_all(connection_socket_fd, &message_buffer_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE) {
+        server_sends_error_msg(connection_socket_fd);
+    }
     //and sends the message
-    write_all(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
+    int msg_buffer_size = strlen(*messageToSend_buffer);
+    if ( write_all(connection_socket_fd, *messageToSend_buffer,msg_buffer_size ) != msg_buffer_size) {
+        server_sends_error_msg(connection_socket_fd);
+    }
     
     return TASK_SUCCEEDED;
 }
@@ -72,9 +79,14 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
         return TASK_FAILED;
     
     //sends the size of the message
-    write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE);
+    if ( write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE ) {
+        server_sends_error_msg(connection_socket_fd);
+    }
     //and sends the message
-    write_all(connection_socket_fd, *messageToSend_buffer, strlen(*messageToSend_buffer));
+    int msg_buffer_size = strlen(*messageToSend_buffer);
+    if ( write_all(connection_socket_fd, *messageToSend_buffer, msg_buffer_size ) != msg_buffer_size ) {
+        server_sends_error_msg(connection_socket_fd);
+    }
     
     return TASK_SUCCEEDED;
 }
