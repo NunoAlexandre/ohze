@@ -10,8 +10,16 @@
 #include "inet.h"
 #include "table-private.h"
 #include "network_server.h"
+#include <signal.h>
 
 int server_run ( int portnumber ) {
+
+    /** 0. SIGPIPE Handling */
+    struct signaction s;
+    //what must do with a signal - ignore
+    s.sa_handler = SIG_IGN;
+    //set what to do when gets the SIGPIPE
+    sigaction(SIGPIPE, &s, NULL);
 
     //1 . Socket
     int socket_fd;
