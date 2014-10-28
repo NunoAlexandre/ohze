@@ -46,9 +46,7 @@ static long long swap_bytes_64(long long number)
     return new_number;
 }
 
- struct message_t * message_create_with_tuple ( int opcode, int content_type, struct tuple_t * tuple  );
-struct message_t * message_create_with_entry ( int opcode, int content_type, struct entry_t * entry  );
-struct message_t * message_create_with_result ( int opcode, int content_type, int result  );
+struct message_t * message_create_with ( int opcode, int content_type, void * element  );
 
 
 int message_size_bytes (  struct message_t * msg );

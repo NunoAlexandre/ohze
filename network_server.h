@@ -11,16 +11,17 @@
 
 #include "message-private.h"
 
+
+
+int server_sends_result (int connection_socket_fd, int opcode, int content_type, int value);
  int server_sends_error_msg( int connection_socket_fd);
 int server_send_table_size ( int connection_socket_fd, table_t * server );
-int server_sends_result (int connection_socket_fd, int opcode, int content_type, int value);
 
 int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_message );
 int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes);
 int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all);
 int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tupleToSend );
 
-int write_all ( int connection_socket_fd, int operation_code, int content_type );
 
 /*
  * Recebe um socket fd de comunicação e uma messagem que contem 
@@ -35,12 +36,6 @@ int send_response (struct table_t server, int connection_socket_fd, struct messa
  * - Retorna 0 em caso de successo ou -1 em caso de erro.
  */
 int network_receive_send(int connection_socket_fd);
-
-/* A funcao network_close() deve fechar a ligação estabelecida por
- * network_connect(). Se network_connect() alocou memoria, a função
- * deve libertar essa memoria.
- */
-int network_close(int socketfd );
 
 
 #endif

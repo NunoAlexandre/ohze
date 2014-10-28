@@ -201,15 +201,17 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         
         //memory security check !!!: if elementSize is bigger then space to
         // read from buffer operation is canceled
-        if ( offset + elementSize > size)
+        if ( offset + elementSize > size) {
+            tuple_destroy(tuple);
             return NULL;
+        }
         
         //2. sets the i element value into the tuple
         char * elementValue = (char*) calloc(1, elementSize);
         
         memcpy(elementValue, (buffer+offset), elementSize);
         tuple->tuple[i] = strdup(elementValue);
-        //free(elementValue);
+        free(elementValue);
         offset+=elementSize;
     }
     

@@ -22,38 +22,30 @@ struct message_t * message_create () {
     return new_message;
 }
 
-struct message_t * message_create_with_tuple ( int opcode, int content_type, struct tuple_t * tuple  ) {
-    struct message_t * new_message = message_create();
-    
-    if ( new_message != NULL ) {
-        new_message->opcode = opcode;
-        new_message->c_type = content_type;
-        new_message->content.tuple = tuple;
-    }
-    
-    return new_message;
-}
-
-struct message_t * message_create_with_entry ( int opcode, int content_type, struct entry_t * entry  ) {
+struct message_t * message_create_with ( int opcode, int content_type, void * element  ) {
     
     struct message_t * new_message = message_create();
     
+    //sets the content of the message
     if ( new_message != NULL ) {
         new_message->opcode = opcode;
         new_message->c_type = content_type;
-        new_message->content.entry = entry;
-    }
-    
-    return new_message;
-}
-
-struct message_t * message_create_with_result ( int opcode, int content_type, int result  ) {
-    struct message_t * new_message = message_create();
-    
-    if ( new_message != NULL ) {
-        new_message->opcode = opcode;
-        new_message->c_type = content_type;
-        new_message->content.result = result;
+        //depending on the content_type sets the content
+        switch (content_type) {
+            case CT_ENTRY:
+                new_message->content.entry = element;
+                break;
+            case CT_TUPLE:
+                new_message->content.tuple = element;
+                break;
+            case CT_RESULT:
+            {
+                new_message->content.result = * ((int *) element);
+                break;
+            }
+            default:
+                break;
+        }
     }
     
     return new_message;
@@ -164,6 +156,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     //buffer to serialize the message content
     char ** message_serialized_content = (char**) calloc(1, sizeof(char*));
+    message_serialized_content[0] = (char*) calloc(1,sizeof(char));
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, message_serialized_content);
     
@@ -183,7 +176,6 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     // OP_CODE
     int offset = 0;
     
-    struct message_t * message = (struct message_t*) malloc ( sizeof(struct message_t) );
     //gets the opcode
     int opcode_network = 0;
     memcpy(&opcode_network, msg_buf+offset, OPCODE_SIZE);
@@ -192,10 +184,7 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     //moves offset
     offset+=OPCODE_SIZE;
     //sets it
-    message->opcode = opcode_host;
-    
-
-    
+  
     //same to c_type
     //gets the opcode
     int ctype_network = 0;
@@ -206,39 +195,36 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     //moves offset
     offset+=C_TYPE_SIZE;
     //sets it
-    message->c_type = ctype_host;
-        
-    //sets the content
-    if ( ctype_host == CT_TUPLE ) {
-        message->content.tuple = tuple_deserialize(msg_buf+offset, msg_size-offset);
-        if ( message->content.tuple == NULL )
-            return NULL;
-    }
-    else if ( ctype_host == CT_ENTRY ) {
-        message->content.entry = entry_deserialize(msg_buf+offset, msg_size-offset);
-        if ( message->content.entry == NULL )
-            return NULL;
-    }
-    else if ( ctype_host == CT_RESULT ) {
-        
-        if ( msg_size-offset == RESULT_SIZE) {
+    void * message_content = NULL;
+    
+    switch (ctype_host) {
+        case CT_TUPLE:
+            message_content = tuple_deserialize(msg_buf+offset, msg_size-offset);
+            break;
+        case CT_ENTRY:
+            message_content = entry_deserialize(msg_buf+offset, msg_size-offset);
+            break;
+        case CT_RESULT:
+        {
             int result_network = 0;
             memcpy(&result_network, msg_buf+offset, RESULT_SIZE);
             //gets to host
             int result_host = ntohl(result_network);
-            //moves offset
-            offset+=RESULT_SIZE;
-            //sets it
-            message->content.result = result_host;
+            message_content = &result_host;
+            break;
         }
-        else {
-                free_message(message);
-                return NULL;
-        }
+        default:
+            break;
     }
-
     
-    return message;
+    if ( message_content == NULL ) {
+            return NULL;
+    }
+    
+    //finally creates the message with all its components
+    struct message_t * message = message_create_with(opcode_host, ctype_host, message_content);
+    
+    return message != NULL ? message : NULL;
 }
 
 /* Liberta a memoria alocada na função buffer_to_message

@@ -15,7 +15,7 @@
 int server_run ( int portnumber ) {
 
     /** 0. SIGPIPE Handling */
-    struct signaction s;
+    struct sigaction s;
     //what must do with a signal - ignore
     s.sa_handler = SIG_IGN;
     //set what to do when gets the SIGPIPE
@@ -61,9 +61,9 @@ int server_run ( int portnumber ) {
     //sockaddres_in struct for a client
     struct sockaddr_in client;
     //the connection socket with a client
-    int connection_socket_fd;
+    int connection_socket_fd = -1;
     //the cliente socket size
-    socklen_t * client_socket_size;
+    socklen_t * client_socket_size = 0;
 
     //4. Accepts clients connects and handles its requests
     while ( (connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size)) != TASK_FAILED)
@@ -89,5 +89,9 @@ int server_run ( int portnumber ) {
 int main() {
     
     server_run(1300);
+    int result = 5;
+    struct message_t * teste = message_create_with(OP_ERROR, CT_RESULT, &result);
+    printf("\n\n Message result is %d\n\n", teste->content.result );
+    
 
 }

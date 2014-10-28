@@ -33,7 +33,7 @@ struct server_t *network_connect(const char *address_port){
    
     //building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
-    server_to_connect->host_address = host_address;
+    server_to_connect->ip_address = host_address;
     server_to_connect->port = atoi(port);
     
     /*---- Create the TCP socket. The three arguments are: ----*/
@@ -54,7 +54,7 @@ struct server_t *network_connect(const char *address_port){
     server.sin_port = htons(server_to_connect->port);
     
     /*converts host address to network format*/
-    if (inet_pton(AF_INET, server_to_connect->host_address, &server.sin_addr) < 1){
+    if (inet_pton(AF_INET, server_to_connect->ip_address, &server.sin_addr) < 1){
         perror("ERROR while converting Host address (IP) to network address structure.");
         //returning to starting state
         close(server_to_connect->socketfd);
@@ -102,7 +102,7 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
         return NULL;
     }
     
-    int n_bytes_writed; //number of bytes writed to buffer
+    long n_bytes_writed; //number of bytes writed to buffer
     int size_of_msg_to_send_HTONL = htonl(size_of_msg_to_send);
     
     //sends size_of_msg_to_send_buffer to server
@@ -159,7 +159,7 @@ int network_close(struct server_t *server){
     if (task == -1){
         return -1;
     }
-    free (server->host_address);
+    free (server->ip_address);
     free (server);
     return task;
 }
