@@ -61,17 +61,14 @@ int server_run ( int portnumber ) {
     //sockaddres_in struct for a client
     struct sockaddr_in client;
     //the connection socket with a client
-    int connection_socket_fd = -1;
+    int connection_socket_fd;
     //the cliente socket size
-    socklen_t * client_socket_size = 0;
+    socklen_t * client_socket_size;
 
     //4. Accepts clients connects and handles its requests
-    while ( (connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size)) != TASK_FAILED)
+    while ( (connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size)) != TASK_FAILED )
     {
-             //5. receive_send
-            // Handles requests from the cliente
-            // and gives a proper response.
-        printf("is waiting for client requests\n");
+        network_receive_send(connection_socket_fd);
     }
 
     
@@ -82,16 +79,45 @@ int server_run ( int portnumber ) {
     return TASK_SUCCEEDED;
 }
 
-
-
-
-
-int main() {
+int is_number (char * stringWithNumber ) {
+    char *ptr;
+    strtol(stringWithNumber, &ptr, 10);
     
-    server_run(1300);
-    int result = 5;
-    struct message_t * teste = message_create_with(OP_ERROR, CT_RESULT, &result);
-    printf("\n\n Message result is %d\n\n", teste->content.result );
+    return strncmp(ptr, "", 1) == 0;
+}
+
+int input_is_valid (int argc, char *argv[]) {
+    return  argc > 1 && is_number (argv[1]);
+}
+
+int reads_server_portnumber ( const char * stringWithPortNumber ) {
+    return atoi(stringWithPortNumber);
+}
+
+int portnumber_is_invalid (int portNumber ) {
+    return portNumber <= 0 || ((portNumber >=1 && portNumber<=1023) || (portNumber >=49152 && portNumber<=65535));
+}
+
+void invalid_input_message () {
+    puts("####### SD15-SERVER ##############");
+    puts("Sorry, your input was not valid.");
+    puts("You must provide a valid number to be the server port.");
+    puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
+    puts("####### SD15-SERVER ##############");
+}
+
+int main ( int argc, char *argv[] ) {
+    
+    //gets the port number
+    int portNumber = input_is_valid(argc, argv) ? reads_server_portnumber(argv[1]) : -1;
+    //case its invalid
+    if ( portnumber_is_invalid(portNumber) ) {
+        invalid_input_message();
+        return TASK_FAILED;
+    }
+    printf("Port number is %d\n", portNumber);
+    
+    server_run(portNumber);
     
 
 }
