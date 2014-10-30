@@ -9,6 +9,13 @@
 #ifndef SD15_Product_network_utils_h
 #define SD15_Product_network_utils_h
 
+int split_address_port (const char *address_and_port, int * address, int *port );
+
+int reads_server_portnumber ( const char * stringWithPortNumber );
+
+int portnumber_is_invalid (int portNumber );
+
+int hostname_to_ip(char * hostname , char* ip);
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
  * The only case it doesn't happen is if some EINTR EPIPE happens.

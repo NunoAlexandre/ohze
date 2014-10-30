@@ -1,12 +1,18 @@
 ###################################################
 #
-# Makefile - Grupo sd015 - Projecto 2
+# Makefile - Grupo sd015 - Projecto 3
 #
 ###################################################
+
 
 #
 # Macros
 #
+
+
+#O nome do executavel
+EXECUTABLE_CLIENT = SD15_CLIENT
+EXECUTABLE_SERVER = SD15_SERVER
 
 CC = /usr/bin/gcc
 CC_OPTIONS = 
@@ -21,54 +27,61 @@ INCLUDE = -I.\
 		-ISD15-Project
 
 
-
-#O nome do executavel
-EXECUTABLE_MESSAGE = SD15_MESSAGE
-EXECUTABLE_TABLE = SD15_TABLE
 #
 # Build SD15-Product
 #
 
-$(EXECUTABLE_MESSAGE) : \
+$(EXECUTABLE_CLIENT) : \
 		./entry.o\
 		./list.o\
 		./tuple.o\
-		./test_message.o\
+		./table-cliente.o\
+		./network_cliente.o\
+		./general_utils.o\
+		./network_utils.o\
 		./message.o\
 		./table.o
 	$(CC) $(LNK_OPTIONS) \
 		./entry.o\
 		./list.o\
 		./tuple.o\
-		./test_message.o\
+		./table-cliente.o\
+		./network_cliente.o\
+		./general_utils.o\
+		./network_utils.o\
 		./message.o\
 		./table.o\
-		-o $(EXECUTABLE_MESSAGE)
+		-o $(EXECUTABLE_CLIENT)
 
-$(EXECUTABLE_TABLE) : \
+$(EXECUTABLE_SERVER) : \
 		./entry.o\
 		./list.o\
 		./tuple.o\
-		./test_table.o\
+		./table-server.o\
+		./network_server.o\
+		./general_utils.o\
+		./network_utils.o\
 		./message.o\
 		./table.o
 	$(CC) $(LNK_OPTIONS) \
 		./entry.o\
 		./list.o\
 		./tuple.o\
-		./test_table.o\
+		./table-server.o\
+		./network_server.o\
+		./general_utils.o\
+		./network_utils.o\
 		./message.o\
 		./table.o\
-		-o $(EXECUTABLE_TABLE)
-
+		-o $(EXECUTABLE_SERVER)
 
 clean : 
 		rm \
 		./*.o\
-		$(EXECUTABLE_TABLE) \
-		$(EXECUTABLE_MESSAGE)
+		$(EXECUTABLE_CLIENT) \
+		$(EXECUTABLE_SERVER)
 
-install : $(EXECUTABLE_TABLE) $(EXECUTABLE_MESSAGE)
+install : $(EXECUTABLE_SERVER) $(EXECUTABLE_CLIENT)
 
 #
 # Build the parts of SD15-Product
@@ -90,24 +103,44 @@ install : $(EXECUTABLE_TABLE) $(EXECUTABLE_MESSAGE)
 	$(CC) $(CC_OPTIONS) SD15-Project/tuple.c -c $(INCLUDE) -o ./tuple.o
 
 
-# Item # 4 -- test_message --
-./test_message.o : testes_projeto2-GRUPO015/test_message.c
-	$(CC) $(CC_OPTIONS) testes_projeto2-GRUPO015/test_message.c -c $(INCLUDE) -o ./test_message.o
+# Item # 4 -- table-cliente --
+./table-cliente.o : SD15-Project/table-cliente.c
+	$(CC) $(CC_OPTIONS) SD15-Project/table-cliente.c -c $(INCLUDE) -o ./table-cliente.o
 
 
-# Item # 5 -- test_table --
-./test_table.o : testes_projeto2-GRUPO015/test_table.c
-	$(CC) $(CC_OPTIONS) testes_projeto2-GRUPO015/test_table.c -c $(INCLUDE) -o ./test_table.o
+# Item # 5 -- network_cliente --
+./network_cliente.o : SD15-Project/network_cliente.c
+	$(CC) $(CC_OPTIONS) SD15-Project/network_cliente.c -c $(INCLUDE) -o ./network_cliente.o
 
 
-# Item # 6 -- message --
+# Item # 6 -- table-server --
+./table-server.o : SD15-Project/table-server.c
+	$(CC) $(CC_OPTIONS) SD15-Project/table-server.c -c $(INCLUDE) -o ./table-server.o
+
+
+# Item # 7 -- general_utils --
+./general_utils.o : SD15-Project/general_utils.c
+	$(CC) $(CC_OPTIONS) SD15-Project/general_utils.c -c $(INCLUDE) -o ./general_utils.o
+
+
+# Item # 8 -- network_server --
+./network_server.o : SD15-Project/network_server.c
+	$(CC) $(CC_OPTIONS) SD15-Project/network_server.c -c $(INCLUDE) -o ./network_server.o
+
+
+# Item # 9 -- network_utils --
+./network_utils.o : SD15-Project/network_utils.c
+	$(CC) $(CC_OPTIONS) SD15-Project/network_utils.c -c $(INCLUDE) -o ./network_utils.o
+
+
+# Item # 10 -- message --
 ./message.o : SD15-Project/message.c
 	$(CC) $(CC_OPTIONS) SD15-Project/message.c -c $(INCLUDE) -o ./message.o
 
 
-# Item # 7 -- table --
+# Item # 11 -- table --
 ./table.o : SD15-Project/table.c
 	$(CC) $(CC_OPTIONS) SD15-Project/table.c -c $(INCLUDE) -o ./table.o
 
 
-##### END MAKEFILE GRUPO SD015 ####
+##### END RUN ####

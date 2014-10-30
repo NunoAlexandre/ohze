@@ -9,8 +9,9 @@
 #include "inet.h"
 #include "table.h"
 #include "network_cliente.h"
-#include "define-utils.h" //definições de constantes
-
+#include "general_utils.h" 
+#include "general_utils.h"
+#include "network_utils.h"
 
 
 /*
@@ -29,57 +30,8 @@ int test_input(int argc){
     return 0;
 }
 
-/*
- * tests if input is a valid IP
- */
-int is_number (char * stringWithNumber ) {
-    char *ptr;
-    int value = (int)strtol(stringWithNumber, &ptr, 10);
-    return value;
-}
 
-/*
- Get ip from domain name
- */
-int hostname_to_ip(char * hostname , char* ip){
-    
-    struct hostent *host_entry;
-    struct in_addr **addr_list;
-    int i;
-    
-    if ( (host_entry = gethostbyname( hostname ) ) == NULL){
-        // get the host info
-        herror("HOSTNAME TO IP ERROR: ");
-        return TASK_FAILED;
-    }
-    
-    addr_list = (struct in_addr **) host_entry->h_addr_list;
-    
-    for(i = 0; addr_list[i] != NULL; i++){
-        //Return the first one;
-        strcpy(ip , inet_ntoa(*addr_list[i]) );
-        return ip[i];
-    }
-    
-    return TASK_FAILED;
-}
 
-/*
- *  Get port number from user input
- */
-int reads_server_portnumber ( const char * stringWithPortNumber ) {
-    int port_number = atoi(stringWithPortNumber);
-    printf("Get port number from user input --> Port: %d\n", port_number);
-    
-    return port_number;
-}
-
-/*
- *  Verifies if port number is valid
- */
-int portnumber_is_invalid (int portNumber ) {
-    return (portNumber <= 0 || ((portNumber >=1 && portNumber<=1023) || (portNumber >=49152 && portNumber<=65535)));
-}
 
 /*
  *  Message if port number is invalid
@@ -157,7 +109,7 @@ int find_opcode(char *input_dup){
         printf("OPCODE -> QUIT\n");
         printf ("Instrução: %s\n", user_task);
         free(user_task);
-        return TASK_SUCCEDED;
+        return TASK_SUCCEEDED;
     }
     
     
@@ -269,52 +221,7 @@ int main(int argc , char *argv[]) {
     puts("1. Testar input de utilizador\n");
     test_input (argc);
     
-    char *server_address = argv[1]; //guarda valor de IP ou endereço de servidor
-    char ip[100]; //se for wwww.example.com guarda o IP
-	char *port_from_host; //guarda o valor do PORTO
-    
-    /* 2. Testar se é IP ou Endereço*/
-    puts("2. Testar se é IP ou HOSTNAME\n");
-    if (is_number (server_address) == 0){
-        /* 2.1 Se não for IP resolve endereço para IP*/
-        puts("2.1 É um HOSTNAME!");
-        puts ("A resolver endereço...\n");
-        char *hostname = strdup(argv[1]);
-        hostname = strtok(hostname, ":");
-        hostname_to_ip(hostname , ip);
-        //        printf("HOSTNAME: %s\n", strtok(hostname, ":"));
-        //        printf("%s resolved to %s\n" , hostname , ip);
-    }
-    
-    else{
-        puts("2. É um IP!");
-    }
-    
-    /* 3. Copia porto do servidor*/
-    port_from_host = strtok(server_address, ":"); //gets the host address porque sim, para passar à frente!
-    //    printf("HOSTNAME from port_from_host: %s\n", port_from_host);
-    
-    port_from_host = strtok(NULL,":"); //gets port server
-    //    printf("PORT from port_from_host: %s\n", port_from_host);
-    
-    int server_port = reads_server_portnumber(port_from_host);
-    //    printf("Server Port number is %d\n", server_port);
-    
-    /* 4. Verifica a validade do valor do porto*/
-    if ( portnumber_is_invalid(server_port) ) {
-        invalid_port_number_message();
-        return TASK_FAILED;
-    }
-    
-    /* 5. Imprime IP e Porto do Servidor*/
-    printf("Server Address is %s\n", server_address);
-    printf("Server Port is %d\n", server_port);
-    printf("\n");
-    
-    /* 6. Ligação ao SERVIDOR */
-    
-    printf("Ligacao iniciada a SERVIDOR: %s no PORTO: %d\n", server_address, server_port);
-    struct server_t *server_to_conect = network_connect(server_address);
+    struct server_t *server_to_conect = network_connect(argv[1]);
     puts("A ligar a servidor...");
     
     /* 6.1 Verificação da ligação ao SERVIDOR */
@@ -333,7 +240,7 @@ int main(int argc , char *argv[]) {
     int opcode, ctcode;
     
     /* 7.1 Ciclo que trata do user input */
-    while (exit != TASK_SUCCEDED){
+    while (exit != TASK_SUCCEEDED){
         if (fgets (input, MAX_MSG-1, stdin) == NULL){
             return TASK_FAILED;
         }
@@ -366,11 +273,11 @@ int main(int argc , char *argv[]) {
         
         //COMO TRATAR DA SAÍDA DO WHILE?
         if (opcode == 0){
-            exit = TASK_SUCCEDED;
+            exit = TASK_SUCCEEDED;
         }
         
     }
     
     puts("A terminar sessão...");
-    return TASK_SUCCEDED;
+    return TASK_SUCCEEDED;
 }

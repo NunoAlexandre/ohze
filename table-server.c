@@ -10,6 +10,8 @@
 #include "inet.h"
 #include "table-private.h"
 #include "network_server.h"
+#include "general_utils.h"
+#include "network_utils.h"
 #include <signal.h>
 
 int server_run ( int portnumber ) {
@@ -68,6 +70,7 @@ int server_run ( int portnumber ) {
     //4. Accepts clients connects and handles its requests
     while ( (connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size)) != TASK_FAILED )
     {
+        printf("### Server got client connection\n");
         network_receive_send(connection_socket_fd);
     }
 
@@ -79,24 +82,13 @@ int server_run ( int portnumber ) {
     return TASK_SUCCEEDED;
 }
 
-int is_number (char * stringWithNumber ) {
-    char *ptr;
-    strtol(stringWithNumber, &ptr, 10);
-    
-    return strncmp(ptr, "", 1) == 0;
-}
+
 
 int input_is_valid (int argc, char *argv[]) {
     return  argc > 1 && is_number (argv[1]);
 }
 
-int reads_server_portnumber ( const char * stringWithPortNumber ) {
-    return atoi(stringWithPortNumber);
-}
 
-int portnumber_is_invalid (int portNumber ) {
-    return portNumber <= 0 || ((portNumber >=1 && portNumber<=1023) || (portNumber >=49152 && portNumber<=65535));
-}
 
 void invalid_input_message () {
     puts("####### SD15-SERVER ##############");

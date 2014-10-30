@@ -13,6 +13,7 @@
 #include "list.h"
 #include "tuple.h"
 #include "tuple-private.h"
+#include "general_utils.h"
 
 /* Função para criar/inicializar uma nova tabela hash, com n
  * linhas(n = módulo da função hash)

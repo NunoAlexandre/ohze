@@ -14,7 +14,7 @@
 #include "network_cliente.h"
 #include "network_utils.h"
 #include "network_client-private.h"
-#include "define-utils.h"
+#include "general_utils.h"
 
 /* Esta função deve:
  * - estabelecer a ligação com o servidor;
@@ -24,20 +24,79 @@
  * socket) na estrutura server_t
  */
 struct server_t *network_connect(const char *address_port){
+    
+    char *server_address = strdup(address_port); //guarda valor de IP ou endereço de servidor
+    char ip[100]; //se for wwww.example.com guarda o IP
+	char *port_from_host; //guarda o valor do PORTO
+    
+    /* 2. Testar se é IP ou Endereço*/
+    puts("2. Testar se é IP ou HOSTNAME\n");
+    if (is_number (server_address) == 0){
+        /* 2.1 Se não for IP resolve endereço para IP*/
+        puts("2.1 É um HOSTNAME!");
+        puts ("A resolver endereço...\n");
+        char *hostname = strdup(address_port);
+        hostname = strtok(hostname, ":");
+        hostname_to_ip(hostname , ip);
+        //        printf("HOSTNAME: %s\n", strtok(hostname, ":"));
+        //        printf("%s resolved to %s\n" , hostname , ip);
+    }
+    
+    else{
+        puts("2. É um IP!");
+    }
+    
+    /* 3. Copia porto do servidor*/
+    port_from_host = strtok(server_address, ":"); //gets the host address porque sim, para passar à frente!
+    //    printf("HOSTNAME from port_from_host: %s\n", port_from_host);
+    
+    port_from_host = strtok(NULL,":"); //gets port server
+    //    printf("PORT from port_from_host: %s\n", port_from_host);
+    
+    int server_port = reads_server_portnumber(port_from_host);
+    //    printf("Server Port number is %d\n", server_port);
+    
+    /* 4. Verifica a validade do valor do porto*/
+    if ( portnumber_is_invalid(server_port) ) {
+        printf("port number is invalid");
+        return NULL;
+    }
+    
+    /* 5. Imprime IP e Porto do Servidor*/
+    printf("Server Address is %s\n", server_address);
+    printf("Server Port is %d\n", server_port);
+    printf("\n");
+    
+    /* 6. Ligação ao SERVIDOR */
+    
+    printf("Ligacao iniciada a SERVIDOR: %s no PORTO: %d\n", server_address, server_port);
+
+    
     char *host_address;
 	char *port;
+
 	char *address_port_copy = strdup(address_port);
+
 	struct sockaddr_in server;
     
     //finding host address and port
     host_address = strtok(address_port_copy, ":"); //get the host address
+
     port = strtok(NULL,":"); //get port
-    
+
+
     //building struct server_t server_to_connect
-    struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
-    server_to_connect->ip_address = host_address;
-    server_to_connect->port = atoi(port);
     
+    struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
+
+    server_to_connect->ip_address = host_address;
+    puts("PPPPPPPP \n");
+    printf("port is %s \n", port);
+
+    server_to_connect->port = atoi(port);
+    puts("PPPPPPPP \n");
+
+
     /*---- Create the TCP socket. The three arguments are: ----*/
     /* 1) Internet domain 2) Stream socket 3) TCP protocol (0) */
     if((server_to_connect->socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -47,6 +106,8 @@ struct server_t *network_connect(const char *address_port){
         free(server_to_connect);
         return NULL; //será?
     }
+    puts("PPPPPPPP \n");
+
     
     /*---- Configure settings of the server address struct ----*/
     /* Address family = Internet */

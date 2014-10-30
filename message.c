@@ -16,6 +16,7 @@
 #include "entry-private.h"
 #import "list-private.h"
 #include <assert.h>
+#include "general_utils.h"
 
 struct message_t * message_create () {
     struct message_t * new_message = (struct message_t*) malloc ( sizeof(struct message_t) );

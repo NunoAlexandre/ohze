@@ -15,6 +15,8 @@
 #include "tuple-private.h"
 #include "network_utils.h"
 #include "tuple.h"
+#include "general_utils.h"
+
 
 
 int server_sends_error_msg( int connection_socket_fd ) {

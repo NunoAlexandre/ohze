@@ -10,6 +10,7 @@
 #include "list-private.h"
 #include "tuple-private.h"
 #include "entry-private.h"
+#include "general_utils.h"
 #include <stdlib.h>
 #include <string.h>
 

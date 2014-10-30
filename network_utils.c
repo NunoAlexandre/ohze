@@ -11,6 +11,83 @@
 #include <errno.h>
 #include "list-private.h"
 #include "message-private.h"
+#include <netdb.h> //hostent
+#include "general_utils.h"
+#include "network_utils.h"
+
+
+int split_address_port (const char *address_and_port, int * address, int *port ) {
+    char *address_and_port_p = strdup(address_and_port); //guarda valor de IP ou endereço de servidor
+    char ip[100]; //se for wwww.example.com guarda o IP
+	char *port_from_host; //guarda o valor do PORTO
+    
+    /* 2. Testar se é IP ou Endereço*/
+    puts("2. Testar se é IP ou HOSTNAME\n");
+    if (is_number (address_and_port_p) == 0){
+        /* 2.1 Se não for IP resolve endereço para IP*/
+        puts("2.1 É um HOSTNAME!");
+        char *hostname = strdup(address_and_port);
+
+        hostname = strtok(hostname, ":");
+        hostname_to_ip(hostname , ip);
+        
+    }
+    
+    else{
+        puts("2. É um IP!");
+    }
+    
+    /* 3. Copia porto do servidor*/
+    port_from_host = strtok(address_and_port_p, ":"); //gets the host address porque sim, para passar à frente!
+    //    printf("HOSTNAME from port_from_host: %s\n", port_from_host);
+    
+    port_from_host = strtok(NULL,":"); //gets port server
+    //    printf("PORT from port_from_host: %s\n", port_from_host);
+    
+    puts("AA");
+    int portnumber = reads_server_portnumber(port_from_host);
+    port = &portnumber;
+    //    printf("Server Port number is %d\n", server_port);
+    printf("PORT IS %d\n", *port);
+
+
+    return TASK_SUCCEEDED;
+}
+
+int reads_server_portnumber ( const char * stringWithPortNumber ) {
+    return atoi(stringWithPortNumber);
+}
+
+int portnumber_is_invalid (int portNumber ) {
+    return portNumber <= 0 || ((portNumber >=1 && portNumber<=1023) || (portNumber >=49152 && portNumber<=65535));
+}
+
+
+/*
+ Get ip from domain name
+ */
+int hostname_to_ip(char * hostname , char* ip){
+    
+    struct hostent *host_entry;
+    struct in_addr **addr_list;
+    int i;
+    
+    if ( (host_entry = gethostbyname( hostname ) ) == NULL){
+        // get the host info
+        puts("HOSTNAME TO IP ERROR: ");
+        return TASK_FAILED;
+    }
+    
+    addr_list = (struct in_addr **) host_entry->h_addr_list;
+    
+    for(i = 0; addr_list[i] != NULL; i++){
+        //Return the first one;
+        strcpy(ip , inet_ntoa(*addr_list[i]) );
+        return ip[i];
+    }
+    
+    return TASK_FAILED;
+}
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
