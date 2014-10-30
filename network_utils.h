@@ -24,9 +24,17 @@ int write_all(int socket_fd, const void *buffer, int nbytesToWrite);
  * than nbytesToRead something went wrong.
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead );
+
 /*
  * Sends messageToSend to the connection_socket
  */
 int send_message (int connection_socket_fd, struct message_t * messageToSend);
+
+
+/*
+ * Receives an integer with conection_socket_fd.
+ * In error case returns NULL, received_message otherwise.
+ */
+struct message_t* receive_message (int connection_socket_fd);
 
 #endif

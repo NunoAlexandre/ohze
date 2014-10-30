@@ -244,6 +244,34 @@ void free_message(struct message_t *message) {
     free(message);
 }
 
+/*
+ *  Verifies if message has error code or is NULL
+ */
+int message_error (struct message_t* tested_msg){
+    
+    if ((tested_msg == NULL) || (tested_msg->opcode == OP_ERROR)) {
+        return TASK_FAILED;
+    }
+    
+    return TASK_SUCCEEDED;
+}
 
+/*
+ * função que compara duas mensagens - response with success --- DECLARAR EM MESSAGE-PRIVATE.H
+ */
+int response_with_success ( struct message_t* request_msg, struct message_t* received_msg){
+    
+    if (message_error(received_msg) == TASK_FAILED) {
+        perror("RECEIVED MESSAGE HAS ERROR CODE OR IS NULL");
+        return TASK_FAILED;
+    }
+    
+    if (request_msg->opcode != received_msg->opcode+1){
+        perror("RECEIVED MESSAGE OPCODE INCORRECT!");
+        return TASK_FAILED;
+    }
+    
+    return TASK_SUCCEEDED;
+}
 
 

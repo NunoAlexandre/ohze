@@ -47,11 +47,18 @@ static long long swap_bytes_64(long long number)
 }
 
 struct message_t * message_create_with ( int opcode, int content_type, void * element  );
-
-
 int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
-
 unsigned long string_positive_number ( char* numberAsString );
+
+/*
+ * função que compara duas mensagens - response with success --- DECLARAR EM MESSAGE-PRIVATE.H
+ */
+int response_with_success ( struct message_t *  request_msg, struct message_t * received_msg);
+
+/*
+ *  Verifies if message has error code or is NULL
+ */
+int message_error (struct message_t* tested_msg);
 
 #endif

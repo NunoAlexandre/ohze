@@ -30,8 +30,8 @@ struct server_t *network_connect(const char *address_port);
  * - retornar a mensagem obtida como resposta ou NULL em caso
  * de erro.
  */
-struct message_t *network_send_receive(struct server_t *server,
-                                       struct message_t *msg);
+struct message_t *network_send_receive(struct server_t *server,struct message_t *msg);
+
 /* A funcao network_close() deve fechar a ligação estabelecida por
  * network_connect(). Se network_connect() alocou memoria, a função
  * deve libertar essa memoria.

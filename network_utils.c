@@ -91,3 +91,61 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     
     return TASK_SUCCEEDED;
 }
+
+
+/*
+ * Receives an integer with conection_socket_fd.
+ * In error case returns NULL, received_message otherwise.
+ */
+struct message_t* receive_message (int connection_socket_fd) {
+    
+    int size_of_msg_received = 0;
+    struct message_t *message_to_receive = NULL;
+    char **message_buffer = (char**) calloc(1, sizeof(char*));
+    message_buffer[0] = (char*) calloc(1, MAX_MSG);
+    
+    /* 2.1 tamanho da mensagem que irá ser recebida*/
+    if ( ((size_of_msg_received = read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE))) != BUFFER_INTEGER_SIZE ) {
+        perror("RECEIVED MESSAGE -> FAILED TO READ MESSAGE SIZE.");
+        free(message_buffer[0]);
+        free(message_buffer);
+        close(connection_socket_fd);
+        return message_to_receive;
+    }
+    
+    /* 2.2 Converte tamanho da mensagem para formato cliente */
+    int size_of_msg_received_NTOHL;
+    if ( (size_of_msg_received_NTOHL = ntohl(size_of_msg_received) ) <= 0 ) {
+        close(connection_socket_fd);
+        free(message_buffer[0]);
+        free(message_buffer);
+        return message_to_receive;
+    }
+    
+    /* 2.3 Lê mensagem enviada */
+    if( (read_all(connection_socket_fd,message_buffer[0], size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
+        perror("RECEIVED MESSAGE -> FAILED TO READ MESSAGE.");
+        free(message_buffer[0]);
+        free(message_buffer);
+        close(connection_socket_fd);
+        return message_to_receive;
+    }
+    
+    /* 2.4 Marca a terminação da Mensagem recebida */
+    message_buffer[size_of_msg_received_NTOHL+1] = '\0';
+    
+    /* 2.5 Converte buffer para Mensagem */
+    message_to_receive = buffer_to_message(message_buffer[0], size_of_msg_received);
+    free(message_buffer[0]);
+    free(message_buffer);
+
+    /* 2.6 Verifica se a mensagem foi bem criada */
+    if ( message_to_receive == NULL ) {
+        perror("RECEIVED MESSAGE -> FAILED TO DESERIALIZE MESSAGE.");
+        close(connection_socket_fd);
+        return message_to_receive;
+    }
+    
+    return message_to_receive;
+}
+

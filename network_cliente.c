@@ -12,7 +12,9 @@
 #include <errno.h>
 #include "inet.h"
 #include "network_cliente.h"
+#include "network_utils.h"
 #include "network_client-private.h"
+#include "define-utils.h"
 
 /* Esta função deve:
  * - estabelecer a ligação com o servidor;
@@ -30,7 +32,7 @@ struct server_t *network_connect(const char *address_port){
     //finding host address and port
     host_address = strtok(address_port_copy, ":"); //get the host address
     port = strtok(NULL,":"); //get port
-   
+    
     //building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
     server_to_connect->ip_address = host_address;
@@ -88,65 +90,25 @@ struct server_t *network_connect(const char *address_port){
  */
 struct message_t *network_send_receive(struct server_t *server, struct message_t *msg){
     
-    int size_of_msg_to_send; // size of message to send
-    char *msg_to_send_buffer [MAX_MSG]; //buffer with message to send
+    /* 1. Envia mensagem para servidor com base no socketfd */
+    if (send_message(server->socketfd, msg) == TASK_FAILED){
+        perror("NETWORK_CLIENT --> FAILED TO SEND MESSAGE!");
+        return NULL;
+    };
     
-    int size_of_msg_received; // size of received message
-    char *msg_received_buffer [MAX_MSG]; //buffer with received message
+    /* 2. Criação das estruturas para receber mensagem */
+    struct message_t* received_msg;
     
-    struct message_t *received_message;
+    /* 3. Recebe mensagem do servidor com base no socketfd */
+    received_msg = receive_message(server->socketfd);
     
-    //converts a struct message_t to serialized message into a buffer and returns the buffer size
-    if((size_of_msg_to_send = message_to_buffer(msg, msg_to_send_buffer)) == -1){
-        puts("ATEMPT TO SERIALIZE MESSAGE TO SEND FAILED");
+    /* 4. Validação da mensagem recebida */
+    if (receive_message(server->socketfd) == NULL){
+        perror("NETWORK_CLIENT --> FAILED TO RECEIVE MESSAGE!");
         return NULL;
     }
     
-    long n_bytes_writed; //number of bytes writed to buffer
-    int size_of_msg_to_send_HTONL = htonl(size_of_msg_to_send);
-    
-    //sends size_of_msg_to_send_buffer to server
-    if ((n_bytes_writed = write(server->socketfd, &size_of_msg_to_send_HTONL, sizeof (size_of_msg_to_send_HTONL))) != sizeof(size_of_msg_to_send)){
-        perror("FAILED to send message size to server!");
-        close(server->socketfd);
-        return NULL;
-        
-    }
-    
-    //sends MESSAGE (msg_to_send_buffer) to server
-    if ((n_bytes_writed = write(server->socketfd, &msg_to_send_buffer, size_of_msg_to_send)) != size_of_msg_to_send){
-        perror("FAILED to send message_buffer to server!");
-        close(server->socketfd);
-        return NULL;
-    }
-    
-    puts("WAITING FOR SERVER...");
-    
-
-    //writes the size_of_msg_received from server
-    if ((n_bytes_writed = read(server->socketfd, &size_of_msg_received, sizeof (size_of_msg_received))) != sizeof(size_of_msg_to_send)){
-        perror("FAILED to receive message SIZE from server!");
-        close(server->socketfd);
-        return NULL;
-    }
-    
-    size_of_msg_received = ntohl (size_of_msg_received);
-    
-    //writes the message from server to msg_received_buffer
-    if ((n_bytes_writed = read (server->socketfd, &msg_received_buffer, size_of_msg_received)) != size_of_msg_received){
-        perror ("FAILED to receive MESSAGE from server!");
-        close (server->socketfd);
-        return NULL;
-    }
-    
-    //terminates buffer with "\0"
-    msg_received_buffer[size_of_msg_received+1] = '\0'; //TENHO DÙVIDA NISTO
-    
-    //converts the serialized message to a struct message_t
-    received_message = buffer_to_message(*msg_received_buffer, size_of_msg_received);
-
-    //returns received message
-    return received_message;
+    return received_msg;
 }
 
 /* A funcao network_close() deve fechar a ligação estabelecida por
@@ -163,5 +125,3 @@ int network_close(struct server_t *server){
     free (server);
     return task;
 }
-
-
