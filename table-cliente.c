@@ -104,8 +104,9 @@ int main(int argc , char *argv[]) {
             printf("## MENSAGEM DE RESPOSTA:\n");
             printf("RESULT IS %d\n", received_msg->content.result);
             
-            int tuplesToRead = received_msg->c_type == CT_TUPLE ? received_msg->content.result : 0;
+            int tuplesToRead =request_msg->opcode == OC_IN ? received_msg->content.result : 0;
             
+            printf("TUPLES TO READ IS %d\n", tuplesToRead);
             while ( tuplesToRead > 0 ) {
                 printf("Reading a tuple...");
                 receive_message(server_to_conect->socketfd);

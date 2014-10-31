@@ -100,6 +100,7 @@ int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct 
     int whatToDoWithTheNode = cliente_request->opcode == OC_IN ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
     
     // gets the matching nodes
+    printf("#&#&#&#&#  >   tup_template %s - %s - %s \n", cliente_request->content.tuple->tuple[0], cliente_request->content.tuple->tuple[1], cliente_request->content.tuple->tuple[2]);
     struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
     
     // sends a message to the client letting him now how many nodes it will receive
