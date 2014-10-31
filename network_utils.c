@@ -15,16 +15,22 @@
 #include "general_utils.h"
 #include "network_utils.h"
 
+/*
+ * address_and_port is a string containing a host address and a port
+ * with the format host_address:port.
+ * returns port.
+ */
+char * get_port (const char * address_and_port) {
+    char * address_and_port_pointer = strdup(address_and_port);
+    strtok(address_and_port_pointer, ":");
+    return strtok(NULL,":");
+}
 
-int split_address_port (const char *address_and_port, char * address, char * port ) {
-    
-    //address fica com o endereço ip do address_and_port ou no caso deste ter um hostname resolve-o e depois atribui.
-    
-    //port fica com o porto de address_and_port
-    
-    //se o porto não foi um numero ou o ip não for válido retorna taskFailed
-    
-    return TASK_SUCCEEDED;
+char * get_address (const char * address_and_port) {
+    char * address_and_port_pointer = strdup(address_and_port); //guarda valor de IP ou endereço de servidor
+    /* 3. Copia porto do servidor*/
+    char * address = strtok(address_and_port_pointer, ":"); //gets the host address porque sim, para passar à frente!
+    return address;
 }
 
 int reads_server_portnumber ( const char * stringWithPortNumber ) {
@@ -94,15 +100,15 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  * than nbytesToRead something went wrong.
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
-    
+    printf("IT will read_all %d from socket %d\n", nBytesToRead, socket_fd);
     int bufsize = nBytesToRead;
     
     while ( nBytesToRead > 0 ) {
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
         if ( nReadedBytes < 0 ) {
-            if(errno==EINTR) continue;
-            perror("network_server > write_all > failed");
-            return nReadedBytes;
+//            if(errno==EINTR) continue;
+//            perror("network_server > read_all > failed");
+//            return nReadedBytes;
         }
         //moves buffer pointer
         buffer += nReadedBytes;

@@ -16,6 +16,11 @@ int reads_server_portnumber ( const char * stringWithPortNumber );
 int portnumber_is_invalid (int portNumber );
 
 int hostname_to_ip(char * hostname , char* ip);
+
+char * get_port (const char * address_and_port);
+
+char * get_address (const char * address_and_port);
+
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
  * The only case it doesn't happen is if some EINTR EPIPE happens.

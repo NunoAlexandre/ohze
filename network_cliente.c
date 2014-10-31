@@ -25,84 +25,32 @@
  */
 struct server_t *network_connect(const char *address_port){
     
-    //ISTO TUDO DEVE SER FEITO EM int split_address_port (const char *address_and_port, char * address, char * port );
-                char *server_address = strdup(address_port); //guarda valor de IP ou endereço de servidor
-                char ip[100]; //se for wwww.example.com guarda o IP
-                char *port_from_host; //guarda o valor do PORTO
-
-                /* 2. Testar se é IP ou Endereço*/
-                puts("2. Testar se é IP ou HOSTNAME\n");
-                if (is_number (server_address) == 0){
-                    puts("2.1 É um HOSTNAME!");
-                    puts ("A resolver endereço...\n");
-                    char *hostname = strdup(address_port);
-                    hostname = strtok(hostname, ":");
-                    hostname_to_ip(hostname , ip);
-                    //        printf("HOSTNAME: %s\n", strtok(hostname, ":"));
-                    //        printf("%s resolved to %s\n" , hostname , ip);
-                }
-
-                else{
-                    puts("2. É um IP!");
-                }
-
-                /* 3. Copia porto do servidor*/
-                port_from_host = strtok(server_address, ":"); //gets the host address porque sim, para passar à frente!
-                //    printf("HOSTNAME from port_from_host: %s\n", port_from_host);
-
-                port_from_host = strtok(NULL,":"); //gets port server
-                //    printf("PORT from port_from_host: %s\n", port_from_host);
-
-                int server_port = reads_server_portnumber(port_from_host);
-                //    printf("Server Port number is %d\n", server_port);
-
-                /* 4. Verifica a validade do valor do porto*/
-                if ( portnumber_is_invalid(server_port) ) {
-                    printf("port number is invalid");
-                    return NULL;
-                }
-
-                /* 5. Imprime IP e Porto do Servidor*/
-                printf("Server Address is %s\n", server_address);
-                printf("Server Port is %d\n", server_port);
-                printf("\n");
-
-                /* 6. Ligação ao SERVIDOR */
-
-                printf("Ligacao iniciada a SERVIDOR: %s no PORTO: %d\n", server_address, server_port);
-
-    //FIM // ISTO TUDO DEVE SER FEITO EM int split_address_port (const char *address_and_port, char * address, char * port );
-
-    struct sockaddr_in server;
-    
+    //1. get server_address and server_port
+    char * server_address = get_address(address_port);
+    char * server_port =  get_port(address_port);
  
-    //building struct server_t server_to_connect
-    
+    //2.building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
-
     server_to_connect->ip_address = server_address;
+    server_to_connect->port = atoi(server_port);
 
-    server_to_connect->port = atoi(port_from_host);
 
-
-    /*---- Create the TCP socket. The three arguments are: ----*/
-    /* 1) Internet domain 2) Stream socket 3) TCP protocol (0) */
+    //---- Create the TCP socket with 1) Internet domain 2) Stream socket 3) TCP protocol (0)
     if((server_to_connect->socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("ERROR while creating TCP socket!");
         //returning to starting state
         free(server_to_connect);
-        return NULL; //será?
+        return NULL;
     }
 
     
-    /*---- Configure settings of the server address struct ----*/
-    /* Address family = Internet */
+    struct sockaddr_in server;
+    //Configure settings of the server address struct
     server.sin_family = AF_INET;
-    
-    /* Set port number, using htons function to use proper byte order */
+    // Set port number, using htons function to use proper byte order
     server.sin_port = htons(server_to_connect->port);
     
-    /*converts host address to network format*/
+    //converts host address to network format
     if (inet_pton(AF_INET, server_to_connect->ip_address, &server.sin_addr) < 1){
         perror("ERROR while converting Host address (IP) to network address structure.");
         //returning to starting state
