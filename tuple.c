@@ -212,7 +212,7 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         char * elementValue = (char*) calloc(1, elementSize);
         
         memcpy(elementValue, (buffer+offset), elementSize);
-        tuple->tuple[i] = elementValue == TUPLE_ELEM_NULL ? NULL : strdup(elementValue);
+        tuple->tuple[i] = strncmp(elementValue, TUPLE_ELEM_NULL, 1) == 0 ? NULL : strdup(elementValue);
         free(elementValue);
         offset+=elementSize;
     }
