@@ -14,6 +14,8 @@
 #define YES 1
 #define NO  0
 #define OPCODE_QUIT 0
+#define TUPLE_ELEM_NULL "*"
+
 int is_number (char * stringWithNumber );
 
 #endif

@@ -93,12 +93,16 @@ int main(int argc , char *argv[]) {
         
         if ( keepOn ) {
             /* 7.6 Envio da mensagem */
+            puts("before network_send_receive");
             struct message_t * received_msg = network_send_receive(server_to_conect, request_msg);
-        
+            
             /* 7.7 Verificação da mensagem de resposta */
             if (response_with_success(request_msg, received_msg) == TASK_FAILED){
                 return TASK_FAILED;
-            };
+            }
+            
+            printf("## MENSAGEM DE RESPOSTA:\n");
+            printf("RESULT IS %d\n", received_msg->content.result);
         }
         
     }

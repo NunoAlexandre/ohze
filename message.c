@@ -41,7 +41,6 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
                 break;
             case CT_RESULT:
             {
-                puts("case CT_RESULT:");
                 new_message->content.result = * ((int *) element);
                 break;
             }
@@ -88,9 +87,10 @@ int message_content_size_bytes ( struct message_t * msg ) {
 int message_serialize_content ( struct message_t * message, char ** buffer ) {
     
     int buffer_size = 0;
-    
+
     
     if ( message->c_type == CT_TUPLE ) {
+        puts("### message_serialize_content > CTTUPLE");
         buffer_size = tuple_serialize(message->content.tuple, buffer);
     }
     else  if ( message->c_type == CT_ENTRY ) {
@@ -136,8 +136,12 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     if ( msg == NULL )
         return TASK_FAILED;
     
+    puts("### 1");
+
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
+    puts("### 2");
+
     //allocs the memory
     msg_buf[0] = (char*) calloc (1, msg_buffer_size );
     
@@ -250,12 +254,7 @@ void free_message(struct message_t *message) {
  *  Verifies if message has error code or is NULL
  */
 int message_error (struct message_t* tested_msg){
-    
-    if ((tested_msg == NULL) || (tested_msg->opcode == OP_ERROR)) {
-        return TASK_FAILED;
-    }
-    
-    return TASK_SUCCEEDED;
+    return tested_msg == NULL || tested_msg->opcode == OP_ERROR;
 }
 
 /*
@@ -263,12 +262,15 @@ int message_error (struct message_t* tested_msg){
  */
 int response_with_success ( struct message_t* request_msg, struct message_t* received_msg){
     
-    if (message_error(received_msg) == TASK_FAILED) {
+    int opcode_req = request_msg->opcode;
+    int opcode_resp = received_msg->opcode;
+ 
+    if (message_error(received_msg)) {
         perror("RECEIVED MESSAGE HAS ERROR CODE OR IS NULL");
         return TASK_FAILED;
     }
     
-    if (request_msg->opcode != received_msg->opcode+1){
+    if (opcode_resp != (opcode_req+1)){
         perror("RECEIVED MESSAGE OPCODE INCORRECT!");
         return TASK_FAILED;
     }
@@ -387,6 +389,7 @@ struct message_t * command_to_message (const char * command) {
     }
     //create and return message
     struct message_t * message = message_create_with(opcode, ctype, message_content);
+
     return message;
 }
 

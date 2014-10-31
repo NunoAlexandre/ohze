@@ -91,11 +91,13 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
     /* 2. Criação das estruturas para receber mensagem */
     struct message_t* received_msg;
     
+    puts("client - enviou integer e msg e vai receive_message");
     /* 3. Recebe mensagem do servidor com base no socketfd */
     received_msg = receive_message(server->socketfd);
-    
+    puts("client - leu receive_message");
+    printf("# received message has opcode: %d\n", received_msg->opcode);
     /* 4. Validação da mensagem recebida */
-    if (receive_message(server->socketfd) == NULL){
+    if (received_msg == NULL){
         perror("NETWORK_CLIENT --> FAILED TO RECEIVE MESSAGE!");
         return NULL;
     }

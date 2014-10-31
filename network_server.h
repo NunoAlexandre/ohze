@@ -35,7 +35,6 @@ int send_response (struct table_t server, int connection_socket_fd, struct messa
  * - Envia uma resposta apropriada ao cliente.
  * - Retorna 0 em caso de successo ou -1 em caso de erro.
  */
-int network_receive_send(int connection_socket_fd);
-
+int network_receive_send(table_t * server_table,  int connection_socket_fd );
 
 #endif

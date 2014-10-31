@@ -12,6 +12,7 @@
 #include "tuple.h"
 #include "message-private.h"
 #include <assert.h>
+#include "general_utils.h"
 
 /* Função que cria um novo tuplo (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
@@ -42,7 +43,7 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     if ( newTuple != NULL ) {
 	int i;
         for ( i=0; i<newTuple->tuple_dimension; i++) {
-            newTuple->tuple[i] = strdup(tuple[i]);
+            newTuple->tuple[i] = tuple[i] == NULL ? NULL :  strdup(tuple[i]);
         }
     }
     return newTuple;
@@ -110,7 +111,8 @@ int tuple_size_bytes ( struct tuple_t* tuple) {
     int i;
     for ( i = 0; i < tuple_size(tuple); i++) {
         //sums the number of bytes needed to alloc for each element of the tuple
-        nBytes+= TUPLE_ELEMENTSIZE_SIZE + strlen(tuple_element(tuple,i));
+        long elementSize = tuple_element(tuple,i) == NULL ? 1 : strlen(tuple_element(tuple,i));
+        nBytes+= TUPLE_ELEMENTSIZE_SIZE + elementSize;
     }
     
     return nBytes;
@@ -123,7 +125,7 @@ int tuple_size_bytes ( struct tuple_t* tuple) {
 int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     
     if ( tuple == NULL)
-        return -1;
+        return TASK_FAILED;
     
     //bytes size needed to be alloc
     int buffer_size = tuple_size_bytes(tuple);
@@ -144,8 +146,8 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     int i;
     for ( i = 0; i < tuple_size(tuple); i++) {
         //gets tuple element information
-        char* currentElementValue = tuple_element(tuple, i);
-        long currentElementSize = strlen(currentElementValue);
+        char* currentElementValue = tuple_element(tuple, i) == NULL ? TUPLE_ELEM_NULL : tuple_element(tuple, i);
+        long currentElementSize = currentElementValue == NULL ? 1 : strlen(currentElementValue);
         
         // 1. first inserts element size
         int tuple_elementSizeI_htonl = htonl(currentElementSize);
@@ -237,15 +239,13 @@ struct tuple_t* create_tuple_from_input (const char *user_input){
     token = strtok(user_input_p, search);
     
     int i;
-    for (i = 0; i<= TUPLE_DIMENSION; i++ ) {
+    for (i = 0; i< TUPLE_DIMENSION; i++ ) {
         token = strtok(NULL, search);
-        if (strcmp(token, "*") != 0) {
-            tuple_data[i] = strdup (token);
-        }
+        tuple_data[i] = strcmp(token, TUPLE_ELEM_NULL) == 0 ? NULL : strdup (token);
     }
-    
     //creates new tuple to send
-    tuple_to_send = tuple_create2(3, tuple_data);
+    tuple_to_send = tuple_create2(TUPLE_DIMENSION, tuple_data);
+
     free(user_input_p);
     return tuple_to_send;
 }

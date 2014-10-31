@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#define TABLE_DIMENSION 12
 
 typedef struct table_t {
     //the size of the table: numbero of slots

@@ -77,7 +77,7 @@ int hostname_to_ip(char * hostname , char* ip){
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
     
     int bufsize = bytesToWrite;
-    
+    printf("write_all > will write bytesToWrite == %d\n", bytesToWrite );
     while(bytesToWrite>0) {
         int writtenBytes = (int) write(socket_fd, buffer, bytesToWrite);
         if(writtenBytes<0) {
@@ -90,6 +90,8 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
         //bytes to write
         bytesToWrite -= writtenBytes;
     }
+    printf("Success write_all - from %d wrote  %d\n", bufsize, bytesToWrite);
+
     return bufsize;
 }
 
@@ -106,8 +108,8 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
     while ( nBytesToRead > 0 ) {
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
         if ( nReadedBytes < 0 ) {
-//            if(errno==EINTR) continue;
-//            perror("network_server > read_all > failed");
+            if(errno==EINTR) continue;
+            perror("network_server > read_all > failed");
             return nReadedBytes;
         }
         //moves buffer pointer
@@ -115,6 +117,7 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
         //bytes to write
         nBytesToRead -= nReadedBytes;
     }
+    printf("Success read_all - from %d read  %d\n", bufsize, nBytesToRead);
     return bufsize;
 }
 
@@ -130,21 +133,23 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     
     //creates the message buffer to send to the cliente
     char ** messageToSend_buffer = (char**) calloc(1, sizeof(char*));
+    puts("### send_message > before message_to_buffer");
     int message_size = message_to_buffer(messageToSend, messageToSend_buffer);
-    
+    puts("### send_message > after message_to_buffer");
+
     printf("send_message > message_size is %d\n", message_size);
     
     if ( message_size <= 0 || message_size > MAX_MSG )
         return TASK_FAILED;
     
-    int message_size_n = HTONL(message_size);
+    int message_size_n = htonl(message_size);
     //sends the size of the message
     if ( write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE ) {
         return TASK_FAILED;
     }
     //and sends the message
-    int msg_buffer_size = (int) strlen(*messageToSend_buffer);
-    if ( write_all(connection_socket_fd, *messageToSend_buffer, msg_buffer_size ) != msg_buffer_size ) {
+    printf("send_message > msg_buffer_size is %d\n", message_size);
+    if ( write_all(connection_socket_fd, *messageToSend_buffer, message_size ) != message_size ) {
         return TASK_FAILED;
     }
     
@@ -158,23 +163,24 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  */
 struct message_t* receive_message (int connection_socket_fd) {
     
-    int size_of_msg_received = 0;
+    int size_of_msg_received;
     struct message_t *message_to_receive = NULL;
     char **message_buffer = (char**) calloc(1, sizeof(char*));
     message_buffer[0] = (char*) calloc(1, MAX_MSG);
     
     /* 2.1 tamanho da mensagem que irá ser recebida*/
-    if ( ((size_of_msg_received = read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE))) != BUFFER_INTEGER_SIZE ) {
+    if ( (read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
         perror("RECEIVED MESSAGE -> FAILED TO READ MESSAGE SIZE.");
         free(message_buffer[0]);
         free(message_buffer);
         close(connection_socket_fd);
         return message_to_receive;
     }
-    
-    /* 2.2 Converte tamanho da mensagem para formato cliente */
-    int size_of_msg_received_NTOHL;
-    if ( (size_of_msg_received_NTOHL = ntohl(size_of_msg_received) ) <= 0 ) {
+     /* 2.2 Converte tamanho da mensagem para formato cliente */
+    int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
+    printf("### size_of_msg_received_NTOHL is %d and size_of_msg_received is %d\n", size_of_msg_received_NTOHL, size_of_msg_received);
+
+    if ( size_of_msg_received_NTOHL  <= 0 ) {
         close(connection_socket_fd);
         free(message_buffer[0]);
         free(message_buffer);
