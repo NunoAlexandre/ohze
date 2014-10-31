@@ -11,7 +11,9 @@
 
 #define TASK_FAILED -1
 #define TASK_SUCCEEDED 0
-
+#define YES 1
+#define NO  0
+#define OPCODE_QUIT 0
 int is_number (char * stringWithNumber );
 
 #endif

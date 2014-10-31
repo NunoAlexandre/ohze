@@ -108,7 +108,7 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
         if ( nReadedBytes < 0 ) {
 //            if(errno==EINTR) continue;
 //            perror("network_server > read_all > failed");
-//            return nReadedBytes;
+            return nReadedBytes;
         }
         //moves buffer pointer
         buffer += nReadedBytes;
@@ -130,11 +130,14 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     
     //creates the message buffer to send to the cliente
     char ** messageToSend_buffer = (char**) calloc(1, sizeof(char*));
-    int message_size_n = htonl(message_to_buffer(messageToSend, messageToSend_buffer));
+    int message_size = message_to_buffer(messageToSend, messageToSend_buffer);
     
-    if ( message_size_n <= 0 || message_size_n > MAX_MSG )
+    printf("send_message > message_size is %d\n", message_size);
+    
+    if ( message_size <= 0 || message_size > MAX_MSG )
         return TASK_FAILED;
     
+    int message_size_n = HTONL(message_size);
     //sends the size of the message
     if ( write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE ) {
         return TASK_FAILED;

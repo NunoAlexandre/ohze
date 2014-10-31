@@ -41,6 +41,7 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
                 break;
             case CT_RESULT:
             {
+                puts("case CT_RESULT:");
                 new_message->content.result = * ((int *) element);
                 break;
             }
@@ -90,7 +91,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     
     
     if ( message->c_type == CT_TUPLE ) {
-       buffer_size = tuple_serialize(message->content.tuple, buffer);
+        buffer_size = tuple_serialize(message->content.tuple, buffer);
     }
     else  if ( message->c_type == CT_ENTRY ) {
         buffer_size = entry_serialize(message->content.entry, buffer);
@@ -134,7 +135,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     if ( msg == NULL )
         return TASK_FAILED;
-        
+    
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
     //allocs the memory
@@ -185,12 +186,12 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     //moves offset
     offset+=OPCODE_SIZE;
     //sets it
-  
+    
     //same to c_type
     //gets the opcode
     int ctype_network = 0;
     memcpy(&ctype_network, msg_buf+offset, C_TYPE_SIZE);
-
+    
     //gets to host
     int ctype_host = ntohs(ctype_network);
     //moves offset
@@ -219,7 +220,7 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     }
     
     if ( message_content == NULL ) {
-            return NULL;
+        return NULL;
     }
     
     //finally creates the message with all its components
@@ -273,6 +274,120 @@ int response_with_success ( struct message_t* request_msg, struct message_t* rec
     }
     
     return TASK_SUCCEEDED;
+}
+
+/*
+ *  Find opcode form user input
+ */
+
+int find_opcode(const char *input ){
+    
+    char * input_dup = strdup(input);
+    char *user_task = strdup(strtok(input_dup," "));
+    
+    char *out = "out";
+    char *in = "in";
+    char *in_all = "in_all";
+    char *copy = "copy";
+    char *copy_all = "copy_all";
+    char *size = "size\n";
+    char *quit = "quit\n";
+    
+    if (strcasecmp(user_task, out) == 0) {
+        free(user_task);
+        return OC_OUT;
+    }
+    else if (strcasecmp(user_task, in) == 0) {
+        free(user_task);
+        return OC_IN;
+    }
+    else  if (strcasecmp(user_task, in_all) == 0) {
+        free(user_task);
+        return OC_IN_ALL;
+    }
+    else  if (strcasecmp(user_task, copy) == 0) {
+        free(user_task);
+        return OC_COPY;
+    }
+    else if (strcasecmp(user_task, copy_all) == 0) {
+        free(user_task);
+        return OC_COPY_ALL;
+    }
+    else  if (strcasecmp(user_task, size) == 0) {
+        free(user_task);
+        return OC_SIZE;
+    }
+    else if (strcasecmp(user_task, quit) == OPCODE_QUIT) {
+        free(user_task);
+        return OPCODE_QUIT;
+    }
+    else {
+        puts("COMANDO DE OPERAÇÃO INVÁLIDo!\n");
+    }
+    
+    free(user_task);
+    free(input_dup);
+    return TASK_FAILED;
+}
+
+/*
+ *  Assigns CTCODE according with OPCODE
+ */
+int assign_ctype (int opcode){
+    
+    int ctcode = TASK_FAILED;
+    
+    switch (opcode) {
+            
+            /* all operations that envolves finding elements from table */
+        case OC_IN:
+        case OC_COPY:
+        case OC_IN_ALL:
+        case OC_COPY_ALL:
+        case OC_OUT:
+        {
+            ctcode = CT_TUPLE;
+            break;
+        }
+            
+            /* operation that envolves returning a value */
+        case OC_SIZE:
+        {
+            ctcode = CT_RESULT;
+            break;
+        }
+            
+            
+        default:
+            ctcode = TASK_FAILED;
+            break;
+    }
+    
+    return ctcode;
+}
+
+struct message_t * command_to_message (const char * command) {
+    //get opcode
+    int opcode = find_opcode(command);
+    
+    if( opcode == OPCODE_QUIT)
+        return NULL;
+    
+    //get ctype
+    int ctype = assign_ctype(opcode);
+
+    void * message_content;
+    
+    if ( ctype == CT_TUPLE ) {
+        message_content = create_tuple_from_input (command);
+    }
+    else if ( ctype == CT_RESULT ) {
+        int resultValue = 0;
+        message_content = &resultValue;
+    }
+    //create and return message
+    struct message_t * message = message_create_with(opcode, ctype, message_content);
+    return message;
 }
 
 

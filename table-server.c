@@ -67,10 +67,12 @@ int server_run ( int portnumber ) {
     //the cliente socket size
     socklen_t * client_socket_size;
 
+    connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size);
+     printf("### Server got client connection\n");
     //4. Accepts clients connects and handles its requests
-    while ( (connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size)) != TASK_FAILED )
+    while ( 1 )
     {
-        printf("### Server got client connection\n");
+       
         network_receive_send(connection_socket_fd);
     }
 

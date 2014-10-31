@@ -51,6 +51,12 @@ int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
 unsigned long string_positive_number ( char* numberAsString );
 
+struct message_t * command_to_message (const char * command);
+
+int assign_ctype (int opcode);
+    
+int find_opcode(const char *input_dup);
+
 /*
  * função que compara duas mensagens - response with success --- DECLARAR EM MESSAGE-PRIVATE.H
  */

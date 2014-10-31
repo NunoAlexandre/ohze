@@ -219,3 +219,34 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
     return tuple;
 }
 
+
+/*
+ *  Creates a tuple from user input.
+ *
+ */
+struct tuple_t* create_tuple_from_input (const char *user_input){
+    
+    char *token;
+    char *search = " \"";
+    char* tuple_data[3];
+    struct tuple_t * tuple_to_send;
+    
+    char * user_input_p = strdup(user_input);
+    
+    // Token will point to command.
+    token = strtok(user_input_p, search);
+    
+    int i;
+    for (i = 0; i<= TUPLE_DIMENSION; i++ ) {
+        token = strtok(NULL, search);
+        if (strcmp(token, "*") != 0) {
+            tuple_data[i] = strdup (token);
+        }
+    }
+    
+    //creates new tuple to send
+    tuple_to_send = tuple_create2(3, tuple_data);
+    free(user_input_p);
+    return tuple_to_send;
+}
+
