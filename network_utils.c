@@ -16,41 +16,14 @@
 #include "network_utils.h"
 
 
-int split_address_port (const char *address_and_port, int * address, int *port ) {
-    char *address_and_port_p = strdup(address_and_port); //guarda valor de IP ou endereço de servidor
-    char ip[100]; //se for wwww.example.com guarda o IP
-	char *port_from_host; //guarda o valor do PORTO
+int split_address_port (const char *address_and_port, char * address, char * port ) {
     
-    /* 2. Testar se é IP ou Endereço*/
-    puts("2. Testar se é IP ou HOSTNAME\n");
-    if (is_number (address_and_port_p) == 0){
-        /* 2.1 Se não for IP resolve endereço para IP*/
-        puts("2.1 É um HOSTNAME!");
-        char *hostname = strdup(address_and_port);
-
-        hostname = strtok(hostname, ":");
-        hostname_to_ip(hostname , ip);
-        
-    }
+    //address fica com o endereço ip do address_and_port ou no caso deste ter um hostname resolve-o e depois atribui.
     
-    else{
-        puts("2. É um IP!");
-    }
+    //port fica com o porto de address_and_port
     
-    /* 3. Copia porto do servidor*/
-    port_from_host = strtok(address_and_port_p, ":"); //gets the host address porque sim, para passar à frente!
-    //    printf("HOSTNAME from port_from_host: %s\n", port_from_host);
+    //se o porto não foi um numero ou o ip não for válido retorna taskFailed
     
-    port_from_host = strtok(NULL,":"); //gets port server
-    //    printf("PORT from port_from_host: %s\n", port_from_host);
-    
-    puts("AA");
-    int portnumber = reads_server_portnumber(port_from_host);
-    port = &portnumber;
-    //    printf("Server Port number is %d\n", server_port);
-    printf("PORT IS %d\n", *port);
-
-
     return TASK_SUCCEEDED;
 }
 

@@ -9,7 +9,7 @@
 #ifndef SD15_Product_network_utils_h
 #define SD15_Product_network_utils_h
 
-int split_address_port (const char *address_and_port, int * address, int *port );
+int split_address_port (const char *address_and_port, char * address, char * port );
 
 int reads_server_portnumber ( const char * stringWithPortNumber );
 
