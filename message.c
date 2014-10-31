@@ -267,15 +267,16 @@ int response_with_success ( struct message_t* request_msg, struct message_t* rec
  
     if (message_error(received_msg)) {
         perror("RECEIVED MESSAGE HAS ERROR CODE OR IS NULL");
-        return TASK_FAILED;
+        return NO;
     }
     
     if (opcode_resp != (opcode_req+1)){
+        printf("opcode request: %d || opcode respose %d\n", opcode_req, opcode_resp);
         perror("RECEIVED MESSAGE OPCODE INCORRECT!");
-        return TASK_FAILED;
+        return NO;
     }
     
-    return TASK_SUCCEEDED;
+    return YES;
 }
 
 /*

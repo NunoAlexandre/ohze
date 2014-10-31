@@ -55,11 +55,12 @@ int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * ma
     int tuplesToSend = list_size(matching_nodes);
     struct node_t * currentNode = list_head(matching_nodes);
     
-    while ( tuplesToSend-- > 0 ) {
+    while ( tuplesToSend > 0 ) {
         //sends the tuple
         server_send_tuple(connection_socket_fd, opcode, entry_value(node_entry(currentNode)));
         //moves the node pointer
         currentNode = currentNode->next;
+        tuplesToSend--;
     }
     
     return TASK_SUCCEEDED;
@@ -96,10 +97,7 @@ int server_put (int connection_socket_fd, struct table_t * table, struct message
 int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all) {
     
     // first it has to know what must happen to the matching nodes
-    printf("#$#$#$# server_get_send_tuples > cliente_request->opcode %d\n", cliente_request->opcode);
     int whatToDoWithTheNode = cliente_request->opcode == OC_IN ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
-    
-//    printf("#$#$#$# ////// cliente_request->content.tuple is %s %s %s\n", cliente_request->content.tuple->tuple[0],cliente_request->content.tuple->tuple[1],cliente_request->content.tuple->tuple[2]);
     
     // gets the matching nodes
     struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
@@ -224,7 +222,6 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
     //converts the serialized message to a struct message_t
     struct message_t * cliente_request = buffer_to_message(request_msg, request_msg_size);
     
-    puts("GOT client_request");
 
     
     if ( cliente_request == NULL ) {
@@ -233,9 +230,7 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
     }
     
     /**** Sends the proper response to the cliente  ****/
-    puts("before send_response");
     taskSuccess = send_response(server_table, connection_socket_fd, cliente_request);
-    puts("after send_response");
     //if something went wrong it sends an error msg
     if ( taskSuccess == TASK_FAILED ) {
         server_sends_error_msg(connection_socket_fd);

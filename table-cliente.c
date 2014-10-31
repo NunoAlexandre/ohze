@@ -97,12 +97,20 @@ int main(int argc , char *argv[]) {
             struct message_t * received_msg = network_send_receive(server_to_conect, request_msg);
             
             /* 7.7 Verificação da mensagem de resposta */
-            if (response_with_success(request_msg, received_msg) == TASK_FAILED){
-                return TASK_FAILED;
+            if (response_with_success(request_msg, received_msg) == NO ){
+                perror(" ******** Response without success ********* \n");
             }
             
             printf("## MENSAGEM DE RESPOSTA:\n");
             printf("RESULT IS %d\n", received_msg->content.result);
+            
+            int tuplesToRead = received_msg->c_type == CT_TUPLE ? received_msg->content.result : 0;
+            
+            while ( tuplesToRead > 0 ) {
+                printf("Reading a tuple...");
+                receive_message(server_to_conect->socketfd);
+                tuplesToRead--;
+            }
         }
         
     }
