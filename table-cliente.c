@@ -60,7 +60,7 @@ int client_decision_to_take (struct message_t * msg_request, struct message_t * 
 }
 
 int main(int argc , char *argv[]) {
-    
+        
     /* 0. SIGPIPE Handling */
     struct sigaction s;
     //what must do with a signal - ignore

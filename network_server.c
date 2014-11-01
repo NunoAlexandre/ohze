@@ -5,7 +5,6 @@
 //  Created by Nuno Alexandre on 26/10/14.
 //  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
 //
-
 #include <stdio.h>
 #include <errno.h>
 #include "inet.h"
@@ -16,8 +15,6 @@
 #include "network_utils.h"
 #include "tuple.h"
 #include "general_utils.h"
-
-
 
 int server_sends_error_msg( int connection_socket_fd ) {
     int resultWithFailureValue = TASK_FAILED;

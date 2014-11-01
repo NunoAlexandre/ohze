@@ -23,19 +23,23 @@
  * - retornar toda a informacão necessária (e.g., descritor da
  * socket) na estrutura server_t
  */
-struct server_t *network_connect(const char *address_port){
+struct server_t *network_connect(const char *address_port) {
     
     //1. get server_address and server_port
     char * server_address = get_address(address_port);
+    //if server_address is a hostname converts to IP, if alredy IP keeps the same.
+    char server_address_ip[200];
+    int result = hostname_to_ip(server_address, server_address_ip);
+    if ( result == TASK_FAILED ) return NULL;
     char * server_port =  get_port(address_port);
  
     //2.building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
-    server_to_connect->ip_address = server_address;
+    server_to_connect->ip_address = server_address_ip;
     server_to_connect->port = atoi(server_port);
 
 
-    //---- Create the TCP socket with 1) Internet domain 2) Stream socket 3) TCP protocol (0)
+    // Create the TCP socket with 1) Internet domain 2) Stream socket 3) TCP protocol (0)
     if((server_to_connect->socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("ERROR while creating TCP socket!");
         //returning to starting state
