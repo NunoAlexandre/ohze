@@ -56,7 +56,7 @@ int list_destroy(struct list_t *list) {
 }
 
 int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion ) {
-
+    
     //flag to return task success
     int taskSucess = -1;
     
@@ -90,12 +90,12 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     
     //returns task success indication (0/1)
     return taskSucess;
-
+    
 }
 
 /* Adiciona uma entry na lista. Como a lista deve ser ordenada,
  * a nova entry deve ser colocada no local correto.
- *  A ordenação da lista deve ser por ordem decrescente das 
+ *  A ordenação da lista deve ser por ordem decrescente das
  * chaves alfanuméricas dos valores inseridos.
  * Retorna 0 (OK) ou -1 (erro)
  */
@@ -121,11 +121,11 @@ int list_add(struct list_t *list, struct entry_t *entry) {
 
 int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
     
-
+    
     //safety check
     if ( list == NULL || nodeToRemove == NULL)
         return TASK_FAILED;
-
+    
     //success flag, fail as a start since nothing was done yet
     int taskSuccess = TASK_FAILED;
     
@@ -169,10 +169,10 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
     else {
         taskSuccess = TASK_SUCCEEDED;
     }
-
+    
     //returns the taskSucess
     return taskSuccess;
-
+    
 }
 /* Elimina da lista um elemento (tuplo) de acordo com o padrão
  * tup_template.
@@ -190,7 +190,7 @@ int list_remove(struct list_t *list, struct tuple_t *tup_template) {
     
     //if the removedNode is null then it was removed successfully.
     return removedNode == NULL ? TASK_SUCCEEDED : TASK_FAILED;
-  }
+}
 
 /*
  * Method that cheks if a certain node matches a template.
@@ -254,7 +254,7 @@ node_t * node_dup(node_t* node) {
  * Returns 0 (OK) or -1 (error)
  */
 int node_destroy (struct node_t* node ) {
-    //safety checks in error case 
+    //safety checks in error case
     if ( node == NULL || node->entry == NULL )
         return TASK_FAILED;
     
@@ -319,11 +319,11 @@ int list_insert_node(struct list_t* list,  node_t * newNode, node_t* aNode, int 
         list->tail = newNode;
     }
     else {
-      //if there was not specified any relative aNode, if beforeOrAfter says before
-      // the aNode is head, otherwise its tail.
-      if ( aNode == NULL ) {
-         aNode = beforeOrAfter == 0 ? list_head(list) : list_tail(list);         
-      }
+        //if there was not specified any relative aNode, if beforeOrAfter says before
+        // the aNode is head, otherwise its tail.
+        if ( aNode == NULL ) {
+            aNode = beforeOrAfter == 0 ? list_head(list) : list_tail(list);
+        }
         // at this point the list has size >=1 and will add one now.
         // The idea is: aNode has a previous node: nodeA; and a next node: nodeD.
         // the newNode and aNode will be nodeB and nodeC, depending if newNode
@@ -397,7 +397,7 @@ int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int must
     
     // if it got to here there were no errors so it returns success
     return 0;
-
+    
 }
 
 
@@ -407,14 +407,14 @@ int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int must
  */
 int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
                     int moveWithCriterium,  int whatToDoWithTheNode ) {
-  
+    
     //safety checks
     if ( fromList == NULL || toList == NULL || node == NULL)
         return TASK_FAILED;
     
     //if taskSuccess keeps 0 means all taks succeded
     int taskSuccess = 0;
-
+    
     if ( whatToDoWithTheNode == KEEP_AT_ORIGIN ) {
         //if node must be kept at the fromList (origin) we use list_add that
         //adds to toList a new node with the entry of node
@@ -429,7 +429,7 @@ int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * 
         taskSuccess+= list_add_node(toList, node, moveWithCriterium);
     }
     else if ( whatToDoWithTheNode == JUST_DELETE_NODES ) {
-       taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
+        taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
     }
     //returns the taskSuccess (0 ok, -1 error)
     return taskSuccess == 0 ? TASK_SUCCEEDED : TASK_FAILED;
@@ -445,7 +445,7 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     
     //the list where to save all the matching nodes found on this list.
     struct list_t * matching_nodes = list_create();
-       
+    
     //pointer node to iterare
     node_t * matchedNode = list_head(list);
     //number of nodes to check matching
@@ -471,7 +471,7 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     }
     //if there was match it returns the entry of the matchedNode, NULL otherwise.
     return matching_nodes;
-
+    
 }
 
 
@@ -557,25 +557,11 @@ struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_templa
  * Method to print the given list.
  */
 void list_print ( struct list_t * list) {
-    printf("************ list_print with size %d\n", list_size(list));
-    if ( list->size == 0 ) {
-        printf("list_print : list is empty \n");
-    }
-    else {
-        node_t * nodeToPrint = list_head(list);
-        //char * nodeKey = node_key(nodeToPrint);
-        
-        if ( list->size == 1 ) {
-            printf("list_print : list has only one element with key: %s \n", entry_key(nodeToPrint->entry));
-        }
-        else {
-            int nodesToPrint = list->size;
-            // printf("************* Print list with SIZE: %d\n", nodesToPrint);
-            while ( nodesToPrint--  > 0 ) {
-                printf("node with key: %s \n", entry_key(nodeToPrint->entry));
-                nodeToPrint = nodeToPrint->next;
-            }
-        }
-    }
-    
+    printf("# list_print > size %d : ", list_size(list));
+    node_t * nodeToPrint = list_head(list);
+    printf("list_print : list has size %d \n", list_size(list));
+    int nodesToPrint = list->size;
+    while ( nodesToPrint--  > 0 ) {
+       tuple_print(entry_value(node_entry(nodeToPrint)));
+    }   
 }

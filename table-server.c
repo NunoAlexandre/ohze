@@ -71,17 +71,16 @@ int server_run ( int portnumber ) {
     
     struct table_t * server_table = table_create(TABLE_DIMENSION);
     
-    connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size);
     
-    do
-    {
-        printf("### Server got client connection\n");
+    do  {
+        printf("\n--------- waiting for clients requests ---------\n");
+        connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size);
+        printf("> cliente connected.\n");
         network_receive_send ( server_table , connection_socket_fd );
+        close (connection_socket_fd);
     }
     while ( connection_socket_fd != -1 );
 
-    
-    
     //closes server socket
     close(socket_fd);
 
@@ -113,7 +112,7 @@ int main ( int argc, char *argv[] ) {
         invalid_input_message();
         return TASK_FAILED;
     }
-    printf("Port number is %d\n", portNumber);
+    printf("\n> SD15_SERVER is waiting connections at port %d\n", portNumber);
     
     server_run(portNumber);
     

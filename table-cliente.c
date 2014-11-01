@@ -9,43 +9,55 @@
 #include "inet.h"
 #include "table.h"
 #include "network_cliente.h"
-#include "general_utils.h" 
+#include "general_utils.h"
 #include "general_utils.h"
 #include "network_utils.h"
 
+
+/*
+ *  Message if port number is invalid
+ */
+void invalid_client_input () {
+    puts("\n\n####### SD15-CLIENT ##############");
+    puts("Sorry, your input was not valid.");
+    puts("Uso: ./SD15_CLIENT <servidor>:<porto>");
+    puts("Exemplo de uso 1: ./SD15_CLIENT 10.10.10.10:1250");
+    puts("Exemplo de uso 2: ./SD15_CLIENT wwww.example.com:1250");
+    puts("####### SD15-CLIENT ##############\n\n");
+}
+
+void invalid_command () {
+    puts("\n\n####### SD15-CLIENT ##############");
+    puts("Sorry, your command was not valid.");
+    puts("IN | IN_ALL | COPY | COPY_ALL | OUT \"elem1\" \"elem2\" \"elem3\"");
+    puts("SIZE | QUIT");
+    puts("####### SD15-CLIENT ##############\n\n");
+}
 
 /*
  * tests input number of arguments
  */
 int test_input(int argc){
     if (argc != 2){
-        /* MESSAGE INUPUT ERROR */
-        printf("Uso: ./table_client <servidor>:<porto>\n");
-        printf("Exemplo de uso 1: ./table_client 10.10.10.10:805\n");
-        printf("Exemplo de uso 2: ./table_client wwww.example.com:805\n");
-        
+        invalid_client_input();
         return TASK_FAILED;
     }
-    
-    return 0;
+    return TASK_SUCCEEDED;
 }
 
-
-
+int opcode_is_getter (int opcode ) {
+    return opcode == OC_IN || opcode == OC_IN_ALL || opcode == OC_COPY || opcode == OC_COPY_ALL;
+}
 
 /*
- *  Message if port number is invalid
+ * Assume que a msg_response é uma mensagem de sucesso para com a msg_request.
  */
-void invalid_port_number_message () {
-    puts("####### SD15-SERVER ##############");
-    puts("Sorry, your input was not valid.");
-    puts("You must provide a valid number to be the server port.");
-    puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
-    puts("####### SD15-SERVER ##############");
+int client_decision_to_take (struct message_t * msg_request, struct message_t * msg_response ) {
+    if ( opcode_is_getter(msg_request->opcode) && msg_response->content.result > 0 ) {
+        return CLIENT_RECEIVE_TUPLES;
+    }
+    return CLIENT_PROCEED;
 }
-
-
-
 
 int main(int argc , char *argv[]) {
     
@@ -57,65 +69,76 @@ int main(int argc , char *argv[]) {
     sigaction(SIGPIPE, &s, NULL);
     
     /* 1. Testar input de utilizador*/
-    puts("1. Testar input de utilizador\n");
-    test_input (argc);
+    if ( test_input (argc) == TASK_FAILED ) return TASK_FAILED;
     
-    struct server_t *server_to_conect = network_connect(argv[1]);
-    puts("A ligar a servidor...");
     
-    /* 6.1 Verificação da ligação ao SERVIDOR */
-    if (server_to_conect == NULL) {
-        perror("ERRO AO LIGAR AO SERVIDOR\n");
+    //to keep the active
+    int keepGoing = YES;
+    //para guardar o comando do utilizador
+    char input [MAX_MSG];
+    //the server to connect to
+    struct server_t *server_to_conect;
+    char * server_address_and_port = strdup(argv[1]);
+    
+    /* Lê comando do utilizador e faz pedidos ao servidor */
+    while ( keepGoing ) {
         
-        return TASK_FAILED;
-    }
-    
-    /* 7. Tratamento do comando do utilizador */
-    puts ("Introduzir comando:");
-    
-    int keepOn = YES;
-    char input [MAX_MSG]; //vai guardar o comando do utilizador
-    
-    /* 7.1 Ciclo que trata do user input */
-    while ( keepOn ) {
-
+        puts("\n---- Introduzir comando ----");
         //reads user command
-        if (fgets (input, MAX_MSG-1, stdin) == NULL){
+        if (fgets (input, MAX_MSG-1, stdin) == NULL) {
+            free(server_address_and_port);
             return TASK_FAILED;
         }
         
-        /* 7.5 Criação da mensagem a enviar */
+        // Cria mensagem a partir do input
         struct message_t * request_msg = command_to_message(input);
         
+        //Processa a mensagem de pedido adequadamente...
         if ( request_msg == NULL ) {
-            keepOn = NO;
+            puts("ERROR: Erro ao processar mensagem de pedido ao servidor");
         }
-        
-        if ( keepOn ) {
-            /* 7.6 Envio da mensagem */
-            puts("before network_send_receive");
+        else if ( request_msg->opcode == OC_QUIT ) {
+            keepGoing = NO;
+        }
+        else if ( request_msg->opcode == OC_DOESNT_EXIST ) {
+            invalid_command();
+        }
+        else {
+            /*******    O comando foi correcto e vai proceder à comunicacao com o servidor *******/
+            //for each command it connects with the server...
+            server_to_conect = network_connect(server_address_and_port);
+            if (server_to_conect == NULL) {
+                invalid_client_input();
+                free(server_address_and_port);
+                return TASK_FAILED;
+            }
+            
+            //envia o pedido e guarda a mensagem de resposts
             struct message_t * received_msg = network_send_receive(server_to_conect, request_msg);
             
-            /* 7.7 Verificação da mensagem de resposta */
-            if (response_with_success(request_msg, received_msg) == NO ){
-                perror(" ******** Response without success ********* \n");
+            // Verificação da mensagem de resposta
+            if ( response_with_success(request_msg, received_msg)  ) {
+                //checks what has to do now...
+                if ( client_decision_to_take(request_msg, received_msg) == CLIENT_RECEIVE_TUPLES ) {
+                    printf("--- has %d tuples to get from the server.\n", received_msg->content.result);
+                    int tuplesToRead =  received_msg->content.result;
+                    
+                    while ( tuplesToRead > 0 ) {
+                        receive_message(server_to_conect->socketfd);
+                        tuplesToRead--;
+                    }
+                } //acaba de ler os tuplos enviados pelo servidor
             }
-            
-            printf("## MENSAGEM DE RESPOSTA:\n");
-            printf("RESULT IS %d\n", received_msg->content.result);
-            
-            int tuplesToRead =request_msg->opcode == OC_IN ? received_msg->content.result : 0;
-            
-            printf("TUPLES TO READ IS %d\n", tuplesToRead);
-            while ( tuplesToRead > 0 ) {
-                printf("Reading a tuple...");
-                receive_message(server_to_conect->socketfd);
-                tuplesToRead--;
-            }
+            free_message(received_msg);
         }
-        
+        //vai voltar a fazer um pedido...
+        free_message(request_msg);
     }
     
+    //tells server to close
+//    network_close(server_to_conect);
     puts("A terminar sessão...");
+    free(server_address_and_port);
+    //termina processo com sinal de successo
     return TASK_SUCCEEDED;
 }

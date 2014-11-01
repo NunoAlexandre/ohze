@@ -13,9 +13,9 @@
 #define TASK_SUCCEEDED 0
 #define YES 1
 #define NO  0
-#define OPCODE_QUIT 0
-#define TUPLE_ELEM_NULL "*"
 
+#define CLIENT_RECEIVE_TUPLES 1
+#define CLIENT_PROCEED 0
 int is_number (char * stringWithNumber );
 
 #endif

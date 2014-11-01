@@ -23,13 +23,17 @@
 char * get_port (const char * address_and_port) {
     char * address_and_port_pointer = strdup(address_and_port);
     strtok(address_and_port_pointer, ":");
-    return strtok(NULL,":");
+    char * port = strdup(strtok(NULL,":"));
+    free(address_and_port_pointer);
+    return port;
 }
 
 char * get_address (const char * address_and_port) {
-    char * address_and_port_pointer = strdup(address_and_port); //guarda valor de IP ou endereço de servidor
-    /* 3. Copia porto do servidor*/
-    char * address = strtok(address_and_port_pointer, ":"); //gets the host address porque sim, para passar à frente!
+    //guarda valor de IP ou endereço de servidor
+    char * address_and_port_pointer = strdup(address_and_port);
+    // fica com o endereço
+    char * address = strdup(strtok(address_and_port_pointer, ":"));
+    free(address_and_port_pointer);
     return address;
 }
 
@@ -77,7 +81,6 @@ int hostname_to_ip(char * hostname , char* ip){
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
     
     int bufsize = bytesToWrite;
-    printf("write_all > will write bytesToWrite == %d\n", bytesToWrite );
     while(bytesToWrite>0) {
         int writtenBytes = (int) write(socket_fd, buffer, bytesToWrite);
         if(writtenBytes<0) {
@@ -90,8 +93,6 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
         //bytes to write
         bytesToWrite -= writtenBytes;
     }
-    printf("Success write_all - from %d wrote  %d\n", bufsize, bytesToWrite);
-
     return bufsize;
 }
 
@@ -102,7 +103,6 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  * than nbytesToRead something went wrong.
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
-    printf("IT will read_all %d from socket %d\n", nBytesToRead, socket_fd);
     int bufsize = nBytesToRead;
     
     while ( nBytesToRead > 0 ) {
@@ -117,7 +117,6 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
         //bytes to write
         nBytesToRead -= nReadedBytes;
     }
-    printf("Success read_all - from %d read  %d\n", bufsize, nBytesToRead);
     return bufsize;
 }
 
@@ -131,14 +130,12 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( messageToSend == NULL )
         return TASK_FAILED;
     
+    printf("Sending message: "); message_print(messageToSend); printf("\n");
+    
     //creates the message buffer to send to the cliente
     char ** messageToSend_buffer = (char**) calloc(1, sizeof(char*));
-    puts("### send_message > before message_to_buffer");
     int message_size = message_to_buffer(messageToSend, messageToSend_buffer);
-    puts("### send_message > after message_to_buffer");
 
-    printf("send_message > message_size is %d\n", message_size);
-    
     if ( message_size <= 0 || message_size > MAX_MSG )
         return TASK_FAILED;
     
@@ -148,11 +145,10 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
         return TASK_FAILED;
     }
     //and sends the message
-    printf("send_message > msg_buffer_size is %d\n", message_size);
     if ( write_all(connection_socket_fd, *messageToSend_buffer, message_size ) != message_size ) {
         return TASK_FAILED;
     }
-    
+        
     return TASK_SUCCEEDED;
 }
 
@@ -178,8 +174,6 @@ struct message_t* receive_message (int connection_socket_fd) {
     }
      /* 2.2 Converte tamanho da mensagem para formato cliente */
     int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
-    printf("### size_of_msg_received_NTOHL is %d and size_of_msg_received is %d\n", size_of_msg_received_NTOHL, size_of_msg_received);
-
     if ( size_of_msg_received_NTOHL  <= 0 ) {
         close(connection_socket_fd);
         free(message_buffer[0]);
@@ -211,6 +205,8 @@ struct message_t* receive_message (int connection_socket_fd) {
         return message_to_receive;
     }
     
+    printf("Received message: "); message_print(message_to_receive); printf("\n");
+
     return message_to_receive;
 }
 

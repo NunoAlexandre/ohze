@@ -90,7 +90,6 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
 
     
     if ( message->c_type == CT_TUPLE ) {
-        puts("### message_serialize_content > CTTUPLE");
         buffer_size = tuple_serialize(message->content.tuple, buffer);
     }
     else  if ( message->c_type == CT_ENTRY ) {
@@ -136,15 +135,10 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     if ( msg == NULL )
         return TASK_FAILED;
     
-    puts("### 1");
-
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
-    puts("### 2");
-
     //allocs the memory
     msg_buf[0] = (char*) calloc (1, msg_buffer_size );
-    
     //offset
     int offset = 0;
     
@@ -165,12 +159,10 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     message_serialized_content[0] = (char*) calloc(1,sizeof(char));
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, message_serialized_content);
-    
     //adds the content into the buffer
     memcpy(msg_buf[0]+offset, *message_serialized_content, message_serialized_content_size);
-    
+    //frees it
     free(message_serialized_content);
-    
     
     return msg_buffer_size;
 }
@@ -254,7 +246,7 @@ void free_message(struct message_t *message) {
  *  Verifies if message has error code or is NULL
  */
 int message_error (struct message_t* tested_msg){
-    return tested_msg == NULL || tested_msg->opcode == OP_ERROR;
+    return tested_msg->opcode == OC_ERROR;
 }
 
 /*
@@ -266,12 +258,10 @@ int response_with_success ( struct message_t* request_msg, struct message_t* rec
     int opcode_resp = received_msg->opcode;
  
     if (message_error(received_msg)) {
-        perror("RECEIVED MESSAGE HAS ERROR CODE OR IS NULL");
+        perror("RECEIVED MESSAGE HAS ERROR CODE.");
         return NO;
     }
-    
-    if (opcode_resp != (opcode_req+1)){
-        printf("opcode request: %d || opcode respose %d\n", opcode_req, opcode_resp);
+    else if ( opcode_resp != (opcode_req+1) ) {
         perror("RECEIVED MESSAGE OPCODE INCORRECT!");
         return NO;
     }
@@ -298,39 +288,45 @@ int find_opcode(const char *input ){
     
     if (strcasecmp(user_task, out) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_OUT;
     }
     else if (strcasecmp(user_task, in) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_IN;
     }
     else  if (strcasecmp(user_task, in_all) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_IN_ALL;
     }
     else  if (strcasecmp(user_task, copy) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_COPY;
     }
     else if (strcasecmp(user_task, copy_all) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_COPY_ALL;
     }
     else  if (strcasecmp(user_task, size) == 0) {
         free(user_task);
+        free(input_dup);
         return OC_SIZE;
     }
-    else if (strcasecmp(user_task, quit) == OPCODE_QUIT) {
+    else if (strcasecmp(user_task, quit) == 0 ) {
         free(user_task);
-        return OPCODE_QUIT;
+        free(input_dup);
+        return OC_QUIT;
     }
     else {
-        puts("COMANDO DE OPERAÇÃO INVÁLIDo!\n");
+        //if none was it...
+        free(user_task);
+        free(input_dup);
+        return OC_DOESNT_EXIST;
     }
-    
-    free(user_task);
-    free(input_dup);
-    return TASK_FAILED;
 }
 
 /*
@@ -373,13 +369,10 @@ struct message_t * command_to_message (const char * command) {
     //get opcode
     int opcode = find_opcode(command);
     
-    if( opcode == OPCODE_QUIT)
-        return NULL;
-    
     //get ctype
     int ctype = assign_ctype(opcode);
 
-    void * message_content;
+    void * message_content = NULL;
     
     if ( ctype == CT_TUPLE ) {
         message_content = create_tuple_from_input (command);
@@ -393,5 +386,23 @@ struct message_t * command_to_message (const char * command) {
 
     return message;
 }
+
+void message_print ( struct message_t * msg ) {
+    if ( msg == NULL )
+        printf(" [null message] ");
+    else {
+        if ( msg->c_type == CT_TUPLE ) {
+            printf(" [%hd , %hd , ", msg->opcode, msg->c_type );
+            tuple_print(msg->content.tuple);
+            printf(" ] ");
+        }
+        else if ( msg->c_type == CT_RESULT ) {
+            printf(" [%hd , %hd , %d ] ", msg->opcode, msg->c_type, msg->content.result );
+        }
+    }
+}
+
+
+
 
 

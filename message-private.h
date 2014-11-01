@@ -16,7 +16,11 @@
 #include "entry.h"
 #include "message.h"
 
-#define OP_ERROR -99
+//operation codes
+#define OC_ERROR -99
+#define OC_QUIT     111
+#define OC_DOESNT_EXIST 404
+
 #define BUFFER_INTEGER_SIZE 4
 #define OPCODE_SIZE 2
 #define C_TYPE_SIZE 2
@@ -57,6 +61,8 @@ int assign_ctype (int opcode);
     
 int find_opcode(const char *input_dup);
 
+
+void message_print ( struct message_t * msg );
 /*
  * função que compara duas mensagens - response with success --- DECLARAR EM MESSAGE-PRIVATE.H
  */

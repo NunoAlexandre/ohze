@@ -41,7 +41,7 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     struct tuple_t * newTuple = tuple_create(tuple_dim);
     //if it was allocated we just need to copy the tuple values
     if ( newTuple != NULL ) {
-	int i;
+        int i;
         for ( i=0; i<newTuple->tuple_dimension; i++) {
             newTuple->tuple[i] = tuple[i] == NULL ? NULL :  strdup(tuple[i]);
         }
@@ -63,7 +63,7 @@ void tuple_destroy(struct tuple_t *tuple) {
     }
 }
 
-/* 
+/*
  * Função que duplica um tuplo. Quando se criam duplicados
  * é necessário efetuar uma CÓPIA dos dados (e não somente alocar a
  * memória necessária).
@@ -166,6 +166,13 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     return buffer_size;
 }
 
+void tuple_print ( struct tuple_t * tuple ) {
+    if ( tuple == NULL || tuple->tuple == NULL || tuple->tuple_dimension <= 0)
+        printf(" <tuplo nulo> ");
+    else {
+        printf("<%s,%s,%s>", tuple_element(tuple, 0), tuple_element(tuple, 1),tuple_element(tuple, 2));
+    }
+}
 
 /*
  *  Gets a buffer with the format:
@@ -173,7 +180,7 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
  */
 struct tuple_t *tuple_deserialize(char *buffer, int size) {
     
-   
+    
     if ( buffer == NULL )
         return NULL;
     
@@ -235,8 +242,8 @@ struct tuple_t* create_tuple_from_input (const char *user_input){
     
     char * user_input_p = strdup(user_input);
     
-    // Token will point to command.
-    token = strtok(user_input_p, search);
+    // Avanca para o primeiro elemento (salta o nome da operacao)
+    strtok(user_input_p, search);
     
     int i;
     for (i = 0; i< TUPLE_DIMENSION; i++ ) {
@@ -245,7 +252,7 @@ struct tuple_t* create_tuple_from_input (const char *user_input){
     }
     //creates new tuple to send
     tuple_to_send = tuple_create2(TUPLE_DIMENSION, tuple_data);
-
+    
     free(user_input_p);
     return tuple_to_send;
 }
