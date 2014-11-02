@@ -65,7 +65,7 @@ int server_run ( int portnumber ) {
     //the connection socket with a client
     int connection_socket_fd;
     //the cliente socket size
-    socklen_t * client_socket_size;
+    socklen_t  client_socket_size = sizeof (client);
 
     //4. Accepts clients connects and handles its requests
     
@@ -74,7 +74,7 @@ int server_run ( int portnumber ) {
     
     do  {
         printf("\n--------- waiting for clients requests ---------\n");
-        connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, client_socket_size);
+        connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, &client_socket_size);
         printf("> cliente connected.\n");
         network_receive_send ( server_table , connection_socket_fd );
         close (connection_socket_fd);
@@ -117,4 +117,5 @@ int main ( int argc, char *argv[] ) {
     server_run(portNumber);
     
 
+    return TASK_SUCCEEDED;
 }
