@@ -158,6 +158,9 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
         return TASK_FAILED;
     }
+    
+    //frees the local buffer
+    free(messageToSend_buffer);
         
     return TASK_SUCCEEDED;
 }
@@ -203,7 +206,10 @@ struct message_t* receive_message (int connection_socket_fd) {
     }
     
     printf("Received message: "); message_print(message_received); printf("\n");
-
+    
+    //frees the local buffer
+    free(message_buffer);
+    
     return message_received;
 }
 
