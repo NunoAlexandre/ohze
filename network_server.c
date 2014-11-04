@@ -189,9 +189,8 @@ int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
     //reads and gets the cliente request message
      struct message_t * cliente_request = receive_message(connection_socket_fd);
     //safety check
-
     if ( cliente_request == NULL ) {
-        server_sends_error_msg(connection_socket_fd);
+        close(connection_socket_fd);
         return TASK_FAILED;
     }
     
