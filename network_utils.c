@@ -133,19 +133,29 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     printf("Sending message: "); message_print(messageToSend); printf("\n");
     
     //creates the message buffer to send to the cliente
-    char ** messageToSend_buffer = (char**) calloc(1, sizeof(char*));
-    int message_size = message_to_buffer(messageToSend, messageToSend_buffer);
-
-    if ( message_size <= 0 || message_size > MAX_MSG )
+    int message_size = message_size_bytes(messageToSend);
+    if ( message_size <= 0 || message_size > MAX_MSG ) {
+        printf("send_message > message size is invalid (%d)\n", message_size);
         return TASK_FAILED;
+    }
+    //the buffer
+    char * messageToSend_buffer = (char*) malloc(message_size+1);
+    //2.2 Marca a terminação do buffer/string
+    messageToSend_buffer[message_size+1] = '\0';
+    //fills buffer with the serialized messageToSend
+    if ( message_to_buffer(messageToSend, &messageToSend_buffer) != message_size ) {
+        printf("send message > message_to_buffer didnt write all bytes into the buffer\n");
+        return TASK_FAILED;
+    }
     
+    //converts it to network format
     int message_size_n = htonl(message_size);
     //sends the size of the message
     if ( write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE ) {
         return TASK_FAILED;
     }
     //and sends the message
-    if ( write_all(connection_socket_fd, *messageToSend_buffer, message_size ) != message_size ) {
+    if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
         return TASK_FAILED;
     }
         
@@ -154,59 +164,46 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
 
 
 /*
- * Receives an integer with conection_socket_fd.
- * In error case returns NULL, received_message otherwise.
+ * Expects to receives an integer of 4 bytes followd by a serialized message_t from connection_socket_fd.
+ * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
     
-    int size_of_msg_received;
-    struct message_t *message_to_receive = NULL;
-    char **message_buffer = (char**) calloc(1, sizeof(char*));
-    message_buffer[0] = (char*) calloc(1, MAX_MSG);
-    
-    /* 2.1 tamanho da mensagem que irá ser recebida*/
+    int size_of_msg_received = 0;
+
+    // 1. Lê tamanho da mensagem que a ser recebida
     if ( (read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
-        perror("RECEIVED MESSAGE -> FAILED TO READ MESSAGE SIZE.");
-        free(message_buffer[0]);
-        free(message_buffer);
-        close(connection_socket_fd);
-        return message_to_receive;
+        perror("receive_message -> failed to read message size\n");
+        return NULL;
     }
-     /* 2.2 Converte tamanho da mensagem para formato cliente */
+     // 1.1 Converte tamanho da mensagem para formato cliente
     int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
-    if ( size_of_msg_received_NTOHL  <= 0 ) {
-        close(connection_socket_fd);
-        free(message_buffer[0]);
-        free(message_buffer);
-        return message_to_receive;
+    if ( size_of_msg_received_NTOHL  <= 0 || size_of_msg_received_NTOHL > MAX_MSG ) {
+        return NULL;
     }
     
-    /* 2.3 Lê mensagem enviada */
-    if( (read_all(connection_socket_fd,message_buffer[0], size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
-        perror("RECEIVED MESSAGE -> FAILED TO READ MESSAGE.");
-        free(message_buffer[0]);
-        free(message_buffer);
-        close(connection_socket_fd);
-        return message_to_receive;
-    }
-    
-    /* 2.4 Marca a terminação da Mensagem recebida */
+    //2. Recebe a mensagem
+    //2.1 allocs a buffer with the size that was informed from the other host
+    char * message_buffer = (char*) malloc(size_of_msg_received_NTOHL+1);
+    //2.2 Marca a terminação do buffer/string
     message_buffer[size_of_msg_received_NTOHL+1] = '\0';
-    
-    /* 2.5 Converte buffer para Mensagem */
-    message_to_receive = buffer_to_message(message_buffer[0], size_of_msg_received);
-    free(message_buffer[0]);
-    free(message_buffer);
-
-    /* 2.6 Verifica se a mensagem foi bem criada */
-    if ( message_to_receive == NULL ) {
-        perror("RECEIVED MESSAGE -> FAILED TO DESERIALIZE MESSAGE.");
-        close(connection_socket_fd);
-        return message_to_receive;
+    // 2.3 Lê mensagem enviada
+    if( (read_all(connection_socket_fd,message_buffer, size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
+        perror("receive_message -> failed to read message\n");
+        free(message_buffer);
+        return NULL;
     }
     
-    printf("Received message: "); message_print(message_to_receive); printf("\n");
+    // 2.4 Converte buffer para Mensagem
+    struct message_t * message_received = buffer_to_message(message_buffer, size_of_msg_received);
+    // 2.5 Verifica se a mensagem foi bem criada */
+    if ( message_received == NULL ) {
+        perror("receive_message -> failed to buffer_to_message (returned null)\n");
+        return NULL;
+    }
+    
+    printf("Received message: "); message_print(message_received); printf("\n");
 
-    return message_to_receive;
+    return message_received;
 }
 
