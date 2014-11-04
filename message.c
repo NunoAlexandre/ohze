@@ -87,7 +87,6 @@ int message_content_size_bytes ( struct message_t * msg ) {
 int message_serialize_content ( struct message_t * message, char ** buffer ) {
     
     int buffer_size = 0;
-
     
     if ( message->c_type == CT_TUPLE ) {
         buffer_size = tuple_serialize(message->content.tuple, buffer);
@@ -96,7 +95,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
         buffer_size = entry_serialize(message->content.entry, buffer);
     }
     else if ( message->c_type == CT_RESULT ) {
-        buffer[0] = (char*) calloc( 1,  RESULT_SIZE );
+        buffer[0] = (char*) malloc(RESULT_SIZE );
         int result_to_network = htonl(message->content.result);
         memcpy(buffer[0], &result_to_network, RESULT_SIZE);
         buffer_size = RESULT_SIZE;
@@ -135,34 +134,53 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     if ( msg == NULL )
         return TASK_FAILED;
     
+    
+    puts("1");
+    
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
+    puts("2");
     //allocs the memory
-    msg_buf[0] = (char*) calloc (1, msg_buffer_size );
+    *msg_buf = (char*) malloc( msg_buffer_size );
+    puts("3");
+
     //offset
     int offset = 0;
     
     //1. adds the opcode to the buffer
     int opcode_to_network = htons(msg->opcode);
+    puts("4");
+
     memcpy(msg_buf[0]+offset, &opcode_to_network, OPCODE_SIZE);
+    puts("5");
+
     //moves offset
     offset+=OPCODE_SIZE;
     
     //2. adds the content type code
     int ctype_to_network = htons(msg->c_type);
-    memcpy(msg_buf[0]+offset, &(ctype_to_network), C_TYPE_SIZE);
+    puts("6");
+
+    memcpy(msg_buf[0]+offset, &ctype_to_network, C_TYPE_SIZE);
+    puts("7");
+
     //moves the offset
     offset+=C_TYPE_SIZE;
     
     //buffer to serialize the message content
-    char ** message_serialized_content = (char**) calloc(1, sizeof(char*));
-    message_serialized_content[0] = (char*) calloc(1,sizeof(char));
+    char * message_serialized_content = NULL;
     // serializes the content message
-    int message_serialized_content_size = message_serialize_content ( msg, message_serialized_content);
+    int message_serialized_content_size = message_serialize_content ( msg, &message_serialized_content);
+    puts("7");
+
     //adds the content into the buffer
-    memcpy(msg_buf[0]+offset, *message_serialized_content, message_serialized_content_size);
+    memcpy(msg_buf[0]+offset, message_serialized_content, message_serialized_content_size);
+    puts("8");
+
     //frees it
     free(message_serialized_content);
+    puts("9");
+
     
     return msg_buffer_size;
 }

@@ -88,7 +88,7 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
     
     /* 1. Envia mensagem para servidor com base no socketfd */
     if (send_message(server->socketfd, msg) == TASK_FAILED){
-        perror("NETWORK_CLIENT --> FAILED TO SEND MESSAGE!");
+        perror("network_send_receive --> failed to send message!");
         return NULL;
     };
     

@@ -27,7 +27,7 @@ struct tuple_t *tuple_create(int tuple_dim) {
     
     if ( newTuple != NULL ) {
         newTuple->tuple_dimension = tuple_dim;
-        newTuple->tuple = (char**) calloc(tuple_dim, sizeof(char*));
+        newTuple->tuple = (char**) malloc(tuple_dim * sizeof(char*) );
     }
     return newTuple;
 }
@@ -131,7 +131,7 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     int buffer_size = tuple_size_bytes(tuple);
     
     //allocs memory
-    *buffer = (char *) calloc(1, buffer_size );
+    buffer[0] = (char *) malloc(buffer_size );
     //to insert to the buffer
     int offset = 0;
     
@@ -216,7 +216,7 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         }
         
         //2. sets the i element value into the tuple
-        char * elementValue = (char*) calloc(1, elementSize);
+        char * elementValue = (char*) malloc(elementSize);
         
         memcpy(elementValue, (buffer+offset), elementSize);
         tuple->tuple[i] = strncmp(elementValue, TUPLE_ELEM_NULL, 1) == 0 ? NULL : strdup(elementValue);

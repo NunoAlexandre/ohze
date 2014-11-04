@@ -92,9 +92,9 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
         return -1;
     
     //the tuple serialized (to buffer)
-    char **serialized_tuple = (char ** ) calloc( 1, sizeof(char*));
+    char *serialized_tuple = NULL;
     //serializes the tuple and gets its size
-    int serialized_tuple_size = tuple_serialize(entry_value(entry), serialized_tuple);
+    int serialized_tuple_size = tuple_serialize(entry_value(entry), &serialized_tuple);
     
 
     //size (bytes) of the serialized entry (to buffer)
@@ -103,7 +103,7 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
     int offset = 0;
     
     //allocs the needed space for the buffer
-    serialized_entry[0] = (char*) calloc(1, ( serialized_entry_size ));
+    serialized_entry[0] = (char*) malloc( serialized_entry_size );
     
     //converts the timestamp (long long) to network format
     long long timestamp_to_network = swap_bytes_64(entry_timestamp(entry));
@@ -113,7 +113,7 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
     offset+=TIMESTAMP_SIZE;
     
     //adds the serialized tuple to the serialized entry buffer
-    memcpy(serialized_entry[0]+offset, serialized_tuple[0], serialized_tuple_size);
+    memcpy(serialized_entry[0]+offset, serialized_tuple, serialized_tuple_size);
     offset+=serialized_tuple_size;
     
     assert( serialized_entry_size == offset);

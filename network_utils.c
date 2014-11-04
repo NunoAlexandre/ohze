@@ -132,19 +132,13 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     
     printf("Sending message: "); message_print(messageToSend); printf("\n");
     
-    //creates the message buffer to send to the cliente
-    int message_size = message_size_bytes(messageToSend);
-    if ( message_size <= 0 || message_size > MAX_MSG ) {
-        printf("send_message > message size is invalid (%d)\n", message_size);
-        return TASK_FAILED;
-    }
     //the buffer
-    char * messageToSend_buffer = (char*) malloc(message_size+1);
-    //2.2 Marca a terminação do buffer/string
-    messageToSend_buffer[message_size+1] = '\0';
+    char * messageToSend_buffer = NULL;
+    //the message size
+    int message_size = -1;
     //fills buffer with the serialized messageToSend
-    if ( message_to_buffer(messageToSend, &messageToSend_buffer) != message_size ) {
-        printf("send message > message_to_buffer didnt write all bytes into the buffer\n");
+    if ( (message_size = message_to_buffer(messageToSend, &messageToSend_buffer)) == -1 ) {
+        printf("send message > error on message_to_buffer\n");
         return TASK_FAILED;
     }
     
@@ -181,16 +175,18 @@ struct message_t* receive_message (int connection_socket_fd) {
     }
      // 1.1 Converte tamanho da mensagem para formato cliente
     int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
+    //safety check
     if ( size_of_msg_received_NTOHL  <= 0 || size_of_msg_received_NTOHL > MAX_MSG ) {
         return NULL;
     }
     
-    //2. Recebe a mensagem
-    //2.1 allocs a buffer with the size that was informed from the other host
-    char * message_buffer = (char*) malloc(size_of_msg_received_NTOHL+1);
-    //2.2 Marca a terminação do buffer/string
+    // 2. Recebe a mensagem
+    // allocs a buffer with the size that was informed from the other host
+    char * message_buffer = (char*) malloc(size_of_msg_received_NTOHL);
+    // Marca a terminação do buffer/string
     message_buffer[size_of_msg_received_NTOHL+1] = '\0';
-    // 2.3 Lê mensagem enviada
+    
+    // lê a mensagem enviada
     if( (read_all(connection_socket_fd,message_buffer, size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
         perror("receive_message -> failed to read message\n");
         free(message_buffer);
@@ -202,6 +198,7 @@ struct message_t* receive_message (int connection_socket_fd) {
     // 2.5 Verifica se a mensagem foi bem criada */
     if ( message_received == NULL ) {
         perror("receive_message -> failed to buffer_to_message (returned null)\n");
+        free(message_buffer);
         return NULL;
     }
     
