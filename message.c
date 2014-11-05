@@ -162,6 +162,10 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     char * message_serialized_content = NULL;
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, &message_serialized_content);
+    
+    if ( message_serialized_content_size == TASK_FAILED || message_serialized_content == NULL) {
+        return TASK_FAILED;
+    }
 
     //adds the content into the buffer
     memcpy(msg_buf[0]+offset, message_serialized_content, message_serialized_content_size);

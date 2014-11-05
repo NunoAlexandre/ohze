@@ -56,7 +56,9 @@ void tuple_destroy(struct tuple_t *tuple) {
     if ( tuple != NULL && tuple->tuple != NULL ) {
         int i;
         for ( i = 0; i < tuple->tuple_dimension; i++ ) {
-            free(tuple->tuple[i]);
+            if (tuple->tuple[i] != NULL ) {
+                free(tuple->tuple[i]);
+            }
         }
         free(tuple->tuple);
         free(tuple);
