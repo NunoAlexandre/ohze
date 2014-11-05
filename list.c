@@ -110,9 +110,9 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     //adds the nodes and saves task success
     taskSucess = list_add_node(list, newNode, MOVE_WITH_CRITERION);
     //if something went wrong it frees the new node
-    if ( taskSucess == TASK_FAILED)
-        free ( newNode);
-    
+     if ( taskSucess == TASK_FAILED) {
+        node_destroy(newNode);
+     }
     
     return taskSucess;
 }

@@ -255,7 +255,7 @@ struct tuple_t* create_tuple_from_input (const char *user_input){
     for (i = 0; i< TUPLE_DIMENSION; i++ ) {
         token = strtok(NULL, search);
         tuple_data[i] = strcmp(token, TUPLE_ELEM_NULL) == 0 ? NULL : strdup (token);
-        token = strtok(NULL, search);
+        strtok(NULL, search);
 
     }
     //creates new tuple to send
