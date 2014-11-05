@@ -242,7 +242,7 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
 struct tuple_t* create_tuple_from_input (const char *user_input){
     
     char *token;
-    char *search = " \"";
+    char *search = "\"";
     char* tuple_data[3];
     struct tuple_t * tuple_to_send;
     
@@ -255,6 +255,8 @@ struct tuple_t* create_tuple_from_input (const char *user_input){
     for (i = 0; i< TUPLE_DIMENSION; i++ ) {
         token = strtok(NULL, search);
         tuple_data[i] = strcmp(token, TUPLE_ELEM_NULL) == 0 ? NULL : strdup (token);
+        token = strtok(NULL, search);
+
     }
     //creates new tuple to send
     tuple_to_send = tuple_create2(TUPLE_DIMENSION, tuple_data);

@@ -54,7 +54,7 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
 int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
 unsigned long string_positive_number ( char* numberAsString );
-
+void free_message2(struct  message_t * message, int free_content);
 struct message_t * command_to_message (const char * command);
 
 int assign_ctype (int opcode);

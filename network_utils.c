@@ -130,7 +130,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( messageToSend == NULL )
         return TASK_FAILED;
     
-    printf("Sending message: "); message_print(messageToSend); printf(" size : %d\n", message_size_bytes(messageToSend));
+    printf("Sending message: "); message_print(messageToSend); printf(" <> %d bytes\n", message_size_bytes(messageToSend));
     
     //the buffer
     char * messageToSend_buffer = NULL;
@@ -153,9 +153,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
         return TASK_FAILED;
     }
     //frees the local buffer
-    puts("before messageToSend_buffer free");
     free(messageToSend_buffer);
-    puts("after messageToSend_buffer free");
     
     return TASK_SUCCEEDED;
 }
@@ -201,7 +199,7 @@ struct message_t* receive_message (int connection_socket_fd) {
         return NULL;
     }
     
-    printf("Received message: "); message_print(message_received); printf(" size : %d\n", message_size_bytes(message_received));
+    printf("Received message: "); message_print(message_received); printf(" <> %d bytes\n", message_size_bytes(message_received));
     
     //frees the local buffer
     free(message_buffer);

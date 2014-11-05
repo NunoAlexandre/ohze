@@ -93,7 +93,7 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
     };
     
     /* 2. Criação das estruturas para receber mensagem */
-    struct message_t* received_msg;
+    struct message_t* received_msg = NULL;
     
     /* 3. Recebe mensagem do servidor com base no socketfd */
     received_msg = receive_message(server->socketfd);

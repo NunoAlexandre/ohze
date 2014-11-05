@@ -11,6 +11,7 @@
 #include "table.h"
 #include "table-private.h"
 #include "list.h"
+#include "list-private.h"
 #include "tuple.h"
 #include "tuple-private.h"
 #include "general_utils.h"
@@ -78,16 +79,16 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
  * os tuplos que estejam de acordo com o template.
  * Em caso de erro, devolve NULL
  */
-struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int keep_tuples, int one_or_all) {
+struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int whatToDOWithTheNodes, int one_or_all) {
     
     if ( table == NULL || tup_template == NULL )
         return NULL;
-    
+
     //gets the slot index where to search or -1 (must search on every slots)
     int slotIndex =  table_slot_index(table, tuple_key(tup_template));
     
     //the list with all matching nodes that will then be returned
-    struct list_t * allMatchingNodes;
+    struct list_t * allMatchingNodes = NULL;
     
     if ( slotIndex == -1) {
         //must have it own space where to add all the nodes found on every slots of the table.
@@ -99,7 +100,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             //gets the list to search from
             struct list_t * list_to_search = table_slot_list(table, index);
 
-            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
+            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, whatToDOWithTheNodes, one_or_all);
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
@@ -117,10 +118,25 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         struct list_t * list_to_search = table_slot_list(table, slotIndex);
         //once this slot was the only to be searched from,
         //allMatchingNodes is this table_slot_list matching nodes.
-        allMatchingNodes = list_matching_nodes(list_to_search, tup_template, keep_tuples, one_or_all);
+        allMatchingNodes = list_matching_nodes(list_to_search, tup_template, whatToDOWithTheNodes, one_or_all);
     }
 
+
     return allMatchingNodes;
+}
+
+void table_print( struct table_t * table )
+{
+    if (table == NULL || table->size == 0 )
+        printf("Tabela vazia");
+    else {
+        int i = 0;
+        for ( i = 0; i < table->size;  i++) {
+            printf("Table > slot %d : \n", i );
+            list_print(table_slot_list(table, i));
+            printf("\n");
+        }
+    }
 }
 
 /* Função para remover um ou todos os tuplos da tabela que estejam

@@ -14,7 +14,7 @@
 #include "tuple.h"
 #include "tuple-private.h"
 #include "entry-private.h"
-#import "list-private.h"
+#include "list-private.h"
 #include <assert.h>
 #include "general_utils.h"
 
@@ -238,19 +238,25 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
 /* Liberta a memoria alocada na função buffer_to_message
  */
 void free_message(struct message_t *message) {
-    
+    free_message2(message, YES);    
+}
+
+void free_message2(struct  message_t * message, int free_content) {
     if ( message == NULL)
         return;
-    
-    if ( message->c_type == CT_TUPLE ) {
-        tuple_destroy(message->content.tuple);
-    }
-    else if ( message->c_type == CT_ENTRY ) {
-        entry_destroy(message->content.entry);
-    }
+
+    if ( free_content ) { 
+         if ( message->c_type == CT_TUPLE ) {
+             tuple_destroy(message->content.tuple);
+         }
+        else if ( message->c_type == CT_ENTRY ) {
+            entry_destroy(message->content.entry);
+        }
+    } 
     
     free(message);
 }
+
 
 /*
  *  Verifies if message has error code or is NULL
@@ -393,9 +399,6 @@ struct message_t * command_to_message (const char * command) {
     }
     //create and return message
     struct message_t * message = message_create_with(opcode, ctype, message_content);
-  //  printf("command_to_message message is: "); message_print(message); printf("\n");
-    printf("command_to_message message is: "); message_print(message); printf("\n");
-  //  printf("command_to_message mus be equal: "); message_print(createdMessage); printf("\n");
 
     return message;
 }

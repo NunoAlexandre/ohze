@@ -47,7 +47,7 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
     int taskSuccess = send_message(connection_socket_fd, messageToSend);
     //frees the message to save memory
     if ( messageToSend != NULL ) {
-        free_message(messageToSend);
+        free_message2(messageToSend, NO);
     }
     
     return taskSuccess;
@@ -57,16 +57,23 @@ int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * ma
     //then, for each tuple of the list it will send it
     int tuplesToSend = list_size(matching_nodes);
     struct node_t * currentNode = list_head(matching_nodes);
+    //assuming it will work fine
+    int taskSuccess = TASK_SUCCEEDED;
     
     while ( tuplesToSend > 0 ) {
         //sends the tuple
-        server_send_tuple(connection_socket_fd, opcode, entry_value(node_entry(currentNode)));
-        //moves the node pointer
-        currentNode = currentNode->next;
-        tuplesToSend--;
+        if ( server_send_tuple(connection_socket_fd, opcode, entry_value(node_entry(currentNode))) == TASK_FAILED ) {
+            tuplesToSend = 0;
+            taskSuccess = TASK_FAILED;
+        }
+        else {
+            //moves the node pointer
+            currentNode = currentNode->next;
+            tuplesToSend--;
+        }
     }
     
-    return TASK_SUCCEEDED;
+    return taskSuccess;
 }
 
 int server_put (int connection_socket_fd, struct table_t * table, struct message_t * client_msg ) {
@@ -120,7 +127,7 @@ int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct 
         return TASK_FAILED;
    
     //destroyes the list matching nodes to free memory
-    if ( matching_nodes != NULL )
+    if ( matching_nodes != NULL && whatToDoWithTheNode == DONT_KEEP_AT_ORIGIN)
         list_destroy(matching_nodes);
     
     //if it got up to here all went well.
