@@ -29,7 +29,8 @@ int server_send_result (int connection_socket_fd, int opcode, int content_type, 
     //sends the message
     int taskSuccess = send_message(connection_socket_fd, messageToSend);
     //frees the message
-    free_message(messageToSend);
+    if ( messageToSend != NULL)
+        free_message(messageToSend);
     
     //returns the message sending success
     return taskSuccess;
@@ -44,6 +45,11 @@ int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tu
     //creates the message that will be sent.
     struct message_t * messageToSend = message_create_with(opcode+1, CT_TUPLE, tupleToSend);
     int taskSuccess = send_message(connection_socket_fd, messageToSend);
+    //frees the message to save memory
+    if ( messageToSend != NULL ) {
+        free_message(messageToSend);
+    }
+    
     return taskSuccess;
 }
 

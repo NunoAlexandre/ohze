@@ -153,7 +153,9 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
         return TASK_FAILED;
     }
     //frees the local buffer
+    puts("before messageToSend_buffer free");
     free(messageToSend_buffer);
+    puts("after messageToSend_buffer free");
     
     return TASK_SUCCEEDED;
 }
