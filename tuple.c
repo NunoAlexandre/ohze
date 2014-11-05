@@ -147,6 +147,7 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     for ( i = 0; i < tuple_size(tuple); i++) {
         //gets tuple element information
         char* currentElementValue = tuple_element(tuple, i) == NULL ? TUPLE_ELEM_NULL : tuple_element(tuple, i);
+    //    printf("value %d (%s) has size %lu\n",i, currentElementValue, strlen(currentElementValue));
         long currentElementSize = currentElementValue == NULL ? 1 : strlen(currentElementValue);
         
         // 1. first inserts element size
@@ -156,7 +157,9 @@ int tuple_serialize(struct tuple_t *tuple, char **buffer) {
         //moves offset
         offset+=TUPLE_ELEMENTSIZE_SIZE;
         //2. then inserts the string itself
+       // printf("tuple_serialize > element %s has size %ld\n", currentElementValue, currentElementSize);
         memcpy((buffer[0]+offset), currentElementValue, currentElementSize);
+        
         offset+=currentElementSize;
     }
     
@@ -197,8 +200,6 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
     //moves  offset
     offset+=TUPLE_DIMENSION_SIZE;
     
-    //char *tdata[tupleSize] = {"   ", "2014", "Fixe!"};
-    
     //2.gets first element size
     int i;
     for ( i = 0; i < tupleSize; i++ ) {
@@ -207,6 +208,8 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         memcpy(&elementSize_nl, buffer+offset, TUPLE_ELEMENTSIZE_SIZE );
         offset+= TUPLE_ELEMENTSIZE_SIZE;
         int elementSize = ntohl(elementSize_nl);
+      //  printf("tuple_deserialize > element %d has size nl %d and host %d\n", i, elementSize_nl, elementSize);
+
         
         //memory security check !!!: if elementSize is bigger then space to
         // read from buffer operation is canceled
@@ -219,7 +222,8 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
         char * elementValue = (char*) malloc(elementSize);
         
         memcpy(elementValue, (buffer+offset), elementSize);
-        tuple->tuple[i] = strncmp(elementValue, TUPLE_ELEM_NULL, 1) == 0 ? NULL : strdup(elementValue);
+        tuple->tuple[i] = strncmp(elementValue, TUPLE_ELEM_NULL, 1) == 0 ? NULL : strndup(elementValue, elementSize);
+    //    printf("tuple[%d] is %s || elementValue is %s and size %d\n",i, tuple->tuple[i], elementValue, elementSize);
         free(elementValue);
         offset+=elementSize;
     }

@@ -130,7 +130,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( messageToSend == NULL )
         return TASK_FAILED;
     
-    printf("Sending message: "); message_print(messageToSend); printf("\n");
+    printf("Sending message: "); message_print(messageToSend); printf(" size : %d\n", message_size_bytes(messageToSend));
     
     //the buffer
     char * messageToSend_buffer = NULL;
@@ -153,9 +153,13 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
         return TASK_FAILED;
     }
     
+    struct message_t * sentMessage = buffer_to_message(messageToSend_buffer, message_size);
+    
+     printf("Sent message "); message_print(sentMessage); printf(" size : %d\n", message_size_bytes(sentMessage));
+    
     //frees the local buffer
     free(messageToSend_buffer);
-        
+    
     return TASK_SUCCEEDED;
 }
 
@@ -183,8 +187,6 @@ struct message_t* receive_message (int connection_socket_fd) {
     // 2. Recebe a mensagem
     // allocs a buffer with the size that was informed from the other host
     char * message_buffer = (char*) malloc(size_of_msg_received_NTOHL);
-    // Marca a terminação do buffer/string
-    message_buffer[size_of_msg_received_NTOHL+1] = '\0';
     
     // lê a mensagem enviada
     if( (read_all(connection_socket_fd,message_buffer, size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
@@ -202,7 +204,7 @@ struct message_t* receive_message (int connection_socket_fd) {
         return NULL;
     }
     
-    printf("Received message: "); message_print(message_received); printf("\n");
+    printf("Received message: "); message_print(message_received); printf(" size : %d\n", message_size_bytes(message_received));
     
     //frees the local buffer
     free(message_buffer);
