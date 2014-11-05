@@ -112,6 +112,9 @@ int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct 
     if ( send_message(connection_socket_fd, responde_msg) == TASK_FAILED)
        return TASK_FAILED;
     
+    //frees
+    free_message(responde_msg);
+    
     // Then, if there are no nodes nothing will happen, otherwise it will send the tuple(s).
     if ( server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes) == TASK_FAILED )
         return TASK_FAILED;
