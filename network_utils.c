@@ -152,11 +152,6 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
         return TASK_FAILED;
     }
-    
-    struct message_t * sentMessage = buffer_to_message(messageToSend_buffer, message_size);
-    
-     printf("Sent message "); message_print(sentMessage); printf(" size : %d\n", message_size_bytes(sentMessage));
-    
     //frees the local buffer
     free(messageToSend_buffer);
     
