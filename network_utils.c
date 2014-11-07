@@ -126,7 +126,7 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
  * In error case returns TASK_FAILED, TASK_SUCCEEDED otherwise.
  */
 int send_message (int connection_socket_fd, struct message_t * messageToSend) {
-    
+    //puts("\t --- sending message ---");
     if ( messageToSend == NULL )
         return TASK_FAILED;
     
@@ -155,6 +155,10 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //frees the local buffer
     free(messageToSend_buffer);
     
+
+    //puts("\t --- message sent ---");
+
+
     return TASK_SUCCEEDED;
 }
 
@@ -164,7 +168,8 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
-    
+    //puts("\t --- receiving message ---");
+
     int size_of_msg_received = 0;
 
     // 1. Lê tamanho da mensagem que a ser recebida
@@ -176,6 +181,7 @@ struct message_t* receive_message (int connection_socket_fd) {
     int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
     //safety check
     if ( size_of_msg_received_NTOHL  <= 0 || size_of_msg_received_NTOHL > MAX_MSG ) {
+        puts("receive_message > message size <= 0 or > MAX_MSG");
         return NULL;
     }
     
@@ -185,16 +191,17 @@ struct message_t* receive_message (int connection_socket_fd) {
     
     // lê a mensagem enviada
     if( (read_all(connection_socket_fd,message_buffer, size_of_msg_received_NTOHL) != size_of_msg_received_NTOHL)  ) {
-        perror("receive_message -> failed to read message\n");
+        puts("receive_message -> failed to read message\n");
         free(message_buffer);
         return NULL;
     }
     
     // 2.4 Converte buffer para Mensagem
-    struct message_t * message_received = buffer_to_message(message_buffer, size_of_msg_received);
+    //printf("Message to receive has %d bytes\n", size_of_msg_received_NTOHL);
+    struct message_t * message_received = buffer_to_message(message_buffer, size_of_msg_received_NTOHL );
     // 2.5 Verifica se a mensagem foi bem criada */
     if ( message_received == NULL ) {
-        perror("receive_message -> failed to buffer_to_message (returned null)\n");
+        puts("receive_message -> failed to buffer_to_message (returned null)\n");
         free(message_buffer);
         return NULL;
     }
@@ -203,6 +210,8 @@ struct message_t* receive_message (int connection_socket_fd) {
     
     //frees the local buffer
     free(message_buffer);
+
+    //puts("\t --- message readed ---");
     
     return message_received;
 }

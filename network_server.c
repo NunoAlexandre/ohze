@@ -20,6 +20,10 @@ int server_sends_error_msg( int connection_socket_fd ) {
     int resultWithFailureValue = TASK_FAILED;
     struct message_t * errorMessage = message_create_with(OC_ERROR, CT_RESULT, &resultWithFailureValue);
     int taskSuccess = send_message(connection_socket_fd, errorMessage);
+
+    if ( errorMessage != NULL )
+        free_message(errorMessage);
+    
     return taskSuccess;
 }
 
@@ -198,24 +202,22 @@ int send_response (struct table_t * server, int connection_socket_fd, struct mes
  * de erro.
  */
 int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
-    
-    //flag
-    int taskSuccess = TASK_FAILED;
-    
+        
     //reads and gets the cliente request message
      struct message_t * cliente_request = receive_message(connection_socket_fd);
     //safety check
     if ( cliente_request == NULL ) {
-        close(connection_socket_fd);
+        server_sends_error_msg(connection_socket_fd);
         return TASK_FAILED;
     }
     
     /**** Sends the proper response to the cliente  ****/
-    taskSuccess = send_response(server_table, connection_socket_fd, cliente_request);
-    //if something went wrong it sends an error msg
-    if ( taskSuccess == TASK_FAILED ) {
+     //if something went wrong it sends an error msg and frees memory
+    if ( send_response(server_table, connection_socket_fd, cliente_request) == TASK_FAILED ) {
+        free_message(cliente_request);
         server_sends_error_msg(connection_socket_fd);
+        return TASK_FAILED;
     }
 
-    return taskSuccess;
+    return TASK_SUCCEEDED;
 }

@@ -77,7 +77,7 @@ int server_run ( int portnumber ) {
         connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, &client_socket_size);
         printf("> cliente connected.\n");
         network_receive_send ( server_table , connection_socket_fd );
-        close (connection_socket_fd);
+       // close (connection_socket_fd);
     }
     while ( connection_socket_fd != -1 );
 

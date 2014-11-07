@@ -274,11 +274,11 @@ int response_with_success ( struct message_t* request_msg, struct message_t* rec
     int opcode_resp = received_msg->opcode;
  
     if (message_error(received_msg)) {
-        perror("RECEIVED MESSAGE HAS ERROR CODE.");
+        puts(" (received message is an error message)");
         return NO;
     }
     else if ( opcode_resp != (opcode_req+1) ) {
-        perror("RECEIVED MESSAGE OPCODE INCORRECT!");
+        puts(" (received message has not the expected opcode)");
         return NO;
     }
     
