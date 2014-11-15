@@ -138,7 +138,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     int message_size = -1;
     //fills buffer with the serialized messageToSend
     if ( (message_size = message_to_buffer(messageToSend, &messageToSend_buffer)) == -1 ) {
-        printf("send message > error on message_to_buffer\n");
+        printf("SEND MESSAGE > error on message_to_buffer\n");
         return TASK_FAILED;
     }
     
@@ -156,8 +156,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     free(messageToSend_buffer);
     
 
-    //puts("\t --- message sent ---");
-
+//    puts("\t --- message sent ---");
 
     return TASK_SUCCEEDED;
 }
@@ -168,7 +167,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
-    //puts("\t --- receiving message ---");
+//    puts("\t --- receiving message ---");
 
     int size_of_msg_received = 0;
 
@@ -206,6 +205,7 @@ struct message_t* receive_message (int connection_socket_fd) {
         return NULL;
     }
     
+//    puts("\t --- Received message ---");
     printf("Received message: "); message_print(message_received); printf(" <> %d bytes\n", message_size_bytes(message_received));
     
     //frees the local buffer
@@ -215,4 +215,3 @@ struct message_t* receive_message (int connection_socket_fd) {
     
     return message_received;
 }
-

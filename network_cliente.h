@@ -11,6 +11,7 @@
 
 #include "message-private.h"
 #include "network_client-private.h"
+#include "general_utils.h"
 
 struct server_t; //a definer pelo grupo em network_client-private.h
 
@@ -37,6 +38,5 @@ struct message_t *network_send_receive(struct server_t *server,struct message_t 
  * deve libertar essa memoria.
  */
 int network_close(struct server_t *server);
-
 
 #endif

@@ -2,10 +2,11 @@
 #define _CLIENT_STUB_H
 
 #include "tuple.h"
+#include "client_stub-private.h"
 
 /* Remote table. A definir pelo grupo em client_stub-private.h 
  */
-struct rtable_t; 
+struct rtable_t;
 
 /* Função para estabelecer uma associação com uma tabela num servidor.
  * address_port é uma string no formato <hostname>:<port>.
@@ -31,5 +32,4 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
 /* Devolve número de elementos da tabela.
  */
 int rtable_size(struct rtable_t *rtable);
-
 #endif

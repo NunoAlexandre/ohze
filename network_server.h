@@ -14,7 +14,7 @@
 
 
 int server_sends_result (int connection_socket_fd, int opcode, int content_type, int value);
- int server_sends_error_msg( int connection_socket_fd);
+int server_sends_error_msg( int connection_socket_fd);
 int server_send_table_size ( int connection_socket_fd, table_t * server );
 
 int server_put (int connection_socket_fd, struct table_t * server, struct message_t * client_message );

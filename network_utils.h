@@ -9,6 +9,10 @@
 #ifndef SD15_Product_network_utils_h
 #define SD15_Product_network_utils_h
 
+#define RETRY_TIME 5
+int retry_connection;
+char* ip_address_copy_from_server;
+
 int split_address_port (const char *address_and_port, char * address, char * port );
 
 int reads_server_portnumber ( const char * stringWithPortNumber );

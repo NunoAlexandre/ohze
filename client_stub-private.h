@@ -16,7 +16,7 @@
 struct rtable_t{
     struct server_t server_to_connect;
     char * server_address_and_port;
-    int retry_connection;
+//    int retry_connection; ALTEREI AQUI
 };
 
 /*
@@ -51,7 +51,7 @@ int opcode_is_getter (int opcode);
  * address_port é uma string no formato <hostname>:<port>.
  * retorna NULL em caso de erro .
  */
-struct rtable_t *rtable_rebind(struct rtable_t *rtable);
+struct rtable_t *rtable_rebind(struct rtable_t *rtable, char* server_address_and_port);
 
 /*
  * Função que liberta toda a memória alocada a uma estrutura rtable
