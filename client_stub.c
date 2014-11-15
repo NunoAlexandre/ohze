@@ -135,11 +135,9 @@ struct rtable_t *rtable_bind(const char *address_port){
     struct server_t *server_to_conect;
     server_to_conect = network_connect(address_port_copy);
     
-//    puts("CLIENT-STUB > RTABLE_BIND > Connecting to server...");
 
     //verificação da ligação ao servidor
     if (server_to_conect == NULL){
-//        perror ("CLIENT_STUB > RTABLE_BIND > Unable to connect to server!");
         free(address_port_copy);
         free(server_to_conect);
         return NULL; // neste momento estará a NULL
@@ -150,7 +148,7 @@ struct rtable_t *rtable_bind(const char *address_port){
     
     free(address_port_copy);
     free(server_to_conect);
-//    puts("CLIENT-STUB > RTABLE_BIND > Connected to server!");
+
     puts("CONNECTED TO SERVER");
     return remote_table_to_connect;
 }
@@ -167,7 +165,6 @@ int rtable_unbind(struct rtable_t *rtable){
     //verifica se server_t foi bem criado
     if (connected_server == NULL) {
         perror ("CLIENT_STUB > RTABLE_UNBIND > Unable to disconnect from server!");
-        free(connected_server);
         return TASK_FAILED;
     }
     
@@ -177,6 +174,7 @@ int rtable_unbind(struct rtable_t *rtable){
     //faz um network_close ao servidor
     task = network_close(connected_server);
     if(task == TASK_FAILED){
+        puts("rtable_unbind > failed to network_close");
         return TASK_FAILED;
     }
     
@@ -195,8 +193,6 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
     
     //cria server_t com base em rtable
     struct server_t *connected_server = server_create_from_rtable(rtable);
-
-//    puts("CLIENT-STUB > RTABLE_OUT > Creating message to send...");
 
     //cria mensagem com OC_OUT, CT_TUPLE e tuple
     struct message_t *message_to_send = message_create_with(OC_OUT, CT_TUPLE, tuple_to_send);
@@ -226,10 +222,6 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
         free(received_msg);
         return TASK_FAILED;
     }
-
-//    free (message_to_send);
-//    free (received_message);
-//    free (connected_server);
     
     return TASK_SUCCEEDED;
 }
@@ -315,19 +307,8 @@ int rtable_size(struct rtable_t *rtable){
     
     //faz verificação da mensagem recebida
     if (received_msg == NULL) {
-//        if (rtable_reconnect(rtable)){ //verifica se é para tentar no envio de pedido
-//            sleep(RETRY_TIME);
-//            rtable_rebind(rtable, rtable->server_address_and_port);
-//            rtable->retry_connection = NO;
-//            received_msg = network_send_receive(connected_server, message_to_send);
-//        }
-//        else{
             puts ("CLIENT-STUB > RTABLE_SIZE > Failed to send/receive message");
-//            free (connected_server);
-//            free (message_to_send);
-//            free (received_message);
             return TASK_FAILED;
-//        }
         
     }
     
@@ -345,8 +326,6 @@ int rtable_size(struct rtable_t *rtable){
     free (message_to_send);
     free (received_msg);
     free (connected_server);
-
-//    puts("CLIENT-STUB > RTABLE_SIZE > ENDED");
     
     return rtable_size;
 }

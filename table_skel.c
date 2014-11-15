@@ -59,7 +59,6 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
 
  int table_skel_size (struct message_t * msg_in, struct message_t *** msg_set_out ) {
  	int tablesize = table_size(table);
- 	printf("tablesize is %d\n",  tablesize);
 	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &tablesize));
  }
  int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out ) {

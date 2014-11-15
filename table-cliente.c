@@ -151,7 +151,6 @@ int main(int argc , char *argv[]) {
     
     //verifica se o rtable_bind funcionou
     if (rtable_to_consult == NULL){
-//        puts ("TABLE_CLIENT > ERROR WHILE CONNECTING TO RTABLE");
         taskSuccess = TASK_FAILED;
         }
     

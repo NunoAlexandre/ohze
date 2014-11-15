@@ -30,7 +30,7 @@ struct server_t *network_reconnect(struct server_t *server_to_connect);
  * Função que decide se vai haver nova tentativa de ligação ou
  * reenvio de msg
  */
-int network_retransmit ();
+int network_retransmit (int socketfd);
 
 #endif
 

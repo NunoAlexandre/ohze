@@ -72,6 +72,24 @@ int hostname_to_ip(char * hostname , char* ip){
     return TASK_FAILED;
 }
 
+int socket_got_closed(int * socket_fd ) {
+    char * buffer = malloc (1); 
+    if ( recv(*socket_fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0 ) {
+        *socket_fd = -1;
+    }
+    //if socket is not -1 then its opened 
+    return *socket_fd == -1;
+} 
+
+int socket_is_open(int socket_fd ) {
+    char * buffer = malloc (1); 
+    if ( recv(socket_fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0 ) {
+        socket_fd = -1;
+    }
+    //if socket is not -1 then its opened 
+    return socket_fd != -1;
+}
+
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
  * The only case it doesn't happen is if some EINTR EPIPE happens.
@@ -79,15 +97,17 @@ int hostname_to_ip(char * hostname , char* ip){
  * than nbytesToWrite something went wrong.
  */
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
-    
+
     int bufsize = bytesToWrite;
-    while(bytesToWrite>0) {
+
+    while(bytesToWrite>0 ) {
         int writtenBytes = (int) write(socket_fd, buffer, bytesToWrite);
         if(writtenBytes<0) {
             if(errno==EINTR) continue;
             perror("network_server > write_all > failed");
             return writtenBytes;
         }
+       
         //moves buffer pointer
         buffer += writtenBytes;
         //bytes to write
@@ -104,7 +124,7 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
     int bufsize = nBytesToRead;
-    
+
     while ( nBytesToRead > 0 ) {
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
         if ( nReadedBytes < 0 ) {
@@ -112,6 +132,7 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
             perror("network_server > read_all > failed");
             return nReadedBytes;
         }
+
         //moves buffer pointer
         buffer += nReadedBytes;
         //bytes to write

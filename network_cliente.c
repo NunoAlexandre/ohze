@@ -82,7 +82,7 @@ struct server_t *network_connect(const char *address_port) {
         perror ("NETWORK_CLIENT --> NETWORK_CONNECT > ERROR while connecting with server!");
 
         //tries to reconnect to server if ECONNREFUSED occurred and retry_connection = YES
-        if (network_retransmit()){
+        if (network_retransmit(server_to_connect->socketfd)){
             puts("NETWORK_CLIENT --> NETWORK_CONNECT > Trying to reconnect to server...");
             sleep(RETRY_TIME);
             struct server_t *server_reconnected;
@@ -97,9 +97,10 @@ struct server_t *network_connect(const char *address_port) {
         //(re)connection fails and returns to initial state
         if (connection < 0 && reconnected == NO){
         //returning to starting state
-            puts ("SERA QUE ENTREI AQUI TAMBEM");
 
+        shutdown(server_to_connect->socketfd, SHUT_RDWR);
         close(server_to_connect->socketfd);
+        puts("did shutdown the socket!!!!!!!!!!!!");
         free(server_to_connect);
         return NULL;
         }
@@ -124,7 +125,7 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
         perror("NETWORK_CLIENT --> NETWORK_SEND_RECEIVE > FAILED TO SEND MESSAGE!");
         
         //tries to reconnect to server if ECONNREFUSED occurred and retry_connection = YES
-        if (network_retransmit()){
+        if (network_retransmit(server->socketfd)){
             struct server_t * reconnected_server;
             sleep(RETRY_TIME);
             network_close(server); //fecha ligação
@@ -159,7 +160,7 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
         perror("NETWORK_CLIENT --> NETWORK_SEND_RECEIVE > FAILED TO RECEIVE MESSAGE!");
         
         //tries to reconnect to server if ECONNREFUSED occurred and retry_connection = YES
-        if (network_retransmit()){
+        if (network_retransmit(server->socketfd)){
             struct server_t * reconnected_server;
             sleep(RETRY_TIME);
             network_close(server); //fecha ligação
@@ -193,13 +194,13 @@ struct message_t *network_send_receive(struct server_t *server, struct message_t
  */
 int network_close(struct server_t *server){
     int task = TASK_SUCCEEDED;
-    task = close (server->socketfd);
+    shutdown(server->socketfd, SHUT_RDWR);
+    task = close(server->socketfd);
+
     if (task == TASK_FAILED){
         perror("NETWORK_CLIENT --> NETWORK_CLOSE > FAILED TO CLOSE CONNECTION!");
         return TASK_FAILED;
     }
-//    free (server->ip_address); //este free dá problemas
-//    free (server); //este free dá problemas
     return task;
 }
 
@@ -260,7 +261,7 @@ struct server_t *network_reconnect(struct server_t *server_to_connect){
  * Função que decide se vai haver nova tentativa de ligação ou
  * reenvio de msg
  */
-int network_retransmit (){
+int network_retransmit (int socket_fd){
     
     printf ("server->reconnect_to_server: %d\n",retry_connection);
     printf ("errno: %d\n",errno);
@@ -271,12 +272,16 @@ int network_retransmit (){
         return YES;
     }
     
-    else if (retry_connection == YES && errno == ECONNREFUSED){
+    else if (retry_connection == YES && (errno == ECONNREFUSED) ) {
         puts ("É para reconnectar!");
         retry_connection = NO;
         return YES;
     }
-    
+    else if (retry_connection == YES && (!socket_is_open(socket_fd)) )  {
+        puts ("É para reconnectar!");
+        retry_connection = NO;
+        return YES;
+    }    
     else{
         puts("NADA A FAZER -- JÁ FOI FEITO UM RETRANSMIT!");
         retry_connection = NO;

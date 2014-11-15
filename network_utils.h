@@ -9,7 +9,13 @@
 #ifndef SD15_Product_network_utils_h
 #define SD15_Product_network_utils_h
 
+//time to retry to reconnect
 #define RETRY_TIME 5
+
+//module properties
+int retry_connection;
+char* ip_address_copy_from_server;
+
 
 int split_address_port (const char *address_and_port, char * address, char * port );
 
@@ -23,9 +29,19 @@ char * get_port (const char * address_and_port);
 
 char * get_address (const char * address_and_port);
 
-//module properties
-int retry_connection;
-char* ip_address_copy_from_server;
+
+
+/*
+* Checks if the pointed socketfd is open or not (YES or NO as return).
+* If socket is not open it will set its value to -1. 
+* If socket got closed, then YES.
+*/
+int socket_got_closed(int * socketfd );
+
+/*
+* Checks, without modifying its value, if the socket_fd is open.
+*/
+int socket_is_open(int socket_fd );
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
