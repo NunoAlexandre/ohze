@@ -175,7 +175,6 @@ int main(int argc , char *argv[]) {
             if (command_opcode == OC_QUIT) {
                 keepGoing = NO;
             }
-            
             // User instruction is wrong
             else if ( command_opcode == OC_DOESNT_EXIST ) {
                 invalid_command();

@@ -1,6 +1,6 @@
 ###################################################
 #
-# Makefile - Grupo sd015 - Projecto 3
+# Makefile - Grupo sd015 - Projecto 4
 #
 ###################################################
 
@@ -15,7 +15,7 @@ EXECUTABLE_CLIENT = SD15_CLIENT
 EXECUTABLE_SERVER = SD15_SERVER
 
 CC = /usr/bin/gcc
-CC_OPTIONS = 
+CC_OPTIONS = -Wall
 LNK_OPTIONS = 
 
 
