@@ -266,25 +266,28 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
             return NULL;
     }
 
-    
-    /* REVER PORQUE ACHO QUE TEM FALHAS! */
+    //onde os tuplos a receber serão guardados
+    struct tuple_t **received_tuples = NULL;
+
     //verifica se a mensagem recebida foi de sucesso
     if (response_with_success(message_to_send, received_msg)) {
         //checks what has to do now...
         if ( client_decision_to_take(message_to_send, received_msg) == CLIENT_RECEIVE_TUPLES ) {
             int number_of_tuples = received_msg->content.result;
             printf("--- has %d tuples to get from the server.\n", number_of_tuples);
-            struct tuple_t **received_tuples = (struct tuple_t**) malloc(sizeof(struct tuple_t*)*number_of_tuples);
+            received_tuples = (struct tuple_t**) malloc(sizeof(struct tuple_t*)*number_of_tuples);
             
             int i;
             for (i = 0; i < number_of_tuples; i++){
                 received_msg = receive_message(connected_server->socketfd);
                 received_tuples[i] = tuple_from_message(received_msg);
             }
-            return received_tuples;
         }
     }
-    return NULL;
+    else { puts("---- NOT response_with_success !!");  }
+
+    //devolve os tuplos recebidos (ou nulo se nao recebeu nenhum tuplo)
+    return received_tuples;
 }
 
 /* Devolve número de elementos da tabela.

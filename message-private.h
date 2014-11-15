@@ -51,6 +51,7 @@ static long long swap_bytes_64(long long number)
 }
 
 struct message_t * message_create_with ( int opcode, int content_type, void * element  );
+struct tuple_t * tuple_from_message(struct message_t * msg);
 int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
 unsigned long string_positive_number ( char* numberAsString );

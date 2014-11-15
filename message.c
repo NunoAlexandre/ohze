@@ -23,6 +23,9 @@ struct message_t * message_create () {
     return new_message;
 }
 
+struct tuple_t * tuple_from_message(struct message_t * msg) {
+    return msg != NULL ? msg->content.tuple : NULL;
+}
 struct message_t * message_create_with ( int opcode, int content_type, void * element  ) {
     
     struct message_t * new_message = message_create();

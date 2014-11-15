@@ -70,11 +70,11 @@ int server_run ( int portnumber ) {
     //4. Accepts clients connects and handles its requests
     
     struct table_t * server_table = table_create(TABLE_DIMENSION);
-    
+    connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, &client_socket_size);
+
     
     do  {
         printf("\n--------- waiting for clients requests ---------\n");
-        connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, &client_socket_size);
         printf("> cliente connected.\n");
         network_receive_send ( server_table , connection_socket_fd );
        // close (connection_socket_fd);

@@ -78,11 +78,6 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
     if ((opcode != OC_SIZE ||opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
         struct tuple_t **received_tuples; //será que tem de ser inicializado?
         received_tuples = rtable_get(rtable_to_consult, message_content, keep_tuples, one_or_all);
-        
-        if (received_tuples == NULL){
-            perror("TABLE_CLIENT > PROCEED_WITH_COMMAND > Failed to retrieve tuples from getter opcodes!");
-            return TASK_FAILED;
-        }
     }
     
     return task;
@@ -201,7 +196,7 @@ int main(int argc , char *argv[]) {
             int command_opcode = find_opcode(input);
             
             // User wants to quit
-            if (command_opcode == OC_QUIT){
+            if (command_opcode == OC_QUIT) {
                 keepGoing = NO;
             }
             
