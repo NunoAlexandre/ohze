@@ -138,7 +138,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     int message_size = -1;
     //fills buffer with the serialized messageToSend
     if ( (message_size = message_to_buffer(messageToSend, &messageToSend_buffer)) == -1 ) {
-        printf("SEND MESSAGE > error on message_to_buffer\n");
+        printf("send message > error on message_to_buffer\n");
         return TASK_FAILED;
     }
     
@@ -154,9 +154,6 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     }
     //frees the local buffer
     free(messageToSend_buffer);
-    
-
-//    puts("\t --- message sent ---");
 
     return TASK_SUCCEEDED;
 }
@@ -167,7 +164,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
-//    puts("\t --- receiving message ---");
+    //puts("\t --- receiving message ---");
 
     int size_of_msg_received = 0;
 
@@ -197,7 +194,10 @@ struct message_t* receive_message (int connection_socket_fd) {
     
     // 2.4 Converte buffer para Mensagem
     //printf("Message to receive has %d bytes\n", size_of_msg_received_NTOHL);
+    //puts("receive_message > before buf_to_msg");
+   // printf("size_of_msg_received_NTOHL is %d\n", size_of_msg_received_NTOHL);
     struct message_t * message_received = buffer_to_message(message_buffer, size_of_msg_received_NTOHL );
+
     // 2.5 Verifica se a mensagem foi bem criada */
     if ( message_received == NULL ) {
         puts("receive_message -> failed to buffer_to_message (returned null)\n");
@@ -205,13 +205,11 @@ struct message_t* receive_message (int connection_socket_fd) {
         return NULL;
     }
     
-//    puts("\t --- Received message ---");
     printf("Received message: "); message_print(message_received); printf(" <> %d bytes\n", message_size_bytes(message_received));
     
     //frees the local buffer
     free(message_buffer);
-
-    //puts("\t --- message readed ---");
-    
+ 
     return message_received;
 }
+

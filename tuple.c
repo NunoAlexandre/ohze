@@ -48,6 +48,20 @@ struct tuple_t *tuple_create2(int tuple_dim, char **tuple) {
     }
     return newTuple;
 }
+struct tuple_t ** tuple_create_array(int tuples_num) {
+    if ( tuples_num <= 0 ) return NULL;
+
+    return (struct tuple_t **) malloc ( sizeof(struct tuple_t *) * tuples_num);
+}
+void tuple_array_destroy(struct tuple_t ** tuples, int num ) {
+    if ( tuples != NULL ) {
+        int i = 0;
+        for ( i = 0; i < num; i++) {
+            tuple_destroy(tuples[i]);
+        }
+        free(tuples);
+    }
+}
 
 /*
  * Função que destrói um bloco de dados e liberta toda a memoria.

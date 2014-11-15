@@ -20,5 +20,5 @@ int table_skel_destroy();
  * Retorna o número de mensagens presentes no array msg_set_out ou -1 
  * (erro, por exemplo, tabela não inicializada).
  */
-int invoke(struct message_t msg_in, struct message_t ***msg_set_out);
+int invoke(struct message_t * msg_in, struct message_t ***msg_set_out);
 #endif

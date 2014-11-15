@@ -27,4 +27,8 @@ struct tuple_t* create_tuple_from_input (const char *user_input);
 
 void tuple_print ( struct tuple_t * tuple );
 
+struct tuple_t ** tuple_create_array(int tuples_num);
+void tuple_array_destroy(struct tuple_t ** tuples, int num );
+
+
 #endif /* defined(__SD15_Project__tuple_private__) */

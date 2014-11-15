@@ -37,6 +37,7 @@ $(EXECUTABLE_CLIENT) : \
 		./tuple.o\
 		./table-cliente.o\
 		./network_cliente.o\
+		./client_stub.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
@@ -47,6 +48,7 @@ $(EXECUTABLE_CLIENT) : \
 		./tuple.o\
 		./table-cliente.o\
 		./network_cliente.o\
+		./client_stub.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
@@ -62,7 +64,8 @@ $(EXECUTABLE_SERVER) : \
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
-		./table.o
+		./table.o\
+		./table_skel.o
 	$(CC) $(LNK_OPTIONS) \
 		./entry.o\
 		./list.o\
@@ -73,6 +76,7 @@ $(EXECUTABLE_SERVER) : \
 		./network_utils.o\
 		./message.o\
 		./table.o\
+		./table_skel.o\
 		-o $(EXECUTABLE_SERVER)
 
 clean : 
@@ -112,6 +116,9 @@ install : $(EXECUTABLE_SERVER) $(EXECUTABLE_CLIENT)
 ./network_cliente.o : SD15-Project/network_cliente.c
 	$(CC) $(CC_OPTIONS) SD15-Project/network_cliente.c -c $(INCLUDE) -o ./network_cliente.o
 
+# Item # 5 -- client_stub --
+./client_stub.o : SD15-Project/client_stub.c
+	$(CC) $(CC_OPTIONS) SD15-Project/client_stub.c -c $(INCLUDE) -o ./client_stub.o
 
 # Item # 6 -- table-server --
 ./table-server.o : SD15-Project/table-server.c
@@ -142,5 +149,8 @@ install : $(EXECUTABLE_SERVER) $(EXECUTABLE_CLIENT)
 ./table.o : SD15-Project/table.c
 	$(CC) $(CC_OPTIONS) SD15-Project/table.c -c $(INCLUDE) -o ./table.o
 
+
+./table_skel.o : SD15-Project/table_skel.c
+	$(CC) $(CC_OPTIONS) SD15-Project/table_skel.c -c $(INCLUDE) -o ./table_skel.o
 
 ##### END RUN ####

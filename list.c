@@ -28,7 +28,7 @@ struct list_t *list_create() {
 }
 
 /* Elimina uma lista, libertando *toda* a memoria utilizada pela
- * lista.
+ * lista
  * Retorna 0 (OK) ou -1 (erro)
  */
  int list_destroy(struct list_t *list) {
@@ -44,7 +44,7 @@ struct list_t *list_create() {
     while ( current != NULL && numberOfFreedNodes < numberOfNodes-1 ) {
         if ( current->prev != NULL ) {
             //if node is destroyed it increments the freed nodes number
-            if ( node_destroy(current->prev)  == 0 ) {
+            if ( node_destroy(current->prev)  == TASK_SUCCEEDED ) {
                 numberOfFreedNodes++;
             }
         }
@@ -65,7 +65,9 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
         return taskSucess;
     
     //pointer iterate
+
     node_t * currentNode = addWithCriterion ? list_head(list) : list_tail(list);
+
     //flag to indicate if the new node must be inserted before (0) or after (1)
     unsigned int positionToPut = 1;
     //while the new entry is not frist (DESC alfabethic order)
@@ -84,7 +86,6 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     }
     //puts newNode before or after currentNode (defined by positionToPut)
     taskSucess = list_insert_node(list, newNode, currentNode, positionToPut );
-
     
     //returns task success indication (0/1)
     return taskSucess;

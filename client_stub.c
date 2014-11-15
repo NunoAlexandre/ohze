@@ -218,9 +218,6 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
         return TASK_FAILED;
     }
 
-//    puts("CLIENT-STUB > RTABLE_OUT > Received message from server!");
-    puts("Received message from server!");
-
     //verifica se a mensagem recebida foi de sucesso
     if (response_with_success(message_to_send, received_msg) == NO){
         puts("CLIENT-STUB > RTABLE_OUT > RECEIVED MESSAGE WITH ERROR OPCODE or OPCODE UNEXPECTED.");
@@ -254,9 +251,6 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
     //cria mensagem a enviar ao servidor
     struct message_t *message_to_send = message_create_with(opcode, content_type, message_content);
     
-//    puts("CLIENT-STUB > RTABLE_GET > Sending message to server...");
-    puts("Sending message to server...");
-
     //envia mensagem para o servidor e recebe mensagem do servidor com o resultado da operação
     struct message_t *received_msg = network_send_receive(connected_server, message_to_send);
     

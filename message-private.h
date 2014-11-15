@@ -51,7 +51,9 @@ static long long swap_bytes_64(long long number)
 }
 
 struct message_t * message_create_with ( int opcode, int content_type, void * element  );
-struct tuple_t * tuple_from_message(struct message_t * msg);
+struct message_t ** message_create_set ( int msg_num );
+void free_message_set(struct message_t ** message_set, int num);
+struct tuple_t * tuple_from_message(struct message_t * msg );
 int message_size_bytes (  struct message_t * msg );
 int message_content_size_bytes (  struct message_t * msg );
 unsigned long string_positive_number ( char* numberAsString );
@@ -69,9 +71,20 @@ void message_print ( struct message_t * msg );
  */
 int response_with_success ( struct message_t *  request_msg, struct message_t * received_msg);
 
+int message_valid_opcode ( struct  message_t * msg );
+
+int message_opcode_getter ( struct  message_t * msg);
+
+struct message_t * message_of_error();
 /*
  *  Verifies if message has error code or is NULL
  */
 int message_error (struct message_t* tested_msg);
+
+int message_opcode_setter(struct message_t * msg );
+int message_opcode_getter(struct  message_t * msg);
+int message_opcode_size(struct message_t * msg );
+
+int message_valid_opcode(struct  message_t * msg);
 
 #endif

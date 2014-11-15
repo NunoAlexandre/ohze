@@ -16,9 +16,38 @@
 #include "tuple.h"
 #include "general_utils.h"
 
+
+/*
+* Receive_request simply receive_message from socketfd.
+* Useful to improve readability.
+*/
+struct message_t * server_receive_request(int socketfd ) {
+    return receive_message(socketfd);
+}
+
+int server_send_response(int socketfd, int number_of_messages, struct message_t ** response_messages) {
+    if ( number_of_messages <= 0 || response_messages == NULL ) {
+        printf("number of messages %d or msgs null\n", number_of_messages );
+        return TASK_FAILED;
+    }
+    
+    int taskSuccess = TASK_SUCCEEDED;
+    int index = 0;
+    //sends each message. in error case stops to send.
+    while ( index >= 0 && index < number_of_messages ) {
+        if ( send_message(socketfd, response_messages[index]) == TASK_FAILED ) {
+            taskSuccess = TASK_FAILED;
+            index = -1;
+        }
+        else {
+            index++;
+        }
+    }
+    return taskSuccess;
+}
+
 int server_sends_error_msg( int connection_socket_fd ) {
-    int resultWithFailureValue = TASK_FAILED;
-    struct message_t * errorMessage = message_create_with(OC_ERROR, CT_RESULT, &resultWithFailureValue);
+    struct message_t * errorMessage = message_of_error();
     int taskSuccess = send_message(connection_socket_fd, errorMessage);
 
     if ( errorMessage != NULL )
@@ -27,197 +56,3 @@ int server_sends_error_msg( int connection_socket_fd ) {
     return taskSuccess;
 }
 
-int server_send_result (int connection_socket_fd, int opcode, int content_type, int value) {
-    //creates the message
-    struct message_t * messageToSend = message_create_with(opcode, content_type, &value);
-    //sends the message
-    int taskSuccess = send_message(connection_socket_fd, messageToSend);
-    //frees the message
-    if ( messageToSend != NULL)
-        free_message(messageToSend);
-    
-    //returns the message sending success
-    return taskSuccess;
-}
-
-/*
- * Sends a tupleToSend to socket connection_socket_fd.
- * Firstly it sends one integer with the size of the message and then it sends the buffer message.
- */
-int server_send_tuple (int connection_socket_fd, int opcode, struct tuple_t * tupleToSend ) {
-    
-    //creates the message that will be sent.
-    struct message_t * messageToSend = message_create_with(opcode+1, CT_TUPLE, tupleToSend);
-    int taskSuccess = send_message(connection_socket_fd, messageToSend);
-    //frees the message to save memory
-    if ( messageToSend != NULL ) {
-        free_message2(messageToSend, NO);
-    }
-    
-    return taskSuccess;
-}
-
-int server_send_tuples (int connection_socket_fd, int opcode, struct list_t * matching_nodes) {
-    //then, for each tuple of the list it will send it
-    int tuplesToSend = list_size(matching_nodes);
-    struct node_t * currentNode = list_head(matching_nodes);
-    //assuming it will work fine
-    int taskSuccess = TASK_SUCCEEDED;
-    
-    while ( tuplesToSend > 0 ) {
-        //sends the tuple
-        if ( server_send_tuple(connection_socket_fd, opcode, entry_value(node_entry(currentNode))) == TASK_FAILED ) {
-            tuplesToSend = 0;
-            taskSuccess = TASK_FAILED;
-        }
-        else {
-            //moves the node pointer
-            currentNode = currentNode->next;
-            tuplesToSend--;
-        }
-    }
-    
-    return taskSuccess;
-}
-
-int server_put (int connection_socket_fd, struct table_t * table, struct message_t * client_msg ) {
-    
-    //safety check
-    if ( table == NULL || client_msg->content.tuple == NULL )
-        return TASK_FAILED;
-    
-    struct tuple_t * tuple_to_add = client_msg->content.tuple;
-    
-    //if both tasks perform successefully taskSuccess will keep steady.
-    int taskSuccess = TASK_SUCCEEDED;
-    
-    taskSuccess = table_put(table,  tuple_to_add);
-    //sends a message to the cliente notifying him of the put success
-   
-    struct message_t * feedback_msg = message_create_with(client_msg->opcode+1,
-                                                         CT_RESULT, &taskSuccess);
-    
-    taskSuccess+= send_message(connection_socket_fd, feedback_msg);
-    
-    return taskSuccess == TASK_SUCCEEDED ? TASK_SUCCEEDED : TASK_FAILED;
-}
-
-/*
- * Gets one_or_all matching node(s) from the server table and sends it/them to the cliente.
- *
- */
-int server_get_send_tuples ( int connection_socket_fd, table_t * server, struct message_t * cliente_request, int one_or_all) {
-    
-    // first it has to know what must happen to the matching nodes
-    int whatToDoWithTheNode = cliente_request->opcode == OC_IN || cliente_request->opcode == OC_IN_ALL ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
-    
-    // gets the matching nodes
-    struct list_t * matching_nodes = table_get(server, cliente_request->content.tuple, whatToDoWithTheNode, one_or_all);
-    
-    // sends a message to the client letting him now how many nodes it will receive
-    // if there are no tuples to send it sends "0/zero" to the cliente and stops here.
-    int number_of_tuples = list_size(matching_nodes);
-    struct message_t * responde_msg = message_create_with(cliente_request->opcode+1, CT_RESULT, &number_of_tuples);
-    
-    // Sends a message saying how many tuples will send
-    if ( send_message(connection_socket_fd, responde_msg) == TASK_FAILED)
-       return TASK_FAILED;
-    
-    //frees
-    free_message(responde_msg);
-    
-    // Then, if there are no nodes nothing will happen, otherwise it will send the tuple(s).
-    if ( server_send_tuples(connection_socket_fd, cliente_request->opcode, matching_nodes) == TASK_FAILED )
-        return TASK_FAILED;
-   
-    //destroyes the list matching nodes to free memory
-    if ( matching_nodes != NULL && whatToDoWithTheNode == DONT_KEEP_AT_ORIGIN)
-        list_destroy(matching_nodes);
-    
-    //if it got up to here all went well.
-    return TASK_SUCCEEDED;
-}
-
-int server_send_table_size ( int connection_socket_fd, table_t * server ) {
-    
-    int server_table_size = table_size(server);
-    int taskSuccess = server_send_result(connection_socket_fd, OC_SIZE+1, CT_RESULT, server_table_size);
-    
-    return taskSuccess;
-}
-
-/*
- * Recebe um socket fd de comunicação e uma messagem que contem
- * um pedido por um cliente e processa o pedido e
- * age em conformidade, enviando uma resposta de volta.
- */
-int send_response (struct table_t * server, int connection_socket_fd, struct message_t *cliente_request) {
-    
-    //flag to return in the end
-    int taskSuccess = TASK_FAILED;
-    
-    // Tem de fazer um switch case para para caso de mensagem
-    // Dependendo do tipo de mensagem a enviar.
-    switch ( cliente_request->opcode ) {
-        //all the cases that involve to get elements from the server table
-        case OC_IN:
-        case OC_COPY :
-        case OC_IN_ALL:
-        case OC_COPY_ALL :
-        {
-            int one_or_all = cliente_request->opcode == OC_IN || cliente_request->opcode == OC_COPY;
-            taskSuccess = server_get_send_tuples(connection_socket_fd, server, cliente_request, one_or_all );
-            break;
-        }
-        //inserir um tuplo à tabela
-        case OC_OUT:
-        {
-            taskSuccess = server_put(connection_socket_fd, server, cliente_request);
-            //sends a message back saying if it was added
-            break;
-        }
-        //devolve o numero de elements da tabela
-        case OC_SIZE:
-        {
-            taskSuccess = server_send_table_size(connection_socket_fd, server);
-            //does what it should
-            break;
-        }
-            
-        default:
-        {
-            printf("Client asked a wrong operation\n");
-            taskSuccess = TASK_FAILED;
-            break;
-        }
-    }
-    return taskSuccess;
-}
-
-/* Esta função é a correspondente à send_receive do network_client.
- * - Obter o descritor da ligação (socket) da estrutura server_t;
- * - enviar a mensagem msg ao servidor;
- * - receber uma resposta do servidor;
- * - retornar a mensagem obtida como resposta ou NULL em caso
- * de erro.
- */
-int network_receive_send(table_t * server_table,  int connection_socket_fd ) {
-        
-    //reads and gets the cliente request message
-     struct message_t * cliente_request = receive_message(connection_socket_fd);
-    //safety check
-    if ( cliente_request == NULL ) {
-        server_sends_error_msg(connection_socket_fd);
-        return TASK_FAILED;
-    }
-    
-    /**** Sends the proper response to the cliente  ****/
-     //if something went wrong it sends an error msg and frees memory
-    if ( send_response(server_table, connection_socket_fd, cliente_request) == TASK_FAILED ) {
-        free_message(cliente_request);
-        server_sends_error_msg(connection_socket_fd);
-        return TASK_FAILED;
-    }
-
-    return TASK_SUCCEEDED;
-}

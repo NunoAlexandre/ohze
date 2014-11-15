@@ -13,6 +13,10 @@
 #include "general_utils.h"
 #include "network_utils.h"
 #include <signal.h>
+#include "table_skel.h"
+#include <sys/poll.h>
+#include <limits.h>
+#include <sys/uio.h>
 
 int server_run ( int portnumber ) {
 
@@ -33,6 +37,13 @@ int server_run ( int portnumber ) {
         return TASK_FAILED;
     }
     
+    //sets the socket reusable
+    int setSocketReusable = YES;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
+        perror("SO_REUSEADDR setsockopt error");
+        return TASK_FAILED;
+    }
+
     //2. Bind
     struct sockaddr_in server;
     
@@ -50,11 +61,10 @@ int server_run ( int portnumber ) {
     
     //3. Listen
     if (listen(socket_fd, 0) < 0 ) {
-        perror("server > server_run > error on listen()\n");
+        perror("server > server_run > error on listen() \n");
         close(socket_fd);
         return TASK_FAILED;
     };
-    
     
     
     /*  From now on the server will wait that clients
@@ -67,22 +77,93 @@ int server_run ( int portnumber ) {
     //the cliente socket size
     socklen_t  client_socket_size = sizeof (client);
 
-    //4. Accepts clients connects and handles its requests
-    
-    struct table_t * server_table = table_create(TABLE_DIMENSION);
-    connection_socket_fd = accept(socket_fd, (struct sockaddr *) &client, &client_socket_size);
+    // initializes the table_skel
+    if ( table_skel_init(N_TABLE_SLOTS) == TASK_FAILED )
+        return -1;
 
-    
-    do  {
-        printf("\n--------- waiting for clients requests ---------\n");
-        printf("> cliente connected.\n");
-        network_receive_send ( server_table , connection_socket_fd );
-       // close (connection_socket_fd);
+
+    /** creates a pollfd **/ 
+    struct pollfd connections[N_MAX_CLIENTS];
+    //the socket_fd is at first
+    connections[0].fd = socket_fd;
+    connections[0].events = POLLIN;
+
+    int i = 1;
+    for( i=1; i < N_MAX_CLIENTS; i++){
+        connections[i].fd = -1;
+        connections[i].events = 0;
+        connections[i].revents = 0;
     }
-    while ( connection_socket_fd != -1 );
 
-    //closes server socket
-    close(socket_fd);
+    //for now only the listening socket
+    int connected_fds = 1;
+    // to save the result from poll function
+    int polled_fds = 0; 
+
+    // Gets clients connection requests and handles its requests
+    printf("\n--------- waiting for clients requests ---------\n");
+    while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
+        //if there was any polled sockets fd with events
+        if (polled_fds > 0){ 
+             if ((connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS)) {  // Pedido na listening socket ?
+                if ((connections[connected_fds].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
+                    connections[connected_fds].events = POLLIN; // Vamos esperar dados nesta socket
+                    connected_fds++;
+                }
+            }
+
+            //for each connected cliente it will receive a request and give a response
+            int i = 0;
+            for (i = 1; i < connected_fds; i++) {// Todas as ligações
+
+               if (connections[i].revents & POLLIN) { // Dados para ler ?
+
+                connection_socket_fd = connections[i].fd;
+                printf("> serving client with socket_fd %d\n", connection_socket_fd);
+
+        //flag to track errors during the request-response process
+                int failed_tasks = 0;
+
+        /** Gets the client request **/
+                struct message_t * client_request = server_receive_request(connection_socket_fd);
+        //error case
+                failed_tasks += client_request == NULL;
+
+        /** where all the response message will be stored **/
+                struct message_t ** response_message = NULL;
+
+        //the table_skel will process the client request and resolve response_message
+                int response_messages_num = invoke(client_request, &response_message);
+        // error case
+                failed_tasks+= response_messages_num <= 0 || response_message == NULL;
+
+        //sends the response to the client
+                int message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);
+        //error case
+                failed_tasks+= message_was_sent == TASK_FAILED;
+
+
+        /** IF some error happened, it will notify the client **/
+                if ( failed_tasks > 0 ) 
+                    server_sends_error_msg(connection_socket_fd);
+
+        /** frees memory **/
+                free_message2(client_request, NO);
+                free_message_set(response_message, response_messages_num);
+            }
+        }
+        }
+    }
+
+    //closes all the sockets socket
+    int j;
+    for (j = 0; j < N_MAX_CLIENTS; j++){
+        if (connections[j].fd >= 0){
+            close(connections[j].fd);
+        }
+    }
+    //destroys the table_skel
+    table_skel_destroy();
 
     return TASK_SUCCEEDED;
 }
@@ -104,7 +185,7 @@ void invalid_input_message () {
 }
 
 int main ( int argc, char *argv[] ) {
-    
+
     //gets the port number
     int portNumber = input_is_valid(argc, argv) ? reads_server_portnumber(argv[1]) : -1;
     //case its invalid

@@ -37,4 +37,6 @@ struct list_t * table_slot_list ( table_t * table, int index );
 
 int table_slots ( struct table_t * table );
 
+int table_get_array(struct table_t *table, struct tuple_t *tup_template, int whatToDOWithTheNodes, int one_or_all, struct tuple_t *** matching_tuples);
+
 #endif

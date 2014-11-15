@@ -23,9 +23,6 @@ struct message_t * message_create () {
     return new_message;
 }
 
-struct tuple_t * tuple_from_message(struct message_t * msg) {
-    return msg != NULL ? msg->content.tuple : NULL;
-}
 struct message_t * message_create_with ( int opcode, int content_type, void * element  ) {
     
     struct message_t * new_message = message_create();
@@ -43,10 +40,8 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
                 new_message->content.tuple = element;
                 break;
             case CT_RESULT:
-            {
                 new_message->content.result = * ((int *) element);
                 break;
-            }
             default:
                 break;
         }
@@ -54,6 +49,22 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
     
     return new_message;
 }
+struct message_t ** message_create_set ( int msg_num ) {
+    struct message_t ** msg_set =  malloc (  msg_num *  sizeof(struct message_t *) );
+    return msg_set;
+}
+
+void free_message_set(struct message_t ** message_set, int num) {
+    if ( message_set != NULL ) {
+        int i =0;
+        for ( i= 0; i<num; i++) {
+            free_message2(message_set[i], NO );
+        }
+    }
+}
+struct tuple_t * tuple_from_message(struct message_t * msg ) {
+    return msg == NULL ? NULL : msg->content.tuple;
+} 
 
 int message_size_bytes ( struct message_t * msg ) {
     return OPCODE_SIZE + C_TYPE_SIZE + message_content_size_bytes(msg);
@@ -80,7 +91,8 @@ int message_content_size_bytes ( struct message_t * msg ) {
         content_size_bytes = RESULT_SIZE;
     }
     else {
-        printf("Unrecognized message content type\n");
+        printf("Unrecognized message content type : value is %d\n", msg->c_type);
+
         content_size_bytes = TASK_FAILED;
     }
     
@@ -260,6 +272,10 @@ void free_message2(struct  message_t * message, int free_content) {
     free(message);
 }
 
+struct message_t * message_of_error () {
+    int taskFailedFlag = TASK_FAILED;
+    return message_create_with(OC_ERROR, CT_RESULT, &taskFailedFlag);
+}
 
 /*
  *  Verifies if message has error code or is NULL
@@ -421,7 +437,19 @@ void message_print ( struct message_t * msg ) {
     }
 }
 
+int message_opcode_setter (struct message_t * msg ) {
+    return msg != NULL && msg->opcode == OC_OUT;
+}
+int message_opcode_getter ( struct  message_t * msg) {
+    return msg != NULL && (msg->opcode == OC_IN || msg->opcode == OC_IN_ALL 
+            || msg->opcode == OC_COPY || msg->opcode == OC_COPY_ALL );
+}
 
+int message_opcode_size (struct message_t * msg ) {
+    return msg != NULL && msg->opcode == OC_SIZE;
+}
 
-
-
+int message_valid_opcode ( struct  message_t * msg ) {
+    return msg != NULL && 
+        ( message_opcode_setter(msg) || message_opcode_getter(msg) || message_opcode_size(msg) );
+}

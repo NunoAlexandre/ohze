@@ -10,8 +10,6 @@
 #define SD15_Product_network_utils_h
 
 #define RETRY_TIME 5
-int retry_connection;
-char* ip_address_copy_from_server;
 
 int split_address_port (const char *address_and_port, char * address, char * port );
 
@@ -24,6 +22,10 @@ int hostname_to_ip(char * hostname , char* ip);
 char * get_port (const char * address_and_port);
 
 char * get_address (const char * address_and_port);
+
+//module properties
+int retry_connection;
+char* ip_address_copy_from_server;
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.

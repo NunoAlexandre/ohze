@@ -55,18 +55,16 @@ void table_destroy(struct table_t *table) {
  * Devolve 0 (ok) ou -1 (out of memory, outros erros)
  */
 int table_put(struct table_t *table, struct tuple_t *tuple) {
-    
     int slot_index = table_slot_index(table, tuple_key(tuple));
-    
     if ( slot_index == -1)
         return -1;
     
     int taskSuccess = -1;
     
     struct list_t * target_list = table_slot_list(table, slot_index);
-  
+
     taskSuccess = list_add(target_list, entry_create(tuple));
-  
+
     return taskSuccess;
 }
 
@@ -81,8 +79,11 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
  */
 struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int whatToDOWithTheNodes, int one_or_all) {
     
-    if ( table == NULL || tup_template == NULL )
+    if ( table == NULL || tup_template == NULL ) {
+
+        puts("table == NULL");
         return NULL;
+    }
 
     //gets the slot index where to search or -1 (must search on every slots)
     int slotIndex =  table_slot_index(table, tuple_key(tup_template));
@@ -100,7 +101,8 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             //gets the list to search from
             struct list_t * list_to_search = table_slot_list(table, index);
 
-            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, whatToDOWithTheNodes, one_or_all);
+            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, 
+                    whatToDOWithTheNodes, one_or_all);
             
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
@@ -123,6 +125,39 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
 
 
     return allMatchingNodes;
+}
+
+int table_get_array(struct table_t *table, struct tuple_t *tup_template, 
+    int whatToDOWithTheNodes, int one_or_all, struct tuple_t *** matching_tuples)
+{
+
+    //gets the matching nodes on a list_t
+    //puts("table_get_array > tup_template is ");
+    //tuple_print(tup_template); printf("\n");
+    struct list_t * matching_nodes = table_get(table, tup_template, whatToDOWithTheNodes, one_or_all);
+    //puts("matching nodes is "); list_print(matching_nodes); printf("\n");
+    //gets the number of matching nodes
+    int matching_tuples_num = list_size(matching_nodes);
+
+    //since matching_nodes_num > 0 creates the array of tuples
+    *matching_tuples = tuple_create_array(matching_tuples_num);
+
+    int i =0;
+    node_t * currentNode = list_head(matching_nodes);
+    for (i = 0; i < matching_tuples_num; i++ ) {
+        //printf("will copy tuple %d\n",i );
+        //saves the tuple
+        (*matching_tuples)[i] = entry_value(node_entry(currentNode));
+        //moves to list next node
+        currentNode = currentNode->next;  
+    }
+
+    //in the end destroys the list to free memory
+    //tuple_array_destroy(matching_tuples, matching_tuples_num );
+    list_destroy(matching_nodes);
+
+    //returns the array matching_tuples
+    return matching_tuples_num;
 }
 
 void table_print( struct table_t * table )
