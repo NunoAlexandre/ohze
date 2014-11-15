@@ -17,6 +17,7 @@
 #include "list-private.h"
 #include <assert.h>
 #include "general_utils.h"
+#include "inet.h"
 
 struct message_t * message_create () {
     struct message_t * new_message = (struct message_t*) malloc ( sizeof(struct message_t) );
@@ -452,4 +453,22 @@ int message_opcode_size (struct message_t * msg ) {
 int message_valid_opcode ( struct  message_t * msg ) {
     return msg != NULL && 
         ( message_opcode_setter(msg) || message_opcode_getter(msg) || message_opcode_size(msg) );
+}
+
+
+
+long long swap_bytes_64(long long number)
+{
+    long long new_number;
+    
+    new_number = ((number & 0x00000000000000FF) << 56 |
+                  (number & 0x000000000000FF00) << 40 |
+                  (number & 0x0000000000FF0000) << 24 |
+                  (number & 0x00000000FF000000) << 8  |
+                  (number & 0x000000FF00000000) >> 8  |
+                  (number & 0x0000FF0000000000) >> 24 |
+                  (number & 0x00FF000000000000) >> 40 |
+                  (number & 0xFF00000000000000) >> 56);
+    
+    return new_number;
 }

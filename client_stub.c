@@ -17,6 +17,7 @@
 #include "network_utils.h"
 #include "client_stub.h"
 #include "message.h"
+#include "list-private.h"
 
 
 
@@ -44,24 +45,24 @@ int client_decision_to_take (struct message_t * msg_request, struct message_t * 
 int assign_opcode(int keep_tuples, int one_or_all){
     int opcode = OC_DOESNT_EXIST;
     
-    if (keep_tuples == NO && one_or_all == NO){
+    if (keep_tuples == DONT_KEEP_AT_ORIGIN && one_or_all == 1){
         opcode = OC_IN;
     }
     
-    else if (keep_tuples == NO && one_or_all == YES){
+    else if (keep_tuples == DONT_KEEP_AT_ORIGIN && one_or_all == 0){
         opcode = OC_IN_ALL;
     }
     
-    else if (keep_tuples == YES && one_or_all == NO){
+    else if (keep_tuples == KEEP_AT_ORIGIN && one_or_all == 1){
         opcode = OC_COPY;
     }
     
-    else if (keep_tuples == YES && one_or_all == YES){
+    else if (keep_tuples == KEEP_AT_ORIGIN && one_or_all == 0){
         opcode = OC_COPY_ALL;
     }
     
     else{
-        return TASK_FAILED;
+        opcode = TASK_FAILED;
     }
     
     return opcode;

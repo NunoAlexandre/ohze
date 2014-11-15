@@ -13,6 +13,7 @@
 #include "message-private.h"
 #include <assert.h>
 #include "general_utils.h"
+#include "inet.h"
 
 /* Função que cria um novo tuplo (isto é, que inicializa
  * a estrutura e aloca a memória necessária).

@@ -19,68 +19,44 @@
  */
 int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *message_content){
 
-    int task = TASK_FAILED;
+    int taskSuccess = TASK_FAILED;
     int keep_tuples = -1; //apenas para inicializar
     int one_or_all = -1; //apenas para inicializar
     
     switch (opcode) {
         case OC_SIZE: //TABLE SIZE REQUEST
-            task = rtable_size(rtable_to_consult);
-            if (task == TASK_FAILED){
+            taskSuccess = rtable_size(rtable_to_consult);
+            if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
             }
-//            puts("proceed_with_command > OC_SIZE > PASSEI AQUI!");
             break;
             
         case OC_OUT: //TABLE OUT REQUEST
-            task = rtable_out(rtable_to_consult, message_content);
-            if (task == TASK_FAILED){
+            taskSuccess = rtable_out(rtable_to_consult, message_content);
+            if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
             }
-//            puts("proceed_with_command > OC_OUT > PASSEI AQUI!");
             break;
             
-        case OC_IN: //TABLE IN REQUEST
-            keep_tuples = NO;
-            one_or_all = NO; //retira apenas 1?
-            task = TASK_SUCCEEDED;
-//            puts("proceed_with_command > OC_IN > PASSEI AQUI!");
-            break;
-            
-        case OC_IN_ALL: //TABLE IN_ALL REQUEST
-            keep_tuples = NO;
-            one_or_all = YES; //retira todos?
-            task = TASK_SUCCEEDED;
-//            puts("proceed_with_command > OC_IN_ALL > PASSEI AQUI!");
-            break;
-            
-        case OC_COPY: //TABLE COPY REQUEST
-            keep_tuples = YES;
-            one_or_all = NO; //copia apenas 1?
-            task = TASK_SUCCEEDED;
-//            puts("proceed_with_command > OC_COPY > PASSEI AQUI!");
-            break;
-            
-        case OC_COPY_ALL: //TABLE COPY_ALL REQUEST
-            keep_tuples = YES;
-            one_or_all = YES; //copia todos?
-            task = TASK_SUCCEEDED;
-//            puts("proceed_with_command > OC_COPY_ALL > PASSEI AQUI!");
-            break;
-            
+        case OC_IN:
+        case OC_IN_ALL:
+        case OC_COPY:
+        case OC_COPY_ALL:
+            keep_tuples = opcode == OC_IN || opcode == OC_IN_ALL ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
+            one_or_all = opcode == OC_IN || opcode == OC_COPY;
+            taskSuccess = TASK_SUCCEEDED;
+            break;            
         default:
-            task = TASK_FAILED;
-//            puts("proceed_with_command > DEFAULT > PASSEI AQUI!");
+            taskSuccess = TASK_FAILED;
             break;
     }
     
     //GETTER REQUESTS
-    if ((opcode != OC_SIZE ||opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
-        struct tuple_t **received_tuples; //será que tem de ser inicializado?
-        received_tuples = rtable_get(rtable_to_consult, message_content, keep_tuples, one_or_all);
+    if ((opcode != OC_SIZE && opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
+        rtable_get(rtable_to_consult, message_content, keep_tuples, one_or_all);
     }
     
-    return task;
+    return taskSuccess;
 }
 
 /*
@@ -89,7 +65,7 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
  */
 int process_command (const char* command, struct rtable_t* rtable_to_consult){
     
-    int task = TASK_FAILED;
+    int taskSuccess = TASK_FAILED;
     int opcode = find_opcode(command);
     int ctype = assign_ctype(opcode);
     
@@ -106,9 +82,9 @@ int process_command (const char* command, struct rtable_t* rtable_to_consult){
         message_content = &resultValue;
     }
     
-    task = proceed_with_command (opcode, rtable_to_consult, message_content);
+    taskSuccess = proceed_with_command (opcode, rtable_to_consult, message_content);
     
-    return task;
+    return taskSuccess;
 }
 
 /*
@@ -147,7 +123,7 @@ int test_input(int argc){
 
 int main(int argc , char *argv[]) {
 
-    int task = TASK_SUCCEEDED;
+    int taskSuccess = TASK_SUCCEEDED;
     
     /* 0. SIGPIPE Handling */
     struct sigaction s;
@@ -176,11 +152,11 @@ int main(int argc , char *argv[]) {
     //verifica se o rtable_bind funcionou
     if (rtable_to_consult == NULL){
 //        puts ("TABLE_CLIENT > ERROR WHILE CONNECTING TO RTABLE");
-        task = TASK_FAILED;
+        taskSuccess = TASK_FAILED;
         }
     
     //ligação foi bem sucessida
-    if (task == TASK_SUCCEEDED){
+    if (taskSuccess == TASK_SUCCEEDED){
         
         /* 3. LÊ COMANDO DO UTILIZADOR E FAZ CONSULTAS À TABELA */
         while ( keepGoing ) {
@@ -208,10 +184,10 @@ int main(int argc , char *argv[]) {
             else{
                 /******* O comando foi correcto e vai proceder à consulta da tabela *******/
                 //            puts("TABLE_CLIENT > STARTING TO PROCESS USER COMMAND!");
-                task = process_command(input, rtable_to_consult); //processa o pedido do utilizador
+                taskSuccess = process_command(input, rtable_to_consult); //processa o pedido do utilizador
  
                 //se pedido falhou e não é para repetir pedido tenta terminar de forma controlada
-                if (task == TASK_FAILED){
+                if (taskSuccess == TASK_FAILED){
                     keepGoing = NO; //para sair de forma controlada apesar de erro de ligação?
                     puts("\nFAILED TO CONSULT TABLE!/n");
                 }
@@ -240,5 +216,5 @@ int main(int argc , char *argv[]) {
     puts("\nSessão terminada!\n");
     puts("SEE YOU LATER ALLIGATOR!");
     //termina processo com sinal de successo
-    return task;
+    return taskSuccess;
 }

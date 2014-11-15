@@ -15,10 +15,7 @@
 #define YES 1
 #define NO  0
 
-#define N_MAX_CLIENTS 10
-#define POLL_TIME_OUT 10
 
-#define N_TABLE_SLOTS 7
 
 
 #define CLIENT_RECEIVE_TUPLES 1

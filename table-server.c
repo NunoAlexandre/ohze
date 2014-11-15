@@ -18,6 +18,11 @@
 #include <limits.h>
 #include <sys/uio.h>
 
+
+#define N_MAX_CLIENTS 10
+#define POLL_TIME_OUT 10
+#define N_TABLE_SLOTS 7
+
 int server_run ( int portnumber ) {
 
     /** 0. SIGPIPE Handling */
@@ -116,7 +121,7 @@ int server_run ( int portnumber ) {
             int i = 0;
             for (i = 1; i < connected_fds; i++) {// Todas as ligações
 
-               if (connections[i].revents & POLLIN) { // Dados para ler ?
+               if (connections[i].revents & POLLIN && connections[i].fd != -1) { // Dados para ler ?
 
                 connection_socket_fd = connections[i].fd;
                 printf("> serving client with socket_fd %d\n", connection_socket_fd);

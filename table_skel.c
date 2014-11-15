@@ -39,63 +39,34 @@ struct table_t * table = NULL;
  	return TASK_SUCCEEDED;
  }
 
-
- int table_skel_error(struct message_t *** msg_set_out ) {
- 	*msg_set_out = message_create_set(1);
- 	if ( msg_set_out == NULL || *msg_set_out == NULL) return TASK_FAILED;
- 	*msg_set_out[0] = message_of_error();
- 	if ( *msg_set_out[0] == NULL ) return TASK_FAILED;
-
- 	return 1;
- }
-
- int table_skel_size (struct message_t * msg_in, struct message_t *** msg_set_out ) {
-	//checks
- 	if ( msg_in == NULL || ! message_opcode_size(msg_in))
- 		return TASK_FAILED;
-
-	//gets the table size (number of tuples on it)
- 	int tablesize = table_size(table);
-
+int init_response_with_message(struct message_t *** msg_set_out, int set_size, struct message_t * first_message) {
 	//the array msg_set_out points to is now a set with one pointer to a message
- 	*msg_set_out = message_create_set(1);
+ 	*msg_set_out = message_create_set(set_size);
  	//error case
  	if ( *msg_set_out == NULL) return TASK_FAILED;
 
 	//so the first elem of the array is the message with the table size
- 	(*msg_set_out)[0] = message_create_with(msg_in->opcode+1, CT_RESULT, &tablesize);
+ 	(*msg_set_out)[0] = first_message;
 	//error case
  	if ( (*msg_set_out[0]) == NULL ) return TASK_FAILED;
 
-	//returns number of response messages
- 	return 1; 
+ 	return set_size;
+}
+
+ int table_skel_error(struct message_t *** msg_set_out ) {
+ 	return init_response_with_message(msg_set_out, 1, message_of_error());
+ }
+
+ int table_skel_size (struct message_t * msg_in, struct message_t *** msg_set_out ) {
+ 	int tablesize = table_size(table);
+ 	printf("tablesize is %d\n",  tablesize);
+	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &tablesize));
  }
  int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out ) {
-	
-	//checks if invalid arguments
- 	if ( msg_in == NULL || ! message_opcode_setter(msg_in)) 
- 		return TASK_FAILED;
- 	
-	//adds the tuple to the table and returns in error case
- 	struct tuple_t * newTuple = tuple_dup(msg_in->content.tuple);
- 	if ( table_put( table,newTuple ) == TASK_FAILED ) 
- 		return TASK_FAILED;
-
-	/** if it gets to here the tuple was added and message is only one: of success **/
-
-	//the array msg_set_out points to is now a set with one pointer to a message
- 	*msg_set_out = message_create_set(1);
- 	//error case
- 	if ( *msg_set_out == NULL) return TASK_FAILED;
-
+ 	//puts the new tuple
+ 	int successValue = table_put(table, msg_in->content.tuple);
 	//so the first elem of the array is the message with the success value 
- 	int successValue = TASK_SUCCEEDED;
- 	(*msg_set_out)[0] = message_create_with(msg_in->opcode+1, CT_RESULT, &successValue);
-	//if it went wrong
- 	if ( (*msg_set_out[0]) == NULL ) return TASK_FAILED; 
-
-	//returns number of response messages
- 	return 1; 
+ 	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &successValue));
  }
 
  int table_skel_get (struct message_t * msg_in, struct message_t *** msg_set_out ) {
@@ -127,12 +98,10 @@ struct table_t * table = NULL;
  	int msgs_opcode = msg_in->opcode + 1;
 
     //gets room for ntuples + 1 (msg with number of tuples) message_t pointers
- 	*msg_set_out = message_create_set(1+ntuples);
-	//error case
- 	if ( *msg_set_out == NULL) return TASK_FAILED;
+    int n_messages = init_response_with_message(msg_set_out, 1 + ntuples, message_create_with(msgs_opcode, CT_RESULT, &ntuples));
 
-	//so the first elem of the array is the message with the number of tuples
- 	(*msg_set_out)[0] = message_create_with(msgs_opcode, CT_RESULT, &ntuples);
+    if ( n_messages == TASK_FAILED)
+    	return TASK_FAILED;
 
  	int i = 1;
  	int sent_successfully = YES;
@@ -148,17 +117,21 @@ struct table_t * table = NULL;
  		i++;
  	}
     //number of message is the first message saying number of nodes followed by each tuple message
- 	return  sent_successfully ? 1+ntuples : TASK_FAILED;
+ 	return  sent_successfully ? n_messages : TASK_FAILED;
  }
 
-/*
-* Resolves the response to msg_in. Saves the response message(s) on msg_set_out
-* and returns the number of message that composes it. 
-*/
-int resolve_response (struct message_t *msg_in, struct message_t ***msg_set_out) {
-	//checks the message opcode to know what to do -> opcode_valid
-	//for each opcode gets the number of messages to return
-	if ( ! message_valid_opcode(msg_in))
+
+
+/* Executa uma operação (indicada pelo opcode na msg_in) e retorna o(s)
+ * resultado(s) num array de mensagens (struct message_t **msg_set_out).
+ * Retorna o número de mensagens presentes no array msg_set_out ou -1 
+ * (erro, por exemplo, tabela não inicializada).
+ */
+ int invoke(struct message_t *msg_in, struct message_t ***msg_set_out) {
+ 	if ( table == NULL )
+ 		return TASK_FAILED;
+
+ 	if ( ! message_valid_opcode(msg_in))
 		return TASK_FAILED;
 
 	//by default the number of messages is TASK_FAILED
@@ -174,18 +147,4 @@ int resolve_response (struct message_t *msg_in, struct message_t ***msg_set_out)
 		number_of_msgs = table_skel_size(msg_in, msg_set_out);
 	}
 	return number_of_msgs;
-}
-
-/* Executa uma operação (indicada pelo opcode na msg_in) e retorna o(s)
- * resultado(s) num array de mensagens (struct message_t **msg_set_out).
- * Retorna o número de mensagens presentes no array msg_set_out ou -1 
- * (erro, por exemplo, tabela não inicializada).
- */
- int invoke(struct message_t *msg_in, struct message_t ***msg_set_out) {
- 	if ( table == NULL )
- 		return TASK_FAILED;
-
- 	int msg_number = resolve_response (msg_in, msg_set_out);
-
- 	return msg_number;
  }
