@@ -19,7 +19,7 @@
     #include <sys/uio.h>
 
 
-    #define N_MAX_CLIENTS 10
+    #define N_MAX_CLIENTS 4
     #define POLL_TIME_OUT 10
     #define N_TABLE_SLOTS 7
 
@@ -125,12 +125,15 @@
                     //flag to check if socket is on or was closed on client side.
                     int socket_is_on = YES;
 
-                    // checks if this socket is open. If it isnt, it sets it to -1 and 
+                    // checks if this socket was closed on the client side. 
+                    // If it's closed, it sets it to -1 and 
                     //decrements the number of connected_fds
-                    if ( ! socket_is_open(connections[i].fd) ) {
+                    if ( socket_is_closed(connections[i].fd) ) {
                         socket_is_on = NO;
                         close(connections[i].fd);
-                        socket_got_closed( &(connections[i].fd) );
+                        connections[i].fd = -1;
+                        connections[i].events = 0;
+                        connections[i].revents = 0;
                         connected_fds--;
                     }
 
@@ -154,6 +157,9 @@
                     int response_messages_num = invoke(client_request, &response_message);
             // error case
                     failed_tasks+= response_messages_num <= 0 || response_message == NULL;
+
+
+                    sleep(1);
 
             //sends the response to the client
                     int message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);

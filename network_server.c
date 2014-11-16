@@ -27,7 +27,6 @@ struct message_t * server_receive_request(int socketfd ) {
 
 int server_send_response(int socketfd, int number_of_messages, struct message_t ** response_messages) {
     if ( number_of_messages <= 0 || response_messages == NULL ) {
-        printf("number of messages %d or msgs null\n", number_of_messages );
         return TASK_FAILED;
     }
     

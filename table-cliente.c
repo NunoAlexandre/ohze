@@ -181,15 +181,12 @@ int main(int argc , char *argv[]) {
             
             else{
                 /******* O comando foi correcto e vai proceder à consulta da tabela *******/
-                //            puts("TABLE_CLIENT > STARTING TO PROCESS USER COMMAND!");
                 taskSuccess = process_command(input, rtable_to_consult); //processa o pedido do utilizador
  
                 //se pedido falhou e não é para repetir pedido tenta terminar de forma controlada
                 if (taskSuccess == TASK_FAILED){
-                    keepGoing = NO; //para sair de forma controlada apesar de erro de ligação?
-                    puts("\nFAILED TO CONSULT TABLE!/n");
+                    puts("\t--- failed to consult table\n");
                 }
-                //            puts("TABLE_CLIENT > ENDED TO PROCESS USER COMMAND!");
             } //termina o processamento do user_command
         } //sai do while(keepGoing)
     }
@@ -207,12 +204,10 @@ int main(int argc , char *argv[]) {
     }
 
     if (unbind == TASK_FAILED){
-        puts("TABLE_CLIENT > Unable to unbind!");
         return TASK_FAILED;
     }
 
     puts("\nSessão terminada!\n");
-    puts("SEE YOU LATER ALLIGATOR!");
     //termina processo com sinal de successo
     return taskSuccess;
 }

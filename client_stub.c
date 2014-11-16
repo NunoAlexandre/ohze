@@ -174,7 +174,6 @@ int rtable_unbind(struct rtable_t *rtable){
     //faz um network_close ao servidor
     task = network_close(connected_server);
     if(task == TASK_FAILED){
-        puts("rtable_unbind > failed to network_close");
         return TASK_FAILED;
     }
     
@@ -307,9 +306,7 @@ int rtable_size(struct rtable_t *rtable){
     
     //faz verificação da mensagem recebida
     if (received_msg == NULL) {
-            puts ("CLIENT-STUB > RTABLE_SIZE > Failed to send/receive message");
             return TASK_FAILED;
-        
     }
     
     //verifica se a mensagem recebida foi de sucesso

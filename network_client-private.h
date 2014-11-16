@@ -32,6 +32,12 @@ struct server_t *network_reconnect(struct server_t *server_to_connect);
  */
 int network_retransmit (int socketfd);
 
+
+//module property
+int retry_connection;
+
+void network_reset_retransmissions();
+
 #endif
 
 

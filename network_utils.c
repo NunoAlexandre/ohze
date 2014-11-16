@@ -45,7 +45,6 @@ int portnumber_is_invalid (int portNumber ) {
     return portNumber <= 0 || ((portNumber >=1 && portNumber<=1023) || (portNumber >=49152 && portNumber<=65535));
 }
 
-
 /*
  Get ip from domain name
  */
@@ -72,23 +71,19 @@ int hostname_to_ip(char * hostname , char* ip){
     return TASK_FAILED;
 }
 
-int socket_got_closed(int * socket_fd ) {
-    char * buffer = malloc (1); 
-    if ( recv(*socket_fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0 ) {
-        *socket_fd = -1;
-    }
-    //if socket is not -1 then its opened 
-    return *socket_fd == -1;
-} 
-
 int socket_is_open(int socket_fd ) {
     char * buffer = malloc (1); 
     if ( recv(socket_fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0 ) {
         socket_fd = -1;
     }
+    free(buffer);
     //if socket is not -1 then its opened 
     return socket_fd != -1;
 }
+
+int socket_is_closed(int socket_fd ) {
+    return ! socket_is_open(socket_fd);
+} 
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
@@ -97,14 +92,20 @@ int socket_is_open(int socket_fd ) {
  * than nbytesToWrite something went wrong.
  */
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
+    //checks if socket is closed...
+    if ( socket_is_closed(socket_fd) )
+        return TASK_FAILED;
 
     int bufsize = bytesToWrite;
 
     while(bytesToWrite>0 ) {
+        //checks it to avoid issues
+        if ( socket_is_closed(socket_fd) )
+            return TASK_FAILED;
+        //if its open then it can write into it.
         int writtenBytes = (int) write(socket_fd, buffer, bytesToWrite);
         if(writtenBytes<0) {
             if(errno==EINTR) continue;
-            perror("network_server > write_all > failed");
             return writtenBytes;
         }
        
@@ -123,9 +124,18 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  * than nbytesToRead something went wrong.
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
+
+    //checks if socket is closed
+    if ( socket_is_closed(socket_fd) )
+        return TASK_FAILED;
+
     int bufsize = nBytesToRead;
 
     while ( nBytesToRead > 0 ) {
+         //checks it to avoid issues
+        if ( socket_is_closed(socket_fd) )
+            return TASK_FAILED;
+
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
         if ( nReadedBytes < 0 ) {
             if(errno==EINTR) continue;
@@ -166,7 +176,11 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //converts it to network format
     int message_size_n = htonl(message_size);
     //sends the size of the message
-    if ( write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE) != BUFFER_INTEGER_SIZE ) {
+    int writtenBytes = 0;
+    if ( (writtenBytes = write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
+        if ( writtenBytes == TASK_FAILED )
+            printf("\t--- failed: socket is closed\n");
+
         return TASK_FAILED;
     }
     //and sends the message
@@ -191,7 +205,6 @@ struct message_t* receive_message (int connection_socket_fd) {
 
     // 1. Lê tamanho da mensagem que a ser recebida
     if ( (read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
-        perror("receive_message -> failed to read message size\n");
         return NULL;
     }
      // 1.1 Converte tamanho da mensagem para formato cliente
