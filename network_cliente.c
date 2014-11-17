@@ -226,7 +226,7 @@ struct server_t *network_reconnect(struct server_t *server_to_connect){
 int network_retransmit (int socket_fd){
     
     if (retry_connection == YES ) {
-        puts ("\t--- will try to retransmit");
+        puts ("\t--- will try to reconect");
         retry_connection = NO;
         return YES;
     }

@@ -125,24 +125,16 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
 
-    //checks if socket is closed
-    if ( socket_is_closed(socket_fd) )
-        return TASK_FAILED;
-
     int bufsize = nBytesToRead;
 
     while ( nBytesToRead > 0 ) {
-         //checks it to avoid issues
-        if ( socket_is_closed(socket_fd) )
-            return TASK_FAILED;
 
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
-        if ( nReadedBytes < 0 ) {
+        //if nReadedBytes is -1 (error) or 0 (socket closed)
+        if ( nReadedBytes <= 0 ) {
             if(errno==EINTR) continue;
-            perror("network_server > read_all > failed");
-            return nReadedBytes;
+            return TASK_SUCCEEDED;
         }
-
         //moves buffer pointer
         buffer += nReadedBytes;
         //bytes to write

@@ -280,8 +280,6 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
  */
 int rtable_size(struct rtable_t *rtable){
     
-//    puts("CLIENT-STUB > RTABLE_SIZE > STARTING...");
-
     int value = 0; //elem to send
     int rtable_size = TASK_FAILED;
     
@@ -292,7 +290,6 @@ int rtable_size(struct rtable_t *rtable){
     struct message_t *message_to_send = message_create_with(OC_SIZE , CT_RESULT,&value);
     
     if(message_to_send == NULL){
-        puts("CLIENT-STUB > RTABLE_SIZE > ERROR WHILE CREATING MESSAGE_TO_SEND!");
         free(message_to_send);
         free(connected_server);
         return TASK_FAILED;
@@ -311,7 +308,6 @@ int rtable_size(struct rtable_t *rtable){
     
     //verifica se a mensagem recebida foi de sucesso
     if (response_with_success(message_to_send, received_msg) == NO){
-        puts("CLIENT-STUB > RTABLE_SIZE > RECEIVED MESSAGE WITH ERROR OPCODE or OPCODE UNEXPECTED.");
         free(message_to_send);
         free(received_msg);
         free(connected_server);
