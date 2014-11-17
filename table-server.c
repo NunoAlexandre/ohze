@@ -33,6 +33,19 @@ int get_open_slot(struct pollfd * connections, int connected_fds) {
     return open_slot;
 }
 
+int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
+    int i = currentHighest;
+    int highest = i-1;
+    int stillSearching = YES;
+    while ( (i-- > 1) && stillSearching ) {
+        if ( connections[i].fd != -1 ) {
+            highest = i;
+            stillSearching = NO;
+        }
+    } 
+    return highest;
+}
+
 int server_run ( int portnumber ) {
 
             /** 0. SIGPIPE Handling */
@@ -110,42 +123,54 @@ int server_run ( int portnumber ) {
         connections[i].revents = 0;
     }
 
-            //for now only the listening socket
+    //for now only the listening socket
     int connected_fds = 1;
-            // to save the result from poll function
+    //saves the highet connection index
+    int highestIndexConnection = 0;
+    // to save the result from poll function
     int polled_fds = 0; 
 
             // Gets clients connection requests and handles its requests
     printf("\n--------- waiting for clients requests ---------\n");
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
                 //if there was any polled sockets fd with events
-        if (polled_fds > 0){ 
+        if ( polled_fds > 0 ) { 
                      if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  // Pedido na listening socket ?
-                        int open_slot = get_open_slot(&connections, connected_fds); 
+                        int open_slot = get_open_slot(connections, connected_fds); 
                         if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
                             connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
                             connected_fds++;
+                            //updates the highest index connection if needed.
+                            if ( open_slot > highestIndexConnection )
+                                highestIndexConnection = open_slot;
+
+                            printf("\t the highestIndexConnection is %d \n", highestIndexConnection);
                         }
                     }
 
-
                     //for each connected cliente it will receive a request and give a response
                     int i = 0;
-                    for (i = 1; i < connected_fds; i++) {// Todas as ligações
+                    for (i = 1; i <= highestIndexConnection; i++) {// Todas as ligações
 
                         //flag to check if socket is on or was closed on client side.
                         int socket_is_on = YES;
-
                         // checks if this socket was closed on the client side. 
                         // If it's closed, it sets it to -1 and 
                         //decrements the number of connected_fds
-                        if ( socket_is_closed(connections[i].fd) ) {
+                        if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
                             socket_is_on = NO;
+                            //if it was not reseted yet...
                             close(connections[i].fd);
                             connections[i].fd = -1;
                             connections[i].events = 0;
                             connections[i].revents = 0;
                             connected_fds--;
+                            
+                            //if this was the highestIndexConnection now its the previous one
+                            if ( i == highestIndexConnection )
+                                highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
+
+                            printf("\t the highestIndexConnection is %d \n", highestIndexConnection);
                         }
 
                        if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
