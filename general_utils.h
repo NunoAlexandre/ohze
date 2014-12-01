@@ -23,4 +23,7 @@
 
 int is_number (char * stringWithNumber );
 
+
+int get_all_servers(char * filePath, int *number_of_servers, void ** all_servers);
+
 #endif

@@ -259,6 +259,9 @@ int server_run ( int portnumber ) {
         }
         printf("\n> SD15_SERVER is waiting connections at port %d\n", portNumber);
 
+        int k = 0;
+        get_all_servers("./SD15-Project/sd15_system_config", &k,  NULL);
+
         server_run(portNumber);
 
 
