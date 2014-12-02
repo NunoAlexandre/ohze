@@ -25,6 +25,7 @@ char * get_port (const char * address_and_port) {
     strtok(address_and_port_pointer, ":");
     char * port = strdup(strtok(NULL,":"));
     free(address_and_port_pointer);
+
     return port;
 }
 
@@ -34,6 +35,7 @@ char * get_address (const char * address_and_port) {
     // fica com o endereço
     char * address = strdup(strtok(address_and_port_pointer, ":"));
     free(address_and_port_pointer);
+    
     return address;
 }
 

@@ -8,6 +8,9 @@
 #ifndef SD15_Product_general_utils_h
 #define SD15_Product_general_utils_h
 
+#include "network_client-private.h"
+
+
 #include <unistd.h>
 
 #define TASK_FAILED -1
@@ -15,7 +18,7 @@
 #define YES 1
 #define NO  0
 
-
+#define SWITCH_SERVER_IDENTIFIER "S"
 
 
 #define CLIENT_RECEIVE_TUPLES 1
@@ -23,7 +26,7 @@
 
 int is_number (char * stringWithNumber );
 
-
-int get_all_servers(char * filePath, int *number_of_servers, void ** all_servers);
-
+int get_all_servers(char * filePath, int *number_of_servers, struct server_t *** all_servers );
+int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t * server);
+int get_server_from(char * lineWithServerInfo,  struct server_t * server);
 #endif

@@ -438,6 +438,14 @@ void message_print ( struct message_t * msg ) {
     }
 }
 
+int message_is_writer(struct message_t *msg) {
+    return message_opcode_getter(msg) || message_opcode_setter(msg);
+}
+int message_is_reader(struct message_t *msg) {
+    return ! message_is_writer(msg);
+}
+
+
 int message_opcode_setter (struct message_t * msg ) {
     return msg != NULL && msg->opcode == OC_OUT;
 }

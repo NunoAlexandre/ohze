@@ -262,6 +262,8 @@ int server_run ( int portnumber ) {
         int k = 0;
         get_all_servers("./SD15-Project/sd15_system_config", &k,  NULL);
 
+        get_switch_server("./SD15-Project/sd15_system_config", NULL);
+
         server_run(portNumber);
 
 
