@@ -19,18 +19,11 @@
 #include "general_utils.h"
 #include "inet.h"
 
-/*
- * Creates a message_t
- */
 struct message_t * message_create () {
     struct message_t * new_message = (struct message_t*) malloc ( sizeof(struct message_t) );
     return new_message;
 }
 
-/*
- * Creates a message with the given attributes.
- * (Atualizado para Projeto 5)
- */
 struct message_t * message_create_with ( int opcode, int content_type, void * element  ) {
     
     struct message_t * new_message = message_create();
@@ -50,12 +43,6 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
             case CT_RESULT:
                 new_message->content.result = * ((int *) element);
                 break;
-                // * (Atualizado para Projeto 5) - TOKEN
-            case CT_SFAILURE:
-            case CT_SRUNNING:
-                new_message->content.token = element;
-                break;
-                
             default:
                 break;
         }
@@ -63,18 +50,11 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
     
     return new_message;
 }
-
-/*
- * Creates an array of msg_num messages
- */
 struct message_t ** message_create_set ( int msg_num ) {
     struct message_t ** msg_set =  malloc (  msg_num *  sizeof(struct message_t *) );
     return msg_set;
 }
 
-/*
- * Frees num messages from message_set
- */
 void free_message_set(struct message_t ** message_set, int num) {
     if ( message_set != NULL ) {
         int i =0;
@@ -83,27 +63,14 @@ void free_message_set(struct message_t ** message_set, int num) {
         }
     }
 }
-
-/*
- * Returns the tuple_t from the message or NULL if msg is NULL.
- * Assumes the invoker knows what he is doing, ie., that
- * the message contains a tuple as its content.
- */
 struct tuple_t * tuple_from_message(struct message_t * msg ) {
     return msg == NULL ? NULL : msg->content.tuple;
-}
+} 
 
-/*
- * Returns the size of the given message in bytes.
- */
 int message_size_bytes ( struct message_t * msg ) {
     return OPCODE_SIZE + C_TYPE_SIZE + message_content_size_bytes(msg);
 }
 
-/*
- * Returns the size in bytes of the message's content.
- * (Atualizado para Projeto 5)
- */
 int message_content_size_bytes ( struct message_t * msg ) {
     
     if ( msg == NULL) {
@@ -124,25 +91,15 @@ int message_content_size_bytes ( struct message_t * msg ) {
     else if ( msg->c_type == CT_RESULT ) {
         content_size_bytes = RESULT_SIZE;
     }
-    
-    // * (Atualizado para Projeto 5)
-    else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING){
-        content_size_bytes = token_size_bytes (msg->content.token);
-    }
-    
     else {
         printf("Unrecognized message content type : value is %d\n", msg->c_type);
-        
+
         content_size_bytes = TASK_FAILED;
     }
     
     return content_size_bytes;
 }
 
-/*
- *  Serializes content of a given message_t
- * (Atualizado para Projeto 5)(CT_SFAILURE || CT_SRUNNING)
- */
 int message_serialize_content ( struct message_t * message, char ** buffer ) {
     
     int buffer_size = 0;
@@ -159,12 +116,6 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
         memcpy(buffer[0], &result_to_network, RESULT_SIZE);
         buffer_size = RESULT_SIZE;
     }
-    
-    // * (Atualizado para Projeto 5)
-    else if (message->c_type == CT_SFAILURE || message->c_type == CT_SRUNNING){
-        buffer_size = token_serialize(message->content.token, buffer);
-    }
-    
     else {
         printf("message_serialize_content : invalide C_TYPE\n");
         buffer_size=TASK_FAILED;
@@ -187,16 +138,11 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
  *
  * ct_type	dados
  * TUPLE	DIMENSION	ELEMENTSIZE	ELEMENTDATA	...
- *          [4 bytes]	 [4 bytes]	[ES bytes]
- *
+ *		[4 bytes]	 [4 bytes]	[ES bytes]
  * ENTRY	TIMESTAMP 	DIMENSION	ELEMENTSIZE ELEMENTDATA
- *		    [8 bytes] 	[4 bytes]	 [4 bytes]	[ES bytes]	...
- *
+ *		          [8 bytes] 	[4 bytes]	 [4 bytes]	[ES bytes]	...
  * RESULT	RESULT
- *          [4 bytes]
- *
- * TOKEN    DIMENSION   TOKENDATA
- *          [4 BYTES]   [TD BYTES]
+ *		[4 bytes]
  *
  */
 int message_to_buffer(struct message_t *msg, char **msg_buf) {
@@ -208,23 +154,23 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     int msg_buffer_size = message_size_bytes ( msg );
     //allocs the memory
     *msg_buf = (char*) malloc( msg_buffer_size );
-    
+
     //offset
     int offset = 0;
     
     //1. adds the opcode to the buffer
     int opcode_to_network = htons(msg->opcode);
-    
+
     memcpy(msg_buf[0]+offset, &opcode_to_network, OPCODE_SIZE);
-    
+
     //moves offset
     offset+=OPCODE_SIZE;
     
     //2. adds the content type code
     int ctype_to_network = htons(msg->c_type);
-    
+
     memcpy(msg_buf[0]+offset, &ctype_to_network, C_TYPE_SIZE);
-    
+
     //moves the offset
     offset+=C_TYPE_SIZE;
     
@@ -236,20 +182,18 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     if ( message_serialized_content_size == TASK_FAILED || message_serialized_content == NULL) {
         return TASK_FAILED;
     }
-    
+
     //adds the content into the buffer
     memcpy(msg_buf[0]+offset, message_serialized_content, message_serialized_content_size);
-    
+
     //frees it
     free(message_serialized_content);
-    
+
     
     return msg_buffer_size;
 }
 
-/* 
- * Transforma uma mensagem em buffer para uma struct message_t*
- * (Atualizado para Projeto 5)
+/* Transforma uma mensagem em buffer para uma struct message_t*
  */
 struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     
@@ -293,15 +237,6 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
             message_content = &result_host;
             break;
         }
-            
-            // * (Atualizado para Projeto 5)
-        case CT_SRUNNING:
-        case CT_SFAILURE:
-        {
-            message_content = token_deserialize (msg_buf + offset, msg_size-offset);
-        }
-            
-            
         default:
             break;
     }
@@ -312,45 +247,32 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     
     //finally creates the message with all its components
     struct message_t * message = message_create_with(opcode_host, ctype_host, message_content);
-
+    
     return message != NULL ? message : NULL;
 }
 
-/*
- *  Liberta a memoria alocada na função buffer_to_message
+/* Liberta a memoria alocada na função buffer_to_message
  */
 void free_message(struct message_t *message) {
-    free_message2(message, YES);
+    free_message2(message, YES);    
 }
 
-/*
- * More flexible free_message function that gets the option free_content (YES/NO).
- * (Atualizado para Projeto 5)
- */
 void free_message2(struct  message_t * message, int free_content) {
     if ( message == NULL)
         return;
-    
-    if ( free_content ) {
-        if ( message->c_type == CT_TUPLE ) {
-            tuple_destroy(message->content.tuple);
-        }
+
+    if ( free_content ) { 
+         if ( message->c_type == CT_TUPLE ) {
+             tuple_destroy(message->content.tuple);
+         }
         else if ( message->c_type == CT_ENTRY ) {
             entry_destroy(message->content.entry);
         }
-
-        // * (Atualizado para Projeto 5)
-        else if (message->c_type == CT_SFAILURE || message->c_type == CT_SRUNNING){
-            free(message->content.token);
-        }
-    }
+    } 
     
     free(message);
 }
 
-/*
- * Creates an error message
- */
 struct message_t * message_of_error () {
     int taskFailedFlag = TASK_FAILED;
     return message_create_with(OC_ERROR, CT_RESULT, &taskFailedFlag);
@@ -364,14 +286,14 @@ int message_error (struct message_t* tested_msg){
 }
 
 /*
- * Checks if response_msg means success upon the request_msg. YES or NO
+ * função que compara duas mensagens - response with success --- DECLARAR EM MESSAGE-PRIVATE.H
  */
-int response_with_success ( struct message_t* request_msg, struct message_t* response_msg){
+int response_with_success ( struct message_t* request_msg, struct message_t* received_msg){
     
     int opcode_req = request_msg->opcode;
-    int opcode_resp = response_msg->opcode;
-    
-    if (message_error(response_msg)) {
+    int opcode_resp = received_msg->opcode;
+ 
+    if (message_error(received_msg)) {
         puts(" (received message is an error message)");
         return NO;
     }
@@ -386,6 +308,7 @@ int response_with_success ( struct message_t* request_msg, struct message_t* res
 /*
  *  Find opcode form user input
  */
+
 int find_opcode(const char *input ){
     
     char * input_dup = strdup(input);
@@ -468,7 +391,8 @@ int assign_ctype (int opcode){
             ctcode = CT_RESULT;
             break;
         }
-
+            
+            
         default:
             ctcode = TASK_FAILED;
             break;
@@ -477,17 +401,13 @@ int assign_ctype (int opcode){
     return ctcode;
 }
 
-/*
- * Returns a message_t * built from the command string.
- * Assumes the command is valid.
- */
 struct message_t * command_to_message (const char * command) {
     //get opcode
     int opcode = find_opcode(command);
     
     //get ctype
     int ctype = assign_ctype(opcode);
-    
+
     void * message_content = NULL;
     
     if ( ctype == CT_TUPLE ) {
@@ -499,14 +419,10 @@ struct message_t * command_to_message (const char * command) {
     }
     //create and return message
     struct message_t * message = message_create_with(opcode, ctype, message_content);
-    
+
     return message;
 }
 
-/*
- * Prints a given message.
- * (Atualizado para Projeto 5)
- */
 void message_print ( struct message_t * msg ) {
     if ( msg == NULL )
         printf(" [null message] ");
@@ -516,146 +432,30 @@ void message_print ( struct message_t * msg ) {
             tuple_print(msg->content.tuple);
             printf(" ] ");
         }
-        
-        // * (Atualizado para Projeto 5)
-        else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING ){
-            printf (" [%hd , %hd , %s ", msg->opcode, msg->c_type, msg->content.token);
-        }
-        
         else if ( msg->c_type == CT_RESULT ) {
             printf(" [%hd , %hd , %d ] ", msg->opcode, msg->c_type, msg->content.result );
         }
     }
 }
 
-/*
- * Check is message has opcode report (Criado para Projeto 5)
- */
-int message_opcode_report (struct message_t * msg){
-    return msg != NULL && msg->opcode == OC_REPORT;
-}
-
-/*
- * Check is message has opcode setter
- */
 int message_opcode_setter (struct message_t * msg ) {
     return msg != NULL && msg->opcode == OC_OUT;
 }
-
-/*
- * Check is message has opcode getter
- */
 int message_opcode_getter ( struct  message_t * msg) {
-    return msg != NULL && (msg->opcode == OC_IN || msg->opcode == OC_IN_ALL
-                           || msg->opcode == OC_COPY || msg->opcode == OC_COPY_ALL );
+    return msg != NULL && (msg->opcode == OC_IN || msg->opcode == OC_IN_ALL 
+            || msg->opcode == OC_COPY || msg->opcode == OC_COPY_ALL );
 }
 
-/*
- * Check is message has opcode size
- */
 int message_opcode_size (struct message_t * msg ) {
     return msg != NULL && msg->opcode == OC_SIZE;
 }
 
-/*
- * Checks if the msg's opcode is valid/exists. YES or NO
- * (Atualizado para projeto 5)
- */
 int message_valid_opcode ( struct  message_t * msg ) {
-    return msg != NULL &&
-    ( message_opcode_setter(msg) || message_opcode_getter(msg) || message_opcode_size(msg) || message_opcode_report(msg) );
+    return msg != NULL && 
+        ( message_opcode_setter(msg) || message_opcode_getter(msg) || message_opcode_size(msg) );
 }
 
-/*
- * Returns the size (bytes) of a given token (Criado para Projeto 5)
- */
-int token_size_bytes (char* token){
-    
-    if ( token == NULL)
-        return -1;
-    
-    int nBytes = 0;
-    nBytes += strlen(token);
-    return nBytes;
-}
 
-/*
- * Serializes a given token (Criado para Projeto 5)
- */
-int token_serialize(char* token, char **buffer) {
-    
-    if ( token == NULL)
-        return TASK_FAILED;
-    
-    //1. Alocar memória para token (n bytes para alocar)
-    int buffer_size = 0;
-    int size_of_token = token_size_bytes(token);
-    //1.1 Cria buffer com n bytes
-    buffer[0] = (char*) malloc(size_of_token+TOKEN_STRING_SIZE); //aloca tamanho total do token + TOKEN_STRING_SIZE
-    //para gerir preenchimento do buffer
-    int offset = 0;
-    
-    //2. Insere dimensão do TOKEN
-    //2.1 Tamanho do token para formato rede
-    int size_of_token_htonl = htonl(size_of_token); //
-    //2.2 Copia o tamanho do TOKEN para o buffer
-    memcpy((buffer[0]+offset), &size_of_token_htonl, TOKEN_STRING_SIZE);
-    //2.3 Atualiza offset
-    offset+=TOKEN_STRING_SIZE;
-    
-    //3. Copia o TOKEN para o buffer
-    memcpy((buffer[0]+offset), token, size_of_token);
-    //3.1 Atualiza offset
-    offset+=size_of_token;
-    
-    //4. Atualiza o tamanho do buffer (TOKEN_STRING_SIZE + token_size_bytes(token)
-    buffer_size = size_of_token + TOKEN_STRING_SIZE;
-    //4.1 Verifica se o que recebeu é maior do que a memória disponivel
-    if ( offset > buffer_size) {
-        free (buffer[0]);
-        return TASK_FAILED;
-    }
-
-    //5. Devolve o tamanho do buffer
-    return buffer_size;
-}
-
-/*
- * Deserializes a given token (Criado para Projeto 5)
- */
-char* token_deserialize(char* buffer, int size) {
-    
-    if ( buffer == NULL )
-        return NULL;
-    
-    //para gerir preenchimento do buffer
-    int offset = 0;
-    
-    //1. obtem o tamanho do TOKEN a ler
-    //   [TOKEN_DIM][TOKEN]
-    int size_of_token_from_buffer = 0;
-    //1.1 copia para size_of_token o tamanho do token a deserializar
-    memcpy(&size_of_token_from_buffer, buffer+offset, TOKEN_STRING_SIZE);
-    //1.2 converte de formato de rede o tamanho do token
-    int size_of_token = ntohl(size_of_token_from_buffer);
-    //1.3 Atualiza o offset
-    offset+=TOKEN_STRING_SIZE;
-    
-    //2. Aloca memória para receber o TOKEN
-    char * token_rcvd = (char*) malloc(size_of_token);
-    //2.1 copia para token_rcvd o que recebe do buffer
-    memcpy(token_rcvd, (buffer+offset), size_of_token);
-    
-    //2.2 Verifica se o que recebeu é maior do que a memória disponivel
-    if ( offset + size_of_token > size) {
-        free (token_rcvd);
-        return NULL;
-    }
-    
-    //3. Devolve o TOKEN
-    return token_rcvd;
-    
-}
 
 long long swap_bytes_64(long long number)
 {
