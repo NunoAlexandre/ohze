@@ -9,8 +9,12 @@
 #ifndef SD15_Product_network_utils_h
 #define SD15_Product_network_utils_h
 
+#include "network_client-private.h"
+
 //time to retry to reconnect
 #define RETRY_TIME 5
+#define SWITCH_SERVER_IDENTIFIER "S"
+#define SYSTEM_CONFIGURATION_FILE "./SD15-Project/sd15_system_config"
 
 
 char* ip_address_copy_from_server;
@@ -67,6 +71,11 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend);
  * In error case returns NULL, received_message otherwise.
  */
 struct message_t* receive_message (int connection_socket_fd);
+
+
+int get_server_from(char * lineWithServerInfo,  struct server_t ** server);
+int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t ** server);
+int get_all_servers(char * filePath, int *number_of_servers, struct server_t *** all_servers );
 
 
 #endif

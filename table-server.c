@@ -33,6 +33,18 @@ int get_open_slot(struct pollfd * connections, int connected_fds) {
     return open_slot;
 }
 
+int input_is_valid (int argc, char *argv[]) {
+    return  argc > 1 && is_number (argv[1]);
+}
+
+void invalid_input_message () {
+    puts("####### SD15-SERVER ##############");
+    puts("Sorry, your input was not valid.");
+    puts("You must provide a valid number to be the server port.");
+    puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
+    puts("####### SD15-SERVER ##############");
+}
+
 int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
     int i = currentHighest;
     int highest = i-1;
@@ -46,9 +58,35 @@ int get_highest_open_connection ( struct pollfd * connections, int currentHighes
     return highest;
 }
 
-int server_run ( int portnumber ) {
+int server_run ( char * address_and_port ) {
 
-            /** 0. SIGPIPE Handling */
+    
+    //gets the port number
+    int portnumber = atoi(get_port(address_and_port));
+    //case its invalid
+    if ( portnumber_is_invalid(portnumber) ) {
+        invalid_input_message();
+        return TASK_FAILED;
+    }
+    char * my_address = get_address(address_and_port);
+    
+    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
+    
+    int k = 0;
+    struct server_t ** all_servers = NULL;
+    get_all_servers(SYSTEM_CONFIGURATION_FILE, &k,  &all_servers);
+    
+    if ( all_servers == NULL)
+        return TASK_FAILED;
+    
+    int swicthIAm = strcmp(all_servers[0]->ip_address, my_address) == 0 && all_servers[0]->port == portnumber;
+    
+    if ( swicthIAm) {
+        printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
+    }
+
+    
+    /** 0. SIGPIPE Handling */
     struct sigaction s;
             //what must do with a signal - ignore
     s.sa_handler = SIG_IGN;
@@ -71,6 +109,11 @@ int server_run ( int portnumber ) {
         perror("SO_REUSEADDR setsockopt error");
         return TASK_FAILED;
     }
+    
+    
+    
+    
+    
 
             //2. Bind
     struct sockaddr_in server;
@@ -143,8 +186,6 @@ int server_run ( int portnumber ) {
                             //updates the highest index connection if needed.
                             if ( open_slot > highestIndexConnection )
                                 highestIndexConnection = open_slot;
-
-                            printf("\t the highestIndexConnection is %d \n", highestIndexConnection);
                         }
                     }
 
@@ -169,14 +210,11 @@ int server_run ( int portnumber ) {
                             //if this was the highestIndexConnection now its the previous one
                             if ( i == highestIndexConnection )
                                 highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
-
-                            printf("\t the highestIndexConnection is %d \n", highestIndexConnection);
                         }
 
                        if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
 
                         connection_socket_fd = connections[i].fd;
-                        printf("> serving client with socket_fd %d\n", connection_socket_fd);
 
                 //flag to track errors during the request-response process
                         int failed_tasks = 0;
@@ -234,35 +272,13 @@ int server_run ( int portnumber ) {
 
 
 
-    int input_is_valid (int argc, char *argv[]) {
-        return  argc > 1 && is_number (argv[1]);
-    }
-
-
-
-    void invalid_input_message () {
-        puts("####### SD15-SERVER ##############");
-        puts("Sorry, your input was not valid.");
-        puts("You must provide a valid number to be the server port.");
-        puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
-        puts("####### SD15-SERVER ##############");
-    }
-
     int main ( int argc, char *argv[] ) {
-
-            //gets the port number
-        int portNumber = input_is_valid(argc, argv) ? reads_server_portnumber(argv[1]) : -1;
-            //case its invalid
-        if ( portnumber_is_invalid(portNumber) ) {
-            invalid_input_message();
-            return TASK_FAILED;
-        }
-        printf("\n> SD15_SERVER is waiting connections at port %d\n", portNumber);
-
-        int k = 0;
-        get_all_servers("./SD15-Project/sd15_system_config", &k,  NULL);
-
-        server_run(portNumber);
+        
+        char * address_and_port = strdup(argv[1]);
+        
+        if ( server_run(address_and_port) == TASK_FAILED ) {
+            puts("server_run(address_and_port) failed or crashed (TASK_FAILED)");
+        };
 
 
         return TASK_SUCCEEDED;
