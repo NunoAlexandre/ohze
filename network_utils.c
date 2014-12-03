@@ -240,38 +240,36 @@ struct message_t* receive_message (int connection_socket_fd) {
 }
 
 
+int get_system_server(char * lineWithServerInfo,  struct rtable_t ** system_server) {
 
-int get_server_from(char * lineWithServerInfo,  struct server_t ** server) {
-    
 	char * line = strdup(lineWithServerInfo);
 
-    *server = malloc( sizeof(**server));
-	(*server)->ip_address =get_address(line);
-	(*server)->port =  atoi(get_port(line));
-	(*server)->socketfd = -1;
-
-	free(line);
+    *system_server = malloc( sizeof(**system_server));
+	(*system_server)->server_address_and_port = line;
+    (*system_server)->server_to_connect.ip_address =get_address(line);
+    char * portnumber = get_port(line);
+	 (*system_server)->server_to_connect.port =  atoi(portnumber);
+    free(portnumber);
+	 (*system_server)->server_to_connect.socketfd = -1;
     
 	return YES;
 }
 
-int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t ** server) {
-	int switch_founded = NO;
+int get_system_switch(char * lineWithSwitchInfo,  struct rtable_t ** system_switch) {
     
+    int switch_founded = NO;
 	char * line = strdup(lineWithSwitchInfo);
-
 	char * switch_identifier = NULL;
 	strtok_r(line, " ", &switch_identifier);
-    //if there is no space on this line, its not a switch declaration
-    if ( switch_identifier == NULL)
+    if ( switch_identifier == NULL) {
+        free(line);
         return NO;
-    
-
+    }
 	char * breakLine = NULL;
 	strtok_r(switch_identifier, "\n", &breakLine);
-
+    
 	if ( strcmp(switch_identifier, SWITCH_SERVER_IDENTIFIER) == 0 ) {
-        get_server_from( line,  server);
+        get_system_server( line,  system_switch);
         switch_founded = YES;
 	}
 
@@ -283,19 +281,18 @@ int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t ** server
 
 
 /*
- * Gets all the servers from the file of filePath and saves them into all_servers
- * Saves the switch server at the first position of all_servers and the other servers
- * on the following ones.
- * IF there is no switch defined or the number of servers found
- * is not equal to what is announced, returns TASK_FAILED, otherwise TASK_SUCCEDDED;
+ * Gets all the rtables from the system_configuration_file and saves them into system_rtables.
+ * Saves the switch server at the first position (0) and the other servers on the following ones.
+ * IF there is no switch defined or the number of servers found is not equal to what is announced,
+ * returns TASK_FAILED, otherwise returns the number of rtables of the system;
  */
-int get_all_servers(char * filePath, struct server_t *** all_servers ) {
+int get_system_rtables(char * system_configuration_file, struct rtable_t *** system_rtables ) {
 	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
     
-	fp = fopen(filePath, "r");
+	fp = fopen(system_configuration_file, "r");
 	if (fp == NULL)
 		return TASK_FAILED;
     
@@ -313,7 +310,7 @@ int get_all_servers(char * filePath, struct server_t *** all_servers ) {
 
     
 	//allocs memory for all
-	*all_servers = malloc ( sizeof(struct server_t *) * number_of_servers );
+	*system_rtables = malloc ( sizeof(**system_rtables) * number_of_servers );
 
 	int switchNotFoundYet = YES;
 	int iServer = 1;
@@ -323,7 +320,7 @@ int get_all_servers(char * filePath, struct server_t *** all_servers ) {
 	while ((read = getline(&line, &len, fp)) != -1) {
         
 		if ( switchNotFoundYet ) {
-			switchNotFoundYet = !get_switch_server_from(line, &(*all_servers)[0]);
+			switchNotFoundYet = !get_system_switch(line, &(*system_rtables)[0]);
 
             if ( !switchNotFoundYet ) {
                 serversFound++;
@@ -331,7 +328,7 @@ int get_all_servers(char * filePath, struct server_t *** all_servers ) {
             }
 		}
 		if ( !switchWasFoundNow ) {
-             if ( get_server_from(line, &(*all_servers)[iServer]) ) {
+             if ( get_system_server(line, &(*system_rtables)[iServer]) ) {
                 iServer++;
                 serversFound++;
             }
@@ -345,6 +342,5 @@ int get_all_servers(char * filePath, struct server_t *** all_servers ) {
     
 	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
-
 
 

@@ -73,13 +73,18 @@ int server_run ( char * address_and_port ) {
     printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
     
 
-    struct server_t ** all_servers = NULL;
-    int numberOfServers = get_all_servers(SYSTEM_CONFIGURATION_FILE,  &all_servers);
+    struct rtable_t** system_rtables = NULL;
+    int numberOfServers = get_system_rtables(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
     
-    if ( numberOfServers == TASK_FAILED || all_servers == NULL )
+    int n = 0;
+    for ( n = 0; n < numberOfServers; n++) {
+        printf("rtable %d has port_address %s and ip_address %s , port %d and socketfd %d\n", n, system_rtables[n]->server_address_and_port, system_rtables[n]->server_to_connect.ip_address, system_rtables[n]->server_to_connect.port, system_rtables[n]->server_to_connect.socketfd);
+    }
+    
+    if ( numberOfServers == TASK_FAILED || system_rtables == NULL )
         return TASK_FAILED;
     
-    int swicthIAm = strcmp(all_servers[0]->ip_address, my_address) == 0 && all_servers[0]->port == portnumber;
+    int swicthIAm = strcmp(system_rtables[0]->server_to_connect.ip_address, my_address) == 0 && system_rtables[0]->server_to_connect.port == portnumber;
     
     if ( swicthIAm) {
         printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
