@@ -72,11 +72,11 @@ int server_run ( char * address_and_port ) {
     
     printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
     
-    int k = 0;
+
     struct server_t ** all_servers = NULL;
-    get_all_servers(SYSTEM_CONFIGURATION_FILE, &k,  &all_servers);
+    int numberOfServers = get_all_servers(SYSTEM_CONFIGURATION_FILE,  &all_servers);
     
-    if ( all_servers == NULL)
+    if ( numberOfServers == TASK_FAILED || all_servers == NULL )
         return TASK_FAILED;
     
     int swicthIAm = strcmp(all_servers[0]->ip_address, my_address) == 0 && all_servers[0]->port == portnumber;

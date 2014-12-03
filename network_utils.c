@@ -289,7 +289,7 @@ int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t ** server
  * IF there is no switch defined or the number of servers found
  * is not equal to what is announced, returns TASK_FAILED, otherwise TASK_SUCCEDDED;
  */
-int get_all_servers(char * filePath, int *number_of_servers, struct server_t *** all_servers ) {
+int get_all_servers(char * filePath, struct server_t *** all_servers ) {
 	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
@@ -309,11 +309,11 @@ int get_all_servers(char * filePath, int *number_of_servers, struct server_t ***
 	//gets the number of servers itself
 	strtok_r(line,"=", &pointer);
 
-	*number_of_servers = atoi(pointer);
+	int number_of_servers = atoi(pointer);
 
     
 	//allocs memory for all
-	*all_servers = malloc ( sizeof(struct server_t *) * (*number_of_servers) );
+	*all_servers = malloc ( sizeof(struct server_t *) * number_of_servers );
 
 	int switchNotFoundYet = YES;
 	int iServer = 1;
@@ -343,7 +343,7 @@ int get_all_servers(char * filePath, int *number_of_servers, struct server_t ***
 	if (line)
 		free(line);
     
-	return switchNotFoundYet && serversFound == *number_of_servers;
+	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
 
 

@@ -75,7 +75,7 @@ struct message_t* receive_message (int connection_socket_fd);
 
 int get_server_from(char * lineWithServerInfo,  struct server_t ** server);
 int get_switch_server_from(char * lineWithSwitchInfo,  struct server_t ** server);
-int get_all_servers(char * filePath, int *number_of_servers, struct server_t *** all_servers );
+int get_all_servers(char * filePath, struct server_t *** all_servers );
 
 
 #endif
