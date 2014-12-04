@@ -73,7 +73,10 @@ int assign_opcode(int keep_tuples, int one_or_all){
  * retorna NULL em caso de erro
  */
 struct rtable_t* rtable_create_from_server ( struct server_t *server_to_connect, char *server_address_and_port){
+    
     struct rtable_t *new_rtable = (struct rtable_t*) malloc(sizeof(struct rtable_t));
+    if ( new_rtable == NULL)
+        return NULL;
     
 //    puts ("CLIENTE_STUB > RTABLE_CREATE_FROM_SERVER > Creating new rtable...");
 
@@ -81,12 +84,7 @@ struct rtable_t* rtable_create_from_server ( struct server_t *server_to_connect,
     int port_number_from_server = server_to_connect->port;
     int socketfd_from_server = server_to_connect->socketfd;
     
-    if(new_rtable == NULL){
-        perror ("CLIENTE_STUB > RTABLE_CREATE_FROM_SERVER > Unable to create new rtable!");
-        free(new_rtable);
-        free(ip_from_server);
-        return NULL;
-    }
+    //continuar aqui
     
     new_rtable->server_to_connect.ip_address = ip_from_server;
     free(ip_from_server);

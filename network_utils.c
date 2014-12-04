@@ -245,38 +245,41 @@ int get_system_server(char * lineWithServerInfo,  struct rtable_t ** system_serv
 	char * line = strdup(lineWithServerInfo);
 
     *system_server = malloc( sizeof(**system_server));
+    if ( *system_server == NULL )
+        return TASK_FAILED;
+    
+    (*system_server)->status = RTABLE_AVAILABLE;
 	(*system_server)->server_address_and_port = line;
     (*system_server)->server_to_connect.ip_address =get_address(line);
     char * portnumber = get_port(line);
-	 (*system_server)->server_to_connect.port =  atoi(portnumber);
+    (*system_server)->server_to_connect.port =  atoi(portnumber);
     free(portnumber);
 	 (*system_server)->server_to_connect.socketfd = -1;
     
-	return YES;
+	return TASK_SUCCEEDED;
 }
 
 int get_system_switch(char * lineWithSwitchInfo,  struct rtable_t ** system_switch) {
     
-    int switch_founded = NO;
+    int taskSuccess = TASK_FAILED;
 	char * line = strdup(lineWithSwitchInfo);
 	char * switch_identifier = NULL;
 	strtok_r(line, " ", &switch_identifier);
     if ( switch_identifier == NULL) {
         free(line);
-        return NO;
+        return TASK_FAILED;
     }
 	char * breakLine = NULL;
 	strtok_r(switch_identifier, "\n", &breakLine);
     
 	if ( strcmp(switch_identifier, SWITCH_SERVER_IDENTIFIER) == 0 ) {
-        get_system_server( line,  system_switch);
-        switch_founded = YES;
+        taskSuccess = get_system_server( line,  system_switch);
 	}
 
     if ( line != NULL)
         free(line);
     
-	return switch_founded;
+	return taskSuccess;
 }
 
 
@@ -320,7 +323,8 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
 	while ((read = getline(&line, &len, fp)) != -1) {
         
 		if ( switchNotFoundYet ) {
-			switchNotFoundYet = !get_system_switch(line, &(*system_rtables)[0]);
+            //switchNotFoundYet if it failed to get it from this line
+			switchNotFoundYet = get_system_switch(line, &(*system_rtables)[0]) == TASK_FAILED;
 
             if ( !switchNotFoundYet ) {
                 serversFound++;
@@ -328,7 +332,7 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
             }
 		}
 		if ( !switchWasFoundNow ) {
-             if ( get_system_server(line, &(*system_rtables)[iServer]) ) {
+             if ( get_system_server(line, &(*system_rtables)[iServer]) == TASK_SUCCEEDED ) {
                 iServer++;
                 serversFound++;
             }
