@@ -61,33 +61,33 @@ int get_highest_open_connection ( struct pollfd * connections, int currentHighes
     return highest;
 }
 
-int server_run ( char * address_and_port ) {
+int server_run ( char * my_address_and_port ) {
 
     
     //gets the port number
-    int portnumber = atoi(get_port(address_and_port));
+    int portnumber = atoi(get_port(my_address_and_port));
     //case its invalid
     if ( portnumber_is_invalid(portnumber) ) {
         invalid_input_message();
         return TASK_FAILED;
     }
-    char * my_address = get_address(address_and_port);
+    char * my_address = get_address(my_address_and_port);
     
     printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
     
 
-    struct rtable_t** system_rtables = NULL;
-    int numberOfServers = get_system_rtables(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
+   char** system_rtables = NULL;
+    int numberOfServers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
     
     int n = 0;
     for ( n = 0; n < numberOfServers; n++) {
-        printf("rtable %d has port_address %s and ip_address %s , port %d and socketfd %d\n", n, system_rtables[n]->server_address_and_port, system_rtables[n]->server_to_connect.ip_address, system_rtables[n]->server_to_connect.port, system_rtables[n]->server_to_connect.socketfd);
+        printf("rtable %d has address_port %s \n", n, system_rtables[n]);
     }
     
     if ( numberOfServers == TASK_FAILED || system_rtables == NULL )
         return TASK_FAILED;
     
-    int switchIAM = strcmp(system_rtables[0]->server_to_connect.ip_address, my_address) == 0 && system_rtables[0]->server_to_connect.port == portnumber;
+    int switchIAM = strcmp(system_rtables[0], my_address_and_port) == 0;
     
     
     if ( switchIAM) {
@@ -221,8 +221,8 @@ int server_run ( char * address_and_port ) {
                             
                             /* 2. BINDS WITH RTABLE_TO_CONSULT */
                             if ( TEMP_UNIQUE == 0 ) {
-                                rtable_to_consult = rtable_bind( system_rtables[1]->server_address_and_port);
-                                printf("Switch > just binded to %s \n", system_rtables[1]->server_address_and_port);
+                                rtable_to_consult = rtable_bind( system_rtables[1]);
+                                printf("Switch > just binded to %s \n", rtable_to_consult->server_address_and_port);
                                 TEMP_UNIQUE = 1;
 
                             }
@@ -258,7 +258,6 @@ int server_run ( char * address_and_port ) {
                                     if (taskSuccess == TASK_FAILED){
                                         puts("\t--- failed to consult table\n");
                                     }
-                            
                             
                         }
                         else {

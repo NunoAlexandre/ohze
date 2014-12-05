@@ -21,4 +21,5 @@ int table_skel_destroy();
  * (erro, por exemplo, tabela não inicializada).
  */
 int invoke(struct message_t * msg_in, struct message_t ***msg_set_out);
+
 #endif

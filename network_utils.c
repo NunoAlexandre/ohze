@@ -241,26 +241,14 @@ struct message_t* receive_message (int connection_socket_fd) {
 }
 
 
-int get_system_server(char * lineWithServerInfo,  struct rtable_t ** system_server) {
-
-	char * line = strdup(lineWithServerInfo);
-
-    *system_server = malloc( sizeof(**system_server));
-    if ( *system_server == NULL )
-        return TASK_FAILED;
-    
-    (*system_server)->status = RTABLE_AVAILABLE;
-	(*system_server)->server_address_and_port = line;
-    (*system_server)->server_to_connect.ip_address =get_address(line);
-    char * portnumber = get_port(line);
-    (*system_server)->server_to_connect.port =  atoi(portnumber);
-    free(portnumber);
-	 (*system_server)->server_to_connect.socketfd = -1;
+int get_system_server(char * lineWithServerInfo, char ** system_server_info) {
+  
+    *system_server_info = strdup(lineWithServerInfo);
     
 	return TASK_SUCCEEDED;
 }
 
-int get_system_switch(char * lineWithSwitchInfo,  struct rtable_t ** system_switch) {
+int get_system_switch(char * lineWithSwitchInfo, char** system_switch) {
     
     int taskSuccess = TASK_FAILED;
 	char * line = strdup(lineWithSwitchInfo);
@@ -284,13 +272,16 @@ int get_system_switch(char * lineWithSwitchInfo,  struct rtable_t ** system_swit
 }
 
 
+
+
+
 /*
  * Gets all the rtables from the system_configuration_file and saves them into system_rtables.
  * Saves the switch server at the first position (0) and the other servers on the following ones.
  * IF there is no switch defined or the number of servers found is not equal to what is announced,
  * returns TASK_FAILED, otherwise returns the number of rtables of the system;
  */
-int get_system_rtables(char * system_configuration_file, struct rtable_t *** system_rtables ) {
+int get_system_rtables_info(char * system_configuration_file, char *** system_rtables ) {
 	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
@@ -309,13 +300,13 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
 	}
 	//gets the number of servers itself
 	strtok_r(line,"=", &pointer);
-
+    
 	int number_of_servers = atoi(pointer);
-
+    
     
 	//allocs memory for all
 	*system_rtables = malloc ( sizeof(**system_rtables) * number_of_servers );
-
+    
 	int switchNotFoundYet = YES;
 	int iServer = 1;
     int serversFound = 0;
@@ -326,14 +317,14 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
 		if ( switchNotFoundYet ) {
             //switchNotFoundYet if it failed to get it from this line
 			switchNotFoundYet = get_system_switch(line, &(*system_rtables)[0]) == TASK_FAILED;
-
+            
             if ( !switchNotFoundYet ) {
                 serversFound++;
                 switchWasFoundNow = YES;
             }
 		}
 		if ( !switchWasFoundNow ) {
-             if ( get_system_server(line, &(*system_rtables)[iServer]) == TASK_SUCCEEDED ) {
+            if ( get_system_server(line, &(*system_rtables)[iServer]) == TASK_SUCCEEDED ) {
                 iServer++;
                 serversFound++;
             }
@@ -347,5 +338,6 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
     
 	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
+
 
 

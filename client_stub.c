@@ -166,7 +166,6 @@ int rtable_unbind(struct rtable_t *rtable){
         return TASK_FAILED;
     }
     
-//    puts("CLIENT-STUB > RTABLE_UNBIND > Disconnecting from server...");
     puts("Disconnecting from server...");
 
     //faz um network_close ao servidor
@@ -175,7 +174,6 @@ int rtable_unbind(struct rtable_t *rtable){
         return TASK_FAILED;
     }
     
-//    puts("CLIENT-STUB > RTABLE_UNBIND > Disconnected from server!");
     free(connected_server);
     puts("Disconnected from server...");
     return TASK_SUCCEEDED;

@@ -74,15 +74,15 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend);
 struct message_t* receive_message (int connection_socket_fd);
 
 
-int get_system_server(char * lineWithServerInfo,  struct rtable_t ** system_server);
-int get_system_switch(char * lineWithSwitchInfo,  struct rtable_t ** system_switch);
+int get_system_server(char * lineWithServerInfo,  char  ** system_server);
+int get_system_switch(char * lineWithSwitchInfo,  char ** system_switch);
 /*
  * Gets all the rtables from the system_configuration_file and saves them into system_rtables.
  * Saves the switch server at the first position (0) and the other servers on the following ones.
  * IF there is no switch defined or the number of servers found is not equal to what is announced,
  * returns TASK_FAILED, otherwise returns the number of rtables of the system;
  */
-int get_system_rtables(char * filePath, struct rtable_t *** system_rtables );
+int get_system_rtables_info(char * filePath, char *** system_rtables );
 
 
 #endif

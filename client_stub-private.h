@@ -19,7 +19,6 @@ struct rtable_t{
     struct server_t server_to_connect;
     char * server_address_and_port;
     int status;
-//    int retry_connection; ALTEREI AQUI
 };
 
 /*

@@ -24,14 +24,14 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
     int one_or_all = -1; //apenas para inicializar
     
     switch (opcode) {
-        case OC_SIZE: //TABLE SIZE REQUEST
+        case OC_SIZE: 
             taskSuccess = rtable_size(rtable_to_consult);
             if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
             }
             break;
             
-        case OC_OUT: //TABLE OUT REQUEST
+        case OC_OUT:
             taskSuccess = rtable_out(rtable_to_consult, message_content);
             if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
@@ -75,7 +75,6 @@ int process_command (const char* command, struct rtable_t* rtable_to_consult){
     if (ctype == CT_TUPLE){
         message_content = create_tuple_from_input(command);
     }
-
     //defines message type content - CT_RESULT
     if( ctype == CT_RESULT){
         int resultValue = 0;
