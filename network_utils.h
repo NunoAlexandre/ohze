@@ -17,9 +17,12 @@
 #define SWITCH_SERVER_IDENTIFIER "S"
 #define SYSTEM_CONFIGURATION_FILE "./SD15-Project/sd15_system_config"
 
+int extern replica_server_selected; //vai guardar qual a replica seleccionada
+int extern number_of_servers;
+int extern number_of_replicas;
+
 
 char* ip_address_copy_from_server;
-
 
 int split_address_port (const char *address_and_port, char * address, char * port );
 
@@ -84,5 +87,9 @@ int get_system_switch(char * lineWithSwitchInfo,  char ** system_switch);
  */
 int get_system_rtables_info(char * filePath, char *** system_rtables );
 
+/*
+ * Random selection of a replica from a server list
+ */
+struct server_t* get_server_replica (struct server_t ** servers_list);
 
 #endif
