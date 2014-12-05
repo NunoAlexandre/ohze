@@ -23,5 +23,13 @@
 
 int is_number (char * stringWithNumber );
 
+/*
+ * Generates a random number
+ *    Formula:
+ *      rand() % N   <- To get a number between 0 - N-1
+ *      Then add the result to min, giving you
+ *      a random number between min - max.
+ */
+int get_random_number(int min, int max);
 
 #endif

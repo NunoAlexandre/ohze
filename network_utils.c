@@ -348,4 +348,3 @@ int get_system_rtables(char * system_configuration_file, struct rtable_t *** sys
 	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
 
-
