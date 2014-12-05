@@ -61,6 +61,8 @@ $(EXECUTABLE_SERVER) : \
 		./tuple.o\
 		./table-server.o\
 		./network_server.o\
+		./client_stub.o\
+		./network_cliente.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
@@ -71,7 +73,9 @@ $(EXECUTABLE_SERVER) : \
 		./list.o\
 		./tuple.o\
 		./table-server.o\
+		./client_stub.o\
 		./network_server.o\
+		./network_cliente.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\

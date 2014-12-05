@@ -19,6 +19,7 @@
 #define CT_RESULT   300 //mensagem com resultado da operação
 #define CT_SFAILURE 400 //mensagem com informação de endereço_ip:porta do switch que falhou
 #define CT_SRUNNING 500 //mensagem com informação de endereço_ip:porta do novo switch
+#define CT_INVCMD 600 //mensagem para informar comando invalido
 
 /*
  * Estrutura que representa uma mensagem genérica a ser transmitida.

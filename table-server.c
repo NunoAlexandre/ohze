@@ -17,6 +17,9 @@
         #include <sys/poll.h>
         #include <limits.h>
         #include <sys/uio.h>
+        #include "client_stub-private.h"
+        #include "client_stub.h"
+        #include "network_cliente.h"
 
 
         #define N_MAX_CLIENTS 4
@@ -84,12 +87,16 @@ int server_run ( char * address_and_port ) {
     if ( numberOfServers == TASK_FAILED || system_rtables == NULL )
         return TASK_FAILED;
     
-    int swicthIAm = strcmp(system_rtables[0]->server_to_connect.ip_address, my_address) == 0 && system_rtables[0]->server_to_connect.port == portnumber;
+    int switchIAM = strcmp(system_rtables[0]->server_to_connect.ip_address, my_address) == 0 && system_rtables[0]->server_to_connect.port == portnumber;
     
-    if ( swicthIAm) {
+    
+    if ( switchIAM) {
         printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
+        
     }
-
+    else {
+        puts("IM A SUPER SERVER, NOT A SWITCH");
+    }
     
     /** 0. SIGPIPE Handling */
     struct sigaction s;
@@ -178,6 +185,12 @@ int server_run ( char * address_and_port ) {
     // to save the result from poll function
     int polled_fds = 0; 
 
+    /**** TEMPORARY *****/
+    int TEMP_UNIQUE = 0;
+    //the remote table to consult
+    struct rtable_t *rtable_to_consult = NULL;
+
+    
             // Gets clients connection requests and handles its requests
     printf("\n--------- waiting for clients requests ---------\n");
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
@@ -198,6 +211,58 @@ int server_run ( char * address_and_port ) {
                     int i = 0;
                     for (i = 1; i <= highestIndexConnection; i++) {// Todas as ligações
 
+                        if ( switchIAM) {
+                            printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
+                            
+                            int taskSuccess = YES;
+                            //to keep the active
+                            //para guardar o comando do utilizador
+                            
+                            
+                            /* 2. BINDS WITH RTABLE_TO_CONSULT */
+                            if ( TEMP_UNIQUE == 0 ) {
+                                rtable_to_consult = rtable_bind( system_rtables[1]->server_address_and_port);
+                                printf("Switch > just binded to %s \n", system_rtables[1]->server_address_and_port);
+                                TEMP_UNIQUE = 1;
+
+                            }
+                            
+                            //verifica se o rtable_bind funcionou
+                            if (rtable_to_consult == NULL) {
+                                printf("rtable_to_consult == NULL");
+                                taskSuccess = TASK_FAILED;
+                            }
+                            
+                            //ligação foi bem sucessida
+                                    puts("switch will server_receive_request");
+                                    struct message_t * msg_request  = server_receive_request(connections[1].fd);
+                            
+                                /* 
+                                 Em qualquer dos casos em que é recebido de um table_client um comando indevido, deverá ser enviada ao cliente uma mensagem, com opcode OC_REPORT e conteúdo CT_INVCMD (definido com o valor 600), onde será enviada uma string de acordo com a ocorrência.
+                                 
+                                 */
+                            struct message_t * msg_response = NULL;
+                            
+                                if ( message_is_reader(msg_request) ) {
+                                    puts("switch received invalid message > mensagem de leitura > sou o switch zeca!");
+                                    char * error_message = "mensagem de leitura > sou o switch zeca!";
+                                    msg_response = message_create_with(OC_REPORT, CT_INVCMD, error_message);
+                                }
+                                else {
+                                    printf("switch received message: "); message_print(msg_request); puts("");
+                                     msg_response = network_send_receive(&(rtable_to_consult->server_to_connect), msg_request);
+                                }
+                                    
+                                    server_send_response(connections[1].fd, 1, &msg_response);
+                                    
+                                    //se pedido falhou e não é para repetir pedido tenta terminar de forma controlada
+                                    if (taskSuccess == TASK_FAILED){
+                                        puts("\t--- failed to consult table\n");
+                                    }
+                            
+                            
+                        }
+                        else {
                         //flag to check if socket is on or was closed on client side.
                         int socket_is_on = YES;
                         // checks if this socket was closed on the client side. 
@@ -259,6 +324,7 @@ int server_run ( char * address_and_port ) {
 
                     }
                 }
+        }
             }
         }
 

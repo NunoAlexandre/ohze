@@ -124,9 +124,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
     else if ( msg->c_type == CT_RESULT ) {
         content_size_bytes = RESULT_SIZE;
     }
-    
-    // * (Atualizado para Projeto 5)
-    else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING){
+    else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING || msg->c_type == CT_INVCMD){
         content_size_bytes = token_size_bytes (msg->content.token);
     }
     
@@ -161,9 +159,10 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
         memcpy(buffer[0], &result_to_network, RESULT_SIZE);
         buffer_size = RESULT_SIZE;
     }
-    
-    // * (Atualizado para Projeto 5)
-    else if (message->c_type == CT_SFAILURE || message->c_type == CT_SRUNNING){
+    else if (message->c_type == CT_SFAILURE
+             || message->c_type == CT_SRUNNING
+             || message->c_type == CT_INVCMD )
+    {
         buffer_size = token_serialize(message->content.token, buffer);
     }
     
@@ -593,14 +592,8 @@ int message_valid_opcode ( struct message_t * msg ) {
 /*
  * Returns the size (bytes) of a given token (Criado para Projeto 5)
  */
-int token_size_bytes (char* token){
-    
-    if ( token == NULL)
-        return -1;
-    
-    int nBytes = 0;
-    nBytes += strlen(token);
-    return nBytes;
+int token_size_bytes (char* token) {
+    return token == NULL ? -1 :  (int) strlen(token);
 }
 
 /*
@@ -615,7 +608,7 @@ int token_serialize(char* token, char **buffer) {
     int buffer_size = 0;
     int size_of_token = token_size_bytes(token);
     //1.1 Cria buffer com n bytes
-    buffer[0] = (char*) malloc(size_of_token+TOKEN_STRING_SIZE); //aloca tamanho total do token + TOKEN_STRING_SIZE
+    *buffer = malloc(size_of_token+TOKEN_STRING_SIZE); //aloca tamanho total do token + TOKEN_STRING_SIZE
     //para gerir preenchimento do buffer
     int offset = 0;
     
@@ -623,7 +616,7 @@ int token_serialize(char* token, char **buffer) {
     //2.1 Tamanho do token para formato rede
     int size_of_token_htonl = htonl(size_of_token); //
     //2.2 Copia o tamanho do TOKEN para o buffer
-    memcpy((buffer[0]+offset), &size_of_token_htonl, TOKEN_STRING_SIZE);
+    memcpy(((*buffer)+offset), &size_of_token_htonl, TOKEN_STRING_SIZE);
     //2.3 Atualiza offset
     offset+=TOKEN_STRING_SIZE;
     
@@ -636,7 +629,7 @@ int token_serialize(char* token, char **buffer) {
     buffer_size = size_of_token + TOKEN_STRING_SIZE;
     //4.1 Verifica se o que recebeu é maior do que a memória disponivel
     if ( offset > buffer_size) {
-        free (buffer[0]);
+        free (*buffer);
         return TASK_FAILED;
     }
     
