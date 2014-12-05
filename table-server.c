@@ -244,12 +244,11 @@ int server_run ( char * address_and_port ) {
                             struct message_t * msg_response = NULL;
                             
                                 if ( message_is_reader(msg_request) ) {
-                                    puts("switch received invalid message > mensagem de leitura > sou o switch zeca!");
-                                    char * error_message = "mensagem de leitura > sou o switch zeca!";
+                                    puts("\t--- switch doesnt read!");
+                                    char * error_message = "switch doesnt read!";
                                     msg_response = message_create_with(OC_REPORT, CT_INVCMD, error_message);
                                 }
                                 else {
-                                    printf("switch received message: "); message_print(msg_request); puts("");
                                      msg_response = network_send_receive(&(rtable_to_consult->server_to_connect), msg_request);
                                 }
                                     

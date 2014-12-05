@@ -53,6 +53,7 @@ struct message_t * message_create_with ( int opcode, int content_type, void * el
                 // * (Atualizado para Projeto 5) - TOKEN
             case CT_SFAILURE:
             case CT_SRUNNING:
+            case CT_INVCMD:
                 new_message->content.token = element;
                 break;
                 
@@ -125,7 +126,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
         content_size_bytes = RESULT_SIZE;
     }
     else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING || msg->c_type == CT_INVCMD){
-        content_size_bytes = token_size_bytes (msg->content.token);
+        content_size_bytes = token_as_serialized_size(msg->content.token);
     }
     
     else {
@@ -152,7 +153,6 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     else if ( message->c_type == CT_ENTRY ) {
         buffer_size = entry_serialize(message->content.entry, buffer);
     }
-    
     else if ( message->c_type == CT_RESULT ) {
         buffer[0] = (char*) malloc(RESULT_SIZE );
         int result_to_network = htonl(message->content.result);
@@ -165,7 +165,6 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     {
         buffer_size = token_serialize(message->content.token, buffer);
     }
-    
     else {
         printf("message_serialize_content : invalide C_TYPE\n");
         buffer_size=TASK_FAILED;
@@ -294,12 +293,12 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
             message_content = &result_host;
             break;
         }
-            
-            // * (Atualizado para Projeto 5)
         case CT_SRUNNING:
         case CT_SFAILURE:
+        case CT_INVCMD:
         {
             message_content = token_deserialize (msg_buf + offset, msg_size-offset);
+            break;
         }
             
         default:
@@ -307,6 +306,7 @@ struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
     }
     
     if ( message_content == NULL ) {
+        printf("message_content == NULL\n");
         return NULL;
     }
     
@@ -358,9 +358,17 @@ struct message_t * message_of_error () {
 /*
  *  Verifies if message has error code or is NULL
  */
-int message_error (struct message_t* tested_msg){
-    return tested_msg->opcode == OC_ERROR;
+int message_error (struct message_t* msg){
+    return msg->opcode == OC_ERROR;
 }
+
+/*
+ * Verifies if message is a report message
+ */
+int message_report (struct message_t* msg){
+    return msg->opcode == OC_REPORT;
+}
+
 
 /*
  * Checks if response_msg means success upon the request_msg. YES or NO
@@ -374,7 +382,10 @@ int response_with_success ( struct message_t* request_msg, struct message_t* res
         puts(" (received message is an error message)");
         return NO;
     }
-    
+    else if (message_report(response_msg)) {
+        puts(" (received message is an report message)");
+        return NO;
+    }
     else if ( opcode_resp != (opcode_req+1) ) {
         puts(" (received message has not the expected opcode)");
         return NO;
@@ -527,8 +538,8 @@ void message_print ( struct message_t * msg ) {
         }
         
         // * (Atualizado para Projeto 5)
-        else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING ){
-            printf (" [%hd , %hd , %s ", msg->opcode, msg->c_type, msg->content.token);
+        else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING || msg->c_type == CT_INVCMD ){
+            printf (" [ %hd , %hd , %s ]", msg->opcode, msg->c_type, msg->content.token);
         }
         
         else if ( msg->c_type == CT_RESULT ) {
@@ -593,11 +604,14 @@ int message_valid_opcode ( struct message_t * msg ) {
  * Returns the size (bytes) of a given token (Criado para Projeto 5)
  */
 int token_size_bytes (char* token) {
-    return token == NULL ? -1 :  (int) strlen(token);
+    return token == NULL ? 0 : (int) strlen(token);
 }
-
+int token_as_serialized_size(char* token) {
+    return TOKEN_STRING_SIZE + token_size_bytes(token);
+    
+}
 /*
- * Serializes a given token (Criado para Projeto 5)
+ * Serializes a given token
  */
 int token_serialize(char* token, char **buffer) {
     
@@ -605,10 +619,11 @@ int token_serialize(char* token, char **buffer) {
         return TASK_FAILED;
     
     //1. Alocar memória para token (n bytes para alocar)
-    int buffer_size = 0;
     int size_of_token = token_size_bytes(token);
-    //1.1 Cria buffer com n bytes
-    *buffer = malloc(size_of_token+TOKEN_STRING_SIZE); //aloca tamanho total do token + TOKEN_STRING_SIZE
+    int serialized_token_size = token_as_serialized_size(token);
+    
+     //aloca tamanho do token + TOKEN_STRING_SIZE
+    *buffer = malloc(serialized_token_size);
     //para gerir preenchimento do buffer
     int offset = 0;
     
@@ -625,16 +640,16 @@ int token_serialize(char* token, char **buffer) {
     //3.1 Atualiza offset
     offset+=size_of_token;
     
-    //4. Atualiza o tamanho do buffer (TOKEN_STRING_SIZE + token_size_bytes(token)
-    buffer_size = size_of_token + TOKEN_STRING_SIZE;
+
     //4.1 Verifica se o que recebeu é maior do que a memória disponivel
-    if ( offset > buffer_size) {
+    if ( offset > serialized_token_size) {
         free (*buffer);
         return TASK_FAILED;
     }
     
+
     //5. Devolve o tamanho do buffer
-    return buffer_size;
+    return serialized_token_size;
 }
 
 /*
@@ -642,8 +657,10 @@ int token_serialize(char* token, char **buffer) {
  */
 char* token_deserialize(char* buffer, int size) {
     
-    if ( buffer == NULL )
+    if ( buffer == NULL ) {
+        puts("token_deserialize > buffer == NULL ");
         return NULL;
+    }
     
     //para gerir preenchimento do buffer
     int offset = 0;
@@ -662,19 +679,21 @@ char* token_deserialize(char* buffer, int size) {
     char * token_rcvd = (char*) malloc(size_of_token);
     //2.1 copia para token_rcvd o que recebe do buffer
     memcpy(token_rcvd, (buffer+offset), size_of_token);
+
     
+    offset+= size_of_token;
     //2.2 Verifica se o que recebeu é maior do que a memória disponivel
-    if ( offset + size_of_token > size) {
+    if ( offset > size) {
+        puts("!token_deserialize >  if ( offset > size) ");
         free (token_rcvd);
         return NULL;
     }
     
-    //3. Devolve o TOKEN
+    //devolve o token
     return token_rcvd;
-    
 }
 
-long long swap_bytes_64(long long number){
+long long swap_bytes_64(long long number) {
     long long new_number;
     
     new_number = ((number & 0x00000000000000FF) << 56 |

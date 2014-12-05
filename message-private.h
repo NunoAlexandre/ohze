@@ -124,7 +124,10 @@ struct message_t * message_of_error();
  * Verifies if message has error code or is NULL
  */
 int message_error (struct message_t* tested_msg);
-
+/*
+ * Verifies if message is a report message
+ */
+int message_report (struct message_t* msg);
 
 /*
   * Check if message is writer
@@ -165,6 +168,12 @@ int message_serialize_content ( struct message_t * message, char ** buffer );
  * Returns the size (bytes) of a given token
  */
 int token_size_bytes (char* token);
+
+/*
+ * Returns the size in bytes of a token as being serialized.
+ * This means the return value is TOKEN_STRING_SIZE + token_size_bytes(token).
+ */
+int token_as_serialized_size(char* token);
 
 /*
  * Serializes a given token
