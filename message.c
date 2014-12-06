@@ -250,7 +250,7 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
  * (Atualizado para Projeto 5)
  */
 struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
-    
+    puts("//entered buffer_to_message");
     // OP_CODE
     int offset = 0;
     
@@ -535,6 +535,11 @@ void message_print ( struct message_t * msg ) {
             printf(" [%hd , %hd , ", msg->opcode, msg->c_type );
             tuple_print(msg->content.tuple);
             printf(" ] ");
+        }
+        else if ( msg->c_type == CT_ENTRY ) {
+            printf(" [%hd , %hd , <%d , ", msg->opcode, msg->c_type, msg->content.entry->timestamp);
+            tuple_print(msg->content.entry->value);
+            printf("> ] ");
         }
         
         // * (Atualizado para Projeto 5)

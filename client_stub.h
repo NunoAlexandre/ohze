@@ -36,22 +36,5 @@ int rtable_size(struct rtable_t *rtable);
 /*
  * Random selection of a replica from a rtable list
  */
-struct rtable_t* get_rtable_replica (struct server_t ** servers_list){
-    
-    struct server_t* new_replica_server = NULL;
-    int position = 0;
-    
-    //random position selection
-    //assures that selected replica is always different from previous one
-    while (position != replica_server_selected){
-        position = get_random_number(0, number_of_replicas);
-    }
-    
-    // assigns server_list[position] to replica_server
-    new_replica_server = servers_list[position];
-    
-    // returns a new replica server
-    return new_replica_server;
-}
 
 #endif

@@ -17,9 +17,9 @@
 #define SWITCH_SERVER_IDENTIFIER "S"
 #define SYSTEM_CONFIGURATION_FILE "./SD15-Project/sd15_system_config"
 
-int extern replica_server_selected; //vai guardar qual a replica seleccionada
+/*int extern replica_server_selected; //vai guardar qual a replica seleccionada
 int extern number_of_servers;
-int extern number_of_replicas;
+int extern number_of_replicas;*/
 
 
 char* ip_address_copy_from_server;

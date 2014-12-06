@@ -24,6 +24,8 @@ typedef struct table_t {
 } table_t;
 
 
+int table_put_entry(struct table_t *table, struct entry_t *entry);
+
 void table_print( struct table_t * table );
 int table_slot_index ( table_t * table, char * key );
 

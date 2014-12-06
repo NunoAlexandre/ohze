@@ -352,3 +352,4 @@ void rtable_destroy (struct rtable_t *rtable){
     free (rtable->server_to_connect.ip_address);
     free (rtable);
 }
+

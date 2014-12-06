@@ -62,8 +62,11 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
 	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &tablesize));
  }
  int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out ) {
- 	//puts the new tuple
- 	int successValue = table_put(table, msg_in->content.tuple);
+
+ 	//puts the new tuple or entry
+ 	int successValue = msg_in->c_type == CT_TUPLE ? 
+ 		table_put(table, msg_in->content.tuple) : table_put_entry(table, msg_in->content.entry);
+ 		
 	//so the first elem of the array is the message with the success value 
  	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &successValue));
  }
@@ -137,6 +140,7 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
 	int number_of_msgs = TASK_FAILED;
 	//then is set to a value depending on the 
 	if ( message_opcode_setter(msg_in)) {
+		puts("invoke > message is setter");
 		number_of_msgs = table_skel_put(msg_in,msg_set_out);
 	}
 	else if ( message_opcode_getter(msg_in)) {

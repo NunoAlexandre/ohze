@@ -122,7 +122,8 @@ int entry_serialize(struct entry_t * entry, char **serialized_entry) {
 }
 
 struct entry_t *entry_deserialize(char *buffer, int buffer_size) {
-    
+        puts("//entered entry_deserialize");
+
     //safety checks
     if ( buffer == NULL || buffer_size == -1 )
         return NULL;
@@ -154,7 +155,8 @@ struct entry_t *entry_deserialize(char *buffer, int buffer_size) {
     
     //finally creates the entry with the elements retrived from the buffer
     struct entry_t * entry = entry_create2(tuple, timestamp_host);
-    
+            puts("//will return on entry_deserialize");
+
     return entry;
 }
 

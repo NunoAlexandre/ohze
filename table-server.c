@@ -26,7 +26,7 @@
         #define POLL_TIME_OUT 10
         #define N_TABLE_SLOTS 7
 
-int get_open_slot(struct pollfd * connections, int connected_fds) {
+    int get_open_slot(struct pollfd * connections, int connected_fds) {
     int open_slot = connected_fds;
     int i;
     for ( i = 1; i < connected_fds; i++) {
@@ -34,21 +34,21 @@ int get_open_slot(struct pollfd * connections, int connected_fds) {
             open_slot = i;
     }
     return open_slot;
-}
+    }
 
-int input_is_valid (int argc, char *argv[]) {
+    int input_is_valid (int argc, char *argv[]) {
     return  argc > 1 && is_number (argv[1]);
-}
+    }
 
-void invalid_input_message () {
+    void invalid_input_message () {
     puts("####### SD15-SERVER ##############");
     puts("Sorry, your input was not valid.");
     puts("You must provide a valid number to be the server port.");
     puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
     puts("####### SD15-SERVER ##############");
-}
+    }
 
-int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
+    int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
     int i = currentHighest;
     int highest = i-1;
     int stillSearching = YES;
@@ -59,11 +59,11 @@ int get_highest_open_connection ( struct pollfd * connections, int currentHighes
         }
     } 
     return highest;
-}
+    }
 
-int server_run ( char * my_address_and_port ) {
+    int server_run ( char * my_address_and_port ) {
 
-    
+
     //gets the port number
     int portnumber = atoi(get_port(my_address_and_port));
     //case its invalid
@@ -72,24 +72,24 @@ int server_run ( char * my_address_and_port ) {
         return TASK_FAILED;
     }
     char * my_address = get_address(my_address_and_port);
-    
-    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
-    
 
-   char** system_rtables = NULL;
+    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
+
+
+    char** system_rtables = NULL;
     int numberOfServers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
-    
+
     int n = 0;
     for ( n = 0; n < numberOfServers; n++) {
         printf("rtable %d has address_port %s \n", n, system_rtables[n]);
     }
-    
+
     if ( numberOfServers == TASK_FAILED || system_rtables == NULL )
         return TASK_FAILED;
-    
+
     int switchIAM = strcmp(system_rtables[0], my_address_and_port) == 0;
-    
-    
+
+
     if ( switchIAM) {
         printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
         
@@ -97,7 +97,7 @@ int server_run ( char * my_address_and_port ) {
     else {
         puts("IM A SUPER SERVER, NOT A SWITCH");
     }
-    
+
     /** 0. SIGPIPE Handling */
     struct sigaction s;
             //what must do with a signal - ignore
@@ -120,12 +120,7 @@ int server_run ( char * my_address_and_port ) {
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
         perror("SO_REUSEADDR setsockopt error");
         return TASK_FAILED;
-    }
-    
-    
-    
-    
-    
+    } 
 
             //2. Bind
     struct sockaddr_in server;
@@ -190,7 +185,7 @@ int server_run ( char * my_address_and_port ) {
     //the remote table to consult
     struct rtable_t *rtable_to_consult = NULL;
 
-    
+
             // Gets clients connection requests and handles its requests
     printf("\n--------- waiting for clients requests ---------\n");
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
@@ -211,7 +206,7 @@ int server_run ( char * my_address_and_port ) {
                     int i = 0;
                     for (i = 1; i <= highestIndexConnection; i++) {// Todas as ligações
 
-                        if ( switchIAM) {
+                        if ( switchIAM ) {
                             printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
                             
                             int taskSuccess = YES;
@@ -234,13 +229,14 @@ int server_run ( char * my_address_and_port ) {
                             }
                             
                             //ligação foi bem sucessida
-                                    puts("switch will server_receive_request");
-                                    struct message_t * msg_request  = server_receive_request(connections[1].fd);
+                            puts("switch will server_receive_request");
+                            struct message_t * msg_request  = server_receive_request(connections[1].fd);
                             
-                                /* 
-                                 Em qualquer dos casos em que é recebido de um table_client um comando indevido, deverá ser enviada ao cliente uma mensagem, com opcode OC_REPORT e conteúdo CT_INVCMD (definido com o valor 600), onde será enviada uma string de acordo com a ocorrência.
-                                 
-                                 */
+                            /* 
+                            Em qualquer dos casos em que é recebido de um table_client um comando indevido, 
+                            deverá ser enviada ao cliente uma mensagem, com opcode OC_REPORT e conteúdo 
+                            CT_INVCMD (definido com o valor 600), onde será enviada uma string de acordo com a ocorrência.         
+                            */
                             struct message_t * msg_response = NULL;
                             
                                 if ( message_is_reader(msg_request) ) {
@@ -249,6 +245,13 @@ int server_run ( char * my_address_and_port ) {
                                     msg_response = message_create_with(OC_REPORT, CT_INVCMD, error_message);
                                 }
                                 else {
+                                     if ( msg_request->opcode == OC_OUT) {
+                                    puts("its an out, it will turn into entry with timestamp");
+                                    struct entry_t * entry_to_send = entry_create2(msg_request->content.tuple, 3);
+                                    struct message_t * redone_msg = message_create_with(msg_request->opcode, CT_ENTRY, entry_to_send);
+                                    msg_request = redone_msg;
+                                    }
+
                                      msg_response = network_send_receive(&(rtable_to_consult->server_to_connect), msg_request);
                                 }
                                     
@@ -289,6 +292,8 @@ int server_run ( char * my_address_and_port ) {
 
                 /** Gets the client request **/
                         struct message_t * client_request = server_receive_request(connection_socket_fd);
+
+                        puts("\t server: received "); message_print(client_request); puts("");
                 //error case
                         failed_tasks += client_request == NULL;
 

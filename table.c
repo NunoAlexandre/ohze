@@ -50,12 +50,12 @@ void table_destroy(struct table_t *table) {
     free(table);
 }
 
-/* Função para adicionar um tuplo na tabela.
- * Lembrar que num espaço de tuplos podem existir tuplos iguais.
+
+/* Função para adicionar uma entrada à tabela.
  * Devolve 0 (ok) ou -1 (out of memory, outros erros)
  */
-int table_put(struct table_t *table, struct tuple_t *tuple) {
-    int slot_index = table_slot_index(table, tuple_key(tuple));
+int table_put_entry(struct table_t *table, struct entry_t *entry) {
+    int slot_index = table_slot_index(table, entry_key(entry));
     if ( slot_index == -1)
         return -1;
     
@@ -63,10 +63,19 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
     
     struct list_t * target_list = table_slot_list(table, slot_index);
 
-    taskSuccess = list_add(target_list, entry_create(tuple));
+    taskSuccess = list_add(target_list, entry);
 
     return taskSuccess;
 }
+
+/* Função para adicionar um tuplo na tabela.
+ * Lembrar que num espaço de tuplos podem existir tuplos iguais.
+ * Devolve 0 (ok) ou -1 (out of memory, outros erros)
+ */
+int table_put(struct table_t *table, struct tuple_t *tuple) {
+    return table_put_entry(table, entry_create(tuple));
+}
+
 
 /* Função para obter um ou todos os tuplos da tabela que
  * estejam de acordo com o template tup_template.
