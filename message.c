@@ -250,7 +250,6 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
  * (Atualizado para Projeto 5)
  */
 struct message_t *buffer_to_message(char *msg_buf, int msg_size) {
-    puts("//entered buffer_to_message");
     // OP_CODE
     int offset = 0;
     

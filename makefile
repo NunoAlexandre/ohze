@@ -15,8 +15,8 @@ EXECUTABLE_CLIENT = SD15_CLIENT
 EXECUTABLE_SERVER = SD15_SERVER
 
 CC = /usr/bin/gcc
-CC_OPTIONS = -Wall
-LNK_OPTIONS = 
+CC_OPTIONS = -Wall -pthread
+LNK_OPTIONS = -pthread
 
 
 #
@@ -60,6 +60,7 @@ $(EXECUTABLE_SERVER) : \
 		./list.o\
 		./tuple.o\
 		./table-server.o\
+		./server_proxy.o\
 		./network_server.o\
 		./client_stub.o\
 		./network_cliente.o\
@@ -73,6 +74,7 @@ $(EXECUTABLE_SERVER) : \
 		./list.o\
 		./tuple.o\
 		./table-server.o\
+		./server_proxy.o\
 		./client_stub.o\
 		./network_server.o\
 		./network_cliente.o\
@@ -127,6 +129,10 @@ install : $(EXECUTABLE_SERVER) $(EXECUTABLE_CLIENT)
 # Item # 6 -- table-server --
 ./table-server.o : SD15-Project/table-server.c
 	$(CC) $(CC_OPTIONS) SD15-Project/table-server.c -c $(INCLUDE) -o ./table-server.o
+
+# Item #  -- server_proxy --
+./server_proxy.o : SD15-Project/server_proxy.c
+	$(CC) $(CC_OPTIONS) SD15-Project/server_proxy.c -c $(INCLUDE) -o ./server_proxy.o
 
 
 # Item # 7 -- general_utils --

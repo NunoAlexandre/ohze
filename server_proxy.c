@@ -77,7 +77,7 @@ void * run_server_proxy ( void *p ) {
       struct message_t *server_response = network_send_receive(server_to_contact, request->request);
 
 
-      sleep(2); 
+     // sleep(2); 
 
       // Acabou o send_receive!
       // Colocar a resposta na tabela

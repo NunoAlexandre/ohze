@@ -23,6 +23,7 @@
 #include "server_proxy.h"
 #include "message-private.h"
 #include <pthread.h>
+#include <time.h>
 
 
 #define N_MAX_CLIENTS 4
@@ -66,7 +67,16 @@ int get_highest_open_connection ( struct pollfd * connections, int currentHighes
 
 
 
+struct message_t *request_to_switch_mode ( struct message_t * original ) {
+    if ( message_opcode_setter(original) && original->c_type == CT_TUPLE ) {
+        time_t timePassed;
+        time ( &timePassed );
+        struct entry_t * entry = entry_create2(tuple_dup(original->content.tuple), (timePassed%100) );
+        return message_create_with(original->opcode, CT_ENTRY, entry);
+    }
 
+    return original;
+}
 
 
 
@@ -246,7 +256,6 @@ int get_highest_open_connection ( struct pollfd * connections, int currentHighes
                     /** Gets the client request **/
                     struct message_t * client_request = server_receive_request(connection_socket_fd);
 
-                    puts("\t server: received "); message_print(client_request); puts("");
                     //error case
                     failed_tasks += client_request == NULL;
 
@@ -522,8 +531,11 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                     //flag to track errors during the request-response process
                     int failed_tasks = 0;
 
-                    /** Gets the client request **/
-                    struct message_t * client_request = server_receive_request(connection_socket_fd);
+                    /** Gets the client request as it was**/
+                    struct message_t * client_request_raw = server_receive_request(connection_socket_fd);
+                    /** prepares the raw client request to respect the authority of the switch **/
+                    struct message_t * client_request = request_to_switch_mode(client_request_raw);
+                    //checks error
                     failed_tasks += client_request == NULL;
 
                     puts("\t server: received "); message_print(client_request); puts("");
@@ -589,6 +601,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
 
                     }
 
+                    sleep(4);
 
                     /** TIME TO CHECK FOR REPLIED REQUESTS FROM PROXIES **/
                     for ( i = 0; i < REQUESTS_BUCKET_SIZE; i++ ) {
@@ -637,8 +650,8 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                                 free(requests_bucket[i]);
                                 requests_bucket[i] = NULL; // Posição na tabela está livre
                                 bucket_is_full = NO;      // Se estava cheia, agora a tabela já o não estará
-                                requests_counter--;     // O número de mensagens na tabela decresce uma unidade7
-                                bucket_has_requests = requests_counter >= 0;
+                                requests_counter--;     // O número de mensagens na tabela decresce uma unidade
+                                bucket_has_requests = requests_counter > 0;
                             }
                         }
 
