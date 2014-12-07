@@ -25,7 +25,7 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
     
     switch (opcode) {
         case OC_SIZE: 
-            taskSuccess = rtable_size(rtable_to_consult);
+            taskSuccess = rtable_size(rtable_to_consult); 
             if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
             }
@@ -178,7 +178,7 @@ int main(int argc , char *argv[]) {
                 invalid_command();
             }
             
-            else{
+            else {
                 /******* O comando foi correcto e vai proceder à consulta da tabela *******/
                 taskSuccess = process_command(input, rtable_to_consult); //processa o pedido do utilizador
  

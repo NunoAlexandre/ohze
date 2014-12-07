@@ -1,32 +1,35 @@
-        //
-        //  table-server.c
-        //  SD15-Product
-        //
-        //  Created by Nuno Alexandre on 25/10/14.
-        //  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
-        //
+//
+//  table-server.c
+//  SD15-Product
+//
+//  Created by Nuno Alexandre on 25/10/14.
+//  Copyright (c) 2014 Nuno Alexandre. All rights reserved.
+//system_rtables
 
-        #include <stdio.h>
-        #include "inet.h"
-        #include "table-private.h"
-        #include "network_server.h"
-        #include "general_utils.h"
-        #include "network_utils.h"
-        #include <signal.h>
-        #include "table_skel.h"
-        #include <sys/poll.h>
-        #include <limits.h>
-        #include <sys/uio.h>
-        #include "client_stub-private.h"
-        #include "client_stub.h"
-        #include "network_cliente.h"
+#include <stdio.h>
+#include "inet.h"
+#include "table-private.h"
+#include "network_server.h"
+#include "general_utils.h"
+#include "network_utils.h"
+#include <signal.h>
+#include "table_skel.h"
+#include <sys/poll.h>
+#include <limits.h>
+#include <sys/uio.h>
+#include "client_stub-private.h"
+#include "client_stub.h"
+#include "network_cliente.h"
+#include "server_proxy.h"
+#include "message-private.h"
+#include <pthread.h>
 
 
-        #define N_MAX_CLIENTS 4
-        #define POLL_TIME_OUT 10
-        #define N_TABLE_SLOTS 7
+#define N_MAX_CLIENTS 4
+#define POLL_TIME_OUT 10
+#define N_TABLE_SLOTS 7
 
-    int get_open_slot(struct pollfd * connections, int connected_fds) {
+int get_open_slot(struct pollfd * connections, int connected_fds) {
     int open_slot = connected_fds;
     int i;
     for ( i = 1; i < connected_fds; i++) {
@@ -34,21 +37,21 @@
             open_slot = i;
     }
     return open_slot;
-    }
+}
 
-    int input_is_valid (int argc, char *argv[]) {
+int input_is_valid (int argc, char *argv[]) {
     return  argc > 1 && is_number (argv[1]);
-    }
+}
 
-    void invalid_input_message () {
+void invalid_input_message () {
     puts("####### SD15-SERVER ##############");
     puts("Sorry, your input was not valid.");
     puts("You must provide a valid number to be the server port.");
     puts("NOTE: Port invalid if (portNumber >=1 && portNumber<=1023) OR (portNumber >=49152 && portNumber<=65535)");
     puts("####### SD15-SERVER ##############");
-    }
+}
 
-    int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
+int get_highest_open_connection ( struct pollfd * connections, int currentHighest ) {
     int i = currentHighest;
     int highest = i-1;
     int stillSearching = YES;
@@ -59,10 +62,23 @@
         }
     } 
     return highest;
-    }
+}
 
-    int server_run ( char * my_address_and_port ) {
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+ int server_run ( char * my_address_and_port, char ** system_rtables, int numberOfServers ) {
 
     //gets the port number
     int portnumber = atoi(get_port(my_address_and_port));
@@ -76,27 +92,13 @@
     printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
 
 
-    char** system_rtables = NULL;
-    int numberOfServers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
 
     int n = 0;
     for ( n = 0; n < numberOfServers; n++) {
         printf("rtable %d has address_port %s \n", n, system_rtables[n]);
     }
 
-    if ( numberOfServers == TASK_FAILED || system_rtables == NULL )
-        return TASK_FAILED;
 
-    int switchIAM = strcmp(system_rtables[0], my_address_and_port) == 0;
-
-
-    if ( switchIAM) {
-        printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
-        
-    }
-    else {
-        puts("IM A SUPER SERVER, NOT A SWITCH");
-    }
 
     /** 0. SIGPIPE Handling */
     struct sigaction s;
@@ -188,148 +190,96 @@
 
             // Gets clients connection requests and handles its requests
     printf("\n--------- waiting for clients requests ---------\n");
+    
+    
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
-                //if there was any polled sockets fd with events
+
+        //if there was any polled sockets fd with events
         if ( polled_fds > 0 ) { 
-                     if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  // Pedido na listening socket ?
-                        int open_slot = get_open_slot(connections, connected_fds); 
-                        if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
-                            connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
-                            connected_fds++;
-                            //updates the highest index connection if needed.
-                            if ( open_slot > highestIndexConnection )
-                                highestIndexConnection = open_slot;
-                        }
-                    }
 
-                    //for each connected cliente it will receive a request and give a response
-                    int i = 0;
-                    for (i = 1; i <= highestIndexConnection; i++) {// Todas as ligações
+            /** enters if there is a request on the listening socket **/ 
+            if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  
+                /* gets an open slot*/
+                int open_slot = get_open_slot(connections, connected_fds); 
 
-                        if ( switchIAM ) {
-                            printf("\n\n ****** I AM THE SWITCH AND YOU KNOW IT! %s:%d ******\n\n", my_address,portnumber);
-                            
-                            int taskSuccess = YES;
-                            //to keep the active
-                            //para guardar o comando do utilizador
-                            
-                            
-                            /* 2. BINDS WITH RTABLE_TO_CONSULT */
-                            if ( TEMP_UNIQUE == 0 ) {
-                                rtable_to_consult = rtable_bind( system_rtables[1]);
-                                printf("Switch > just binded to %s \n", rtable_to_consult->server_address_and_port);
-                                TEMP_UNIQUE = 1;
-
-                            }
-                            
-                            //verifica se o rtable_bind funcionou
-                            if (rtable_to_consult == NULL) {
-                                printf("rtable_to_consult == NULL");
-                                taskSuccess = TASK_FAILED;
-                            }
-                            
-                            //ligação foi bem sucessida
-                            puts("switch will server_receive_request");
-                            struct message_t * msg_request  = server_receive_request(connections[1].fd);
-                            
-                            /* 
-                            Em qualquer dos casos em que é recebido de um table_client um comando indevido, 
-                            deverá ser enviada ao cliente uma mensagem, com opcode OC_REPORT e conteúdo 
-                            CT_INVCMD (definido com o valor 600), onde será enviada uma string de acordo com a ocorrência.         
-                            */
-                            struct message_t * msg_response = NULL;
-                            
-                                if ( message_is_reader(msg_request) ) {
-                                    puts("\t--- switch doesnt read!");
-                                    char * error_message = "switch doesnt read!";
-                                    msg_response = message_create_with(OC_REPORT, CT_INVCMD, error_message);
-                                }
-                                else {
-                                     if ( msg_request->opcode == OC_OUT) {
-                                    puts("its an out, it will turn into entry with timestamp");
-                                    struct entry_t * entry_to_send = entry_create2(msg_request->content.tuple, 3);
-                                    struct message_t * redone_msg = message_create_with(msg_request->opcode, CT_ENTRY, entry_to_send);
-                                    msg_request = redone_msg;
-                                    }
-
-                                     msg_response = network_send_receive(&(rtable_to_consult->server_to_connect), msg_request);
-                                }
-                                    
-                                    server_send_response(connections[1].fd, 1, &msg_response);
-                                    
-                                    //se pedido falhou e não é para repetir pedido tenta terminar de forma controlada
-                                    if (taskSuccess == TASK_FAILED){
-                                        puts("\t--- failed to consult table\n");
-                                    }
-                            
-                        }
-                        else {
-                        //flag to check if socket is on or was closed on client side.
-                        int socket_is_on = YES;
-                        // checks if this socket was closed on the client side. 
-                        // If it's closed, it sets it to -1 and 
-                        //decrements the number of connected_fds
-                        if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
-                            socket_is_on = NO;
-                            //if it was not reseted yet...
-                            close(connections[i].fd);
-                            connections[i].fd = -1;
-                            connections[i].events = 0;
-                            connections[i].revents = 0;
-                            connected_fds--;
-                            
-                            //if this was the highestIndexConnection now its the previous one
-                            if ( i == highestIndexConnection )
-                                highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
-                        }
-
-                       if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
-
-                        connection_socket_fd = connections[i].fd;
-
-                //flag to track errors during the request-response process
-                        int failed_tasks = 0;
-
-                /** Gets the client request **/
-                        struct message_t * client_request = server_receive_request(connection_socket_fd);
-
-                        puts("\t server: received "); message_print(client_request); puts("");
-                //error case
-                        failed_tasks += client_request == NULL;
-
-                /** where all the response message will be stored **/
-                        struct message_t ** response_message = NULL;
-
-                //the table_skel will process the client request and resolve response_message
-                        int response_messages_num = invoke(client_request, &response_message);
-                // error case
-                        failed_tasks+= response_messages_num <= 0 || response_message == NULL;
-
-
-                        sleep(1);
-
-                //sends the response to the client
-                        int message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);
-                //error case
-                        failed_tasks+= message_was_sent == TASK_FAILED;
-
-
-                /** IF some error happened, it will notify the client **/
-                        if ( failed_tasks > 0 ) {
-
-                            server_sends_error_msg(connection_socket_fd);
-
-                        }
-
-                /** frees memory **/
-                        free_message2(client_request, NO);
-                        free_message_set(response_message, response_messages_num);
-
+                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
+                    connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
+                    connected_fds++;
+                    //updates the highest index connection if needed.
+                    if ( open_slot > highestIndexConnection ) {
+                        highestIndexConnection = open_slot;
                     }
                 }
-        }
+            }
+
+            //for each connected cliente it will receive a request and give a response
+            int i = 0;
+            for (i = 1; i <= highestIndexConnection; i++) {
+
+                //flag to check if socket is on or was closed on client side.
+                int socket_is_on = YES;
+
+                // checks if this socket was closed on the client side. 
+                // If it's closed, it sets it to -1 and 
+                //decrements the number of connected_fds
+                if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
+                    socket_is_on = NO;
+                    //if it was not reseted yet...
+                    close(connections[i].fd);
+                    connections[i].fd = -1;
+                    connections[i].events = 0;
+                    connections[i].revents = 0;
+                    connected_fds--;
+
+                    //if this was the highestIndexConnection now its the previous one
+                    if ( i == highestIndexConnection )
+                        highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
+                }
+
+                if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
+
+                    connection_socket_fd = connections[i].fd;
+
+                    int failed_tasks = 0;
+                    //flag to track errors during the request-response process
+
+                    /** Gets the client request **/
+                    struct message_t * client_request = server_receive_request(connection_socket_fd);
+
+                    puts("\t server: received "); message_print(client_request); puts("");
+                    //error case
+                    failed_tasks += client_request == NULL;
+
+                    /** where all the response message will be stored **/
+                    struct message_t ** response_message = NULL;
+
+                    //the table_skel will process the client request and resolve response_message
+                    int response_messages_num = invoke(client_request, &response_message);
+                    // error case
+                    failed_tasks+= response_messages_num <= 0 || response_message == NULL;
+
+
+                    sleep(1);
+
+                    //sends the response to the client
+                    int message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);
+                    //error case
+                    failed_tasks+= message_was_sent == TASK_FAILED;
+
+
+                    /** IF some error happened, it will notify the client **/
+                    if ( failed_tasks > 0 ) {
+                        server_sends_error_msg(connection_socket_fd);
+                    }
+
+                    /** frees memory **/
+                    free_message2(client_request, NO);
+                    free_message_set(response_message, response_messages_num);
+
+                }
             }
         }
+    }
 
             //closes all the sockets socket
         int j;
@@ -346,14 +296,397 @@
 
 
 
-    int main ( int argc, char *argv[] ) {
-        
-        char * address_and_port = strdup(argv[1]);
-        
-        if ( server_run(address_and_port) == TASK_FAILED ) {
-            puts("server_run(address_and_port) failed or crashed (TASK_FAILED)");
-        };
 
 
-        return TASK_SUCCEEDED;
+
+
+
+
+int switch_run ( char * my_address_and_port, char ** system_rtables, int numberOfServers ) {
+//    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
+
+
+    /** 0. SIGPIPE Handling */
+    struct sigaction s;
+    //what must do with a signal - ignore
+    s.sa_handler = SIG_IGN;
+    //set what to do when gets the SIGPIPE
+    sigaction(SIGPIPE, &s, NULL);
+
+
+    /** gets this server port number **/
+    int portnumber = atoi(get_port(my_address_and_port));
+    /** gets this server ip address **/
+    char * my_address = get_address(my_address_and_port);
+
+    /* if port or address invalid*/
+    if ( portnumber_is_invalid(portnumber) || my_address == NULL ) {
+        invalid_input_message();
+        return TASK_FAILED;
     }
+
+   
+
+    /* if there is not at least one switch and one server */
+    if ( numberOfServers <= 1 ) {
+        puts("--- ERROR: starting server: no minimum services provided (switch and servers number).");
+        return TASK_FAILED;
+    }
+
+
+    //1 . Socket
+    int socket_fd;
+
+    //creates a server socket
+    if (  (socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+        perror("server > server_run > error creating socket\n");
+        return TASK_FAILED;
+    }
+
+    //sets the socket reusable
+    int setSocketReusable = YES;
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
+        perror("SO_REUSEADDR setsockopt error");
+        return TASK_FAILED;
+    } 
+
+    //2. Bind
+    struct sockaddr_in server;
+
+    //initializes server sockaddr_in
+    server.sin_family = AF_INET;
+    server.sin_port = htons(portnumber);
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    //does the bind
+    if (bind(socket_fd, (struct sockaddr *) &server, sizeof(server)) < 0){
+        perror("server > server_run > error binding socket\n");
+        close(socket_fd);
+        return TASK_FAILED;
+    };
+
+    //3. Listen
+    if (listen(socket_fd, 0) < 0 ) {
+        perror("server > server_run > error on listen() \n");
+        close(socket_fd);
+        return TASK_FAILED;
+    };
+
+
+    /** the number of proxies the switch will provide **/
+    int NUMBER_OF_PROXIES = numberOfServers-1;
+    /** array with data for each thread that will be provided **/
+    struct thread_data threads[NUMBER_OF_PROXIES]; 
+    /** array with the ids of each thread that will be provided **/
+    pthread_t thread_ids[NUMBER_OF_PROXIES];
+
+    /** the bucket where requests will be stored and let available to all the threads **/
+    struct request_t *requests_bucket[REQUESTS_BUCKET_SIZE];
+
+    /** a place to store each in processing message **/
+    struct request_t * current_request = NULL;
+
+    /** the monitor to observe if requests_bucket has requests **/
+    struct monitor_t monitor_bucket_has_requests; 
+    /** the monitor to check if the bucket is not null **/
+    struct monitor_t monitor_bucket_not_full;
+
+     /** initializes the two monitors **/
+    monitor_init(&monitor_bucket_has_requests);
+    monitor_init(&monitor_bucket_not_full);
+
+    /** Thy locket to ensure mutex accessing the bucket **/ 
+    pthread_mutex_t bucket_access = PTHREAD_MUTEX_INITIALIZER; 
+
+    /** Variable on the bucket status **/
+    int bucket_is_full = NO;    
+    int bucket_has_requests = NO;
+    int requests_counter = 0;
+    int index_to_store_request = 0;
+    
+    /** initializes each slot of the bucket **/
+    int i;
+    for (i = 0; i < REQUESTS_BUCKET_SIZE; i++) 
+    requests_bucket[i] = NULL;
+
+
+     // Criar QUEUES e THREADS
+    for(i = 0; i < NUMBER_OF_PROXIES; i++){
+
+      threads[i].requests_bucket = requests_bucket; // Cada THREAD PROXY terá acesso à tabela de mensagens,
+      threads[i].bucket_has_requests = &bucket_has_requests; // bem como a esta variável de estado,
+      threads[i].monitor_bucket_has_requests = &monitor_bucket_has_requests; // a este monitor,
+      threads[i].bucket_access = &bucket_access;  // e ao MUTEX para acesso à tabela.
+
+      // Identificar o TABLE_SERVER a que cada PROXY se ligará
+      threads[i].server_address_and_port = system_rtables[i+1];
+      threads[i].id = i+1; // SWITCH com id 0, PROXIES com id's >= 1
+
+      // Criar cada uma das threads que serão PROXY de um TABLE_SERVER
+      if (pthread_create(&thread_ids[i], NULL, &run_server_proxy, (void *) &threads[i]) != 0){
+        perror("Erro ao criar uma thread proxy");
+        return -1;
+      }
+      pthread_detach(thread_ids[i]);
+    }
+
+    
+    
+
+    /** Sets up all the poll structures to support multiple client connections **/
+
+
+    //sockaddres_in struct for a client
+    struct sockaddr_in client;
+    //the connection socket with a client
+    int connection_socket_fd;
+    //the cliente socket size
+    socklen_t  client_socket_size = sizeof (client);
+   
+    /* initializes the table_skel */
+    if ( table_skel_init(N_TABLE_SLOTS) == TASK_FAILED )
+        return TASK_FAILED;
+
+
+    /** creates a pollfd **/ 
+    struct pollfd connections[N_MAX_CLIENTS];
+    /* the socket_fd is the listening socket */
+    connections[0].fd = socket_fd;
+    connections[0].events = POLLIN;
+    /* initializes each connection slot */
+    for( i=1; i < N_MAX_CLIENTS; i++){
+        connections[i].fd = -1;
+        connections[i].events = 0;
+        connections[i].revents = 0;
+    }
+
+    //for now, only the listening socket
+    int connected_fds = 1;
+    //saves the highet connection index
+    int highestIndexConnection = 0;
+    // to save the result from poll function
+    int polled_fds = 0; 
+
+
+    printf("\n--------- waiting for clients requests ---------\n");
+
+
+    while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
+
+        //if there was any polled sockets fd with events
+        if ( polled_fds > 0 ) { 
+
+            /** enters if there is a request on the listening socket **/ 
+            if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  
+                /* gets an open slot*/
+                int open_slot = get_open_slot(connections, connected_fds); 
+
+                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
+                    connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
+                    connected_fds++;
+                    //updates the highest index connection if needed.
+                    if ( open_slot > highestIndexConnection ) {
+                        highestIndexConnection = open_slot;
+                    }
+                }
+            }
+
+            //for each connected cliente it will receive a request and give a response
+            int i = 0;
+            for (i = 1; i <= highestIndexConnection; i++) {
+
+                //flag to check if socket is on or was closed on client side.
+                int socket_is_on = YES;
+
+                // checks if this socket was closed on the client side. 
+                // If it's closed, it sets it to -1 and 
+                //decrements the number of connected_fds
+                if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
+                    socket_is_on = NO;
+                    //if it was not reseted yet...
+                    close(connections[i].fd);
+                    connections[i].fd = -1;
+                    connections[i].events = 0;
+                    connections[i].revents = 0;
+                    connected_fds--;
+
+                    //if this was the highestIndexConnection now its the previous one
+                    if ( i == highestIndexConnection )
+                        highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
+                }
+
+                if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
+
+                    connection_socket_fd = connections[i].fd;
+
+                    //flag to track errors during the request-response process
+                    int failed_tasks = 0;
+
+                    /** Gets the client request **/
+                    struct message_t * client_request = server_receive_request(connection_socket_fd);
+                    failed_tasks += client_request == NULL;
+
+                    puts("\t server: received "); message_print(client_request); puts("");
+
+
+                    /** If client request is a writter it's proxies work, otherwise will send report  **/
+
+                    if ( message_is_writer(client_request) ) {
+
+                        /** UPDATES THE REQUESTS_BUCKET **/
+
+                        /* locks the access to the bucket */
+                        pthread_mutex_lock(&bucket_access); 
+
+                        /** If bucket is not full it will store the client_request **/
+                        if ( !bucket_is_full ) { 
+
+                            // Alocar memória para uma mensagem local (entre thread principal e as outras)
+                            if ((current_request = (struct request_t *) malloc(sizeof(struct request_t))) == NULL) {
+                                perror("Erro ao alocar memória para mensagem local");
+                                return -1;
+                            }
+
+                            // Preparar mensagem local de acordo com o pedido do cliente
+                            current_request->requestor_fd = connection_socket_fd; 
+                            current_request->request = client_request; 
+                            current_request->response = NULL;
+                            current_request->flags = 5; 
+                            current_request->acknowledged = NUMBER_OF_PROXIES;
+                            current_request->answered = NO;        
+
+                            // Colocar mensagem na tabela
+                            requests_bucket[index_to_store_request] = current_request; 
+                            // Próxima mensagem será escrita neste índice
+                            index_to_store_request = index_to_store_request+1 % REQUESTS_BUCKET_SIZE;         
+                            // Incrementar número de mensagens na tabela       
+                            requests_counter++;                 
+
+                            // Forçar este estado
+                            bucket_has_requests = YES;           
+                            // Sinalizar THREADS bloqueadas no estado vazio da tabela
+                            monitor_signal(&monitor_bucket_has_requests, &bucket_has_requests); 
+                            /* bucket is full if the slot of the next index is not empty */
+                            bucket_is_full = requests_bucket[index_to_store_request] != NULL;   
+                        }
+
+                        /* unlocks the bucket */
+                        pthread_mutex_unlock(&bucket_access); 
+                    }
+                    else {
+                        /** else > client_request is a reader operation so will send it a report **/
+
+                        struct message_t *server_response = message_create_with(OC_REPORT, CT_INVCMD, "Invalid command to switch.");
+                        //sends the response to the client
+                        int message_was_sent = server_send_response(connection_socket_fd, 1, &server_response);
+                        //error case
+                        failed_tasks+= message_was_sent == TASK_FAILED;
+
+                        /** IF some error happened, it will notify the client **/
+                        if ( failed_tasks > 0 ) {
+                            server_sends_error_msg(connection_socket_fd);
+                        }
+
+                    }
+
+
+                    /** TIME TO CHECK FOR REPLIED REQUESTS FROM PROXIES **/
+                    for ( i = 0; i < REQUESTS_BUCKET_SIZE; i++ ) {
+
+                        /* locks the access to the buffer */
+                        pthread_mutex_lock(&bucket_access); 
+
+                        if (requests_bucket[i] != NULL && requests_bucket[i]->response != NULL) { // Só acontece se está uma mensagem no indice i
+                                                                                   // e se já chegou a primeira resposta
+                        
+                            // Em baixo, equivale a processar a mensagem em função da resposta
+                            // A flag answered indica se já houve resposta ao cliente.
+                            if (!requests_bucket[i]->answered){  
+                                // Se não houve, temos de fazer invocação local e resposta ao cliente:
+
+                                /** where all the response message will be stored **/
+                                struct message_t ** response_messages = NULL;
+
+                                //the table_skel will process the client request and resolve response_messages
+                                int response_messages_num = invoke(requests_bucket[i]->request, &response_messages);
+                                // error case
+                                failed_tasks+= response_messages_num <= 0 || response_messages == NULL;
+
+                                //sends the response to the client
+                                int message_was_sent = server_send_response(requests_bucket[i]->requestor_fd, response_messages_num, response_messages);
+                                //error case
+                                failed_tasks+= message_was_sent == TASK_FAILED;
+
+
+                                /** IF some error happened, it will notify the client **/
+                                if ( failed_tasks > 0 ) {
+                                    server_sends_error_msg(requests_bucket[i]->requestor_fd);
+                                }
+
+                                /* request was answered if no failed task on the response process */
+                                requests_bucket[i]->answered = failed_tasks == 0; 
+                                
+                            }
+
+                            // A flag acknowledged (com valor 0) indica se já todas as réplicas leram a mensagem.
+                            // Se isso acontecer pode-se retirar a mesma da tabela.
+                            if (requests_bucket[i]->acknowledged == 0){
+
+                                free(requests_bucket[i]->response);
+                                free(requests_bucket[i]->request);
+                                free(requests_bucket[i]);
+                                requests_bucket[i] = NULL; // Posição na tabela está livre
+                                bucket_is_full = NO;      // Se estava cheia, agora a tabela já o não estará
+                                requests_counter--;     // O número de mensagens na tabela decresce uma unidade7
+                                bucket_has_requests = requests_counter >= 0;
+                            }
+                        }
+
+                        pthread_mutex_unlock(&bucket_access); // Desbloquear a tabela
+             
+                    }
+                }
+            }
+        }
+    }
+
+    //closes all the sockets socket
+    int j;
+    for (j = 0; j < N_MAX_CLIENTS; j++){
+        if (connections[j].fd >= 0){
+            close(connections[j].fd);
+        }
+    }
+    //destroys the table_skel
+    table_skel_destroy();
+
+    return TASK_SUCCEEDED;
+}
+
+
+
+int main ( int argc, char *argv[] ) {
+
+    char * my_address_and_port = strdup(argv[1]);
+
+     /** gets the address_and_port of each remote table of the system **/
+    char** system_rtables = NULL;
+    int numberOfServers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,  &system_rtables);
+
+    /* checks if its the switch */
+    int switchIAM = strcmp(system_rtables[0], my_address_and_port) == 0;
+
+
+    if ( switchIAM ) {
+        puts("\t ### I AM THE SWITCH ###");
+        switch_run(my_address_and_port, system_rtables, numberOfServers);
+    }
+    else {
+        puts("\t ### I AM A SERVER ###");
+        server_run(my_address_and_port, system_rtables, numberOfServers);
+    }
+    
+
+
+    return TASK_SUCCEEDED;
+}
