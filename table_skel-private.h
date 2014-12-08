@@ -1,6 +1,14 @@
 #ifndef SD15_Product_table_skel_private_h
 #define SD15_Product_table_skel_private_h
 
+#define SERVER_RESPONSE_MODE 0
+#define SWITCH_RESPONSE_MODE 1
+
+/** Module Property - defines the way that the table operates or responds to operations **/
+int RESPONSE_MODE;
+
+int table_skel_init_with_mode(int n_lists, int response_mode);
+
 /*
 * Initiliazes the msg_set_out array with set_size and sets its first_message as its first message.
 */

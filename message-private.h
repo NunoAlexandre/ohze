@@ -127,7 +127,7 @@ int message_error (struct message_t* tested_msg);
 /*
  * Verifies if message is a report message
  */
-int message_report (struct message_t* msg);
+int message_report (struct message_t* msg); 
 
 /*
   * Check if message is writer
@@ -143,6 +143,11 @@ int message_is_reader(struct message_t *msg);
  * Check is message has opcode setter
  */
 int message_opcode_setter(struct message_t * msg );
+
+/*
+* Checks if message has opcode taker, ie, a getter that takes on reading.
+*/
+int message_opcode_taker( struct message_t * msg );
 
 /*
  * Check is message has opcode getter

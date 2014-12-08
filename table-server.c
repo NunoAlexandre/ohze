@@ -20,6 +20,7 @@
 #include "client_stub-private.h"
 #include "client_stub.h"
 #include "network_cliente.h"
+#include "table_skel-private.h"
 #include "server_proxy.h"
 #include "message-private.h"
 #include <pthread.h>
@@ -127,29 +128,28 @@ struct message_t *request_to_switch_mode ( struct message_t * original ) {
         return TASK_FAILED;
     }
 
-            //sets the socket reusable
+    // sets the socket reusable
     int setSocketReusable = YES;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
         perror("SO_REUSEADDR setsockopt error");
         return TASK_FAILED;
     } 
 
-            //2. Bind
+    // 2. Bind
     struct sockaddr_in server;
 
-            //initializes server sockaddr_in
+    //initializes server sockaddr_in
     server.sin_family = AF_INET;
     server.sin_port = htons(portnumber);
     server.sin_addr.s_addr = htonl(INADDR_ANY);
 
-            //does the bind
+    // does the bind
     if (bind(socket_fd, (struct sockaddr *) &server, sizeof(server)) < 0){
         perror("server > server_run > error binding socket\n");
         close(socket_fd);
         return TASK_FAILED;
     };
-
-            //3. Listen
+    //3. Listen
     if (listen(socket_fd, 0) < 0 ) {
         perror("server > server_run > error on listen() \n");
         close(socket_fd);
@@ -168,7 +168,7 @@ struct message_t *request_to_switch_mode ( struct message_t * original ) {
     socklen_t  client_socket_size = sizeof (client);
 
             // initializes the table_skel
-    if ( table_skel_init(N_TABLE_SLOTS) == TASK_FAILED )
+    if ( table_skel_init_with_mode( N_TABLE_SLOTS, SERVER_RESPONSE_MODE ) == TASK_FAILED )
         return -1;
 
 
@@ -453,8 +453,9 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     socklen_t  client_socket_size = sizeof (client);
    
     /* initializes the table_skel */
-    if ( table_skel_init(N_TABLE_SLOTS) == TASK_FAILED )
+    if ( table_skel_init_with_mode( N_TABLE_SLOTS, SWITCH_RESPONSE_MODE ) == TASK_FAILED )
         return TASK_FAILED;
+
 
 
     /** creates a pollfd **/ 

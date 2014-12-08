@@ -20,14 +20,21 @@ struct table_t * table = NULL;
  */
  int table_skel_init(int n_lists) {
 	//case called more than once
- 	if ( table != NULL ) {
+ 	if ( table != NULL ) { 
  		perror("table_skel_init > table already initialized");
- 		return TASK_FAILED;
+ 		return TASK_SUCCEEDED;
  	}
 	//creates the server table
  	table = table_create(n_lists);
 	//returns success value
  	return table != NULL ? TASK_SUCCEEDED : TASK_FAILED;
+ }
+
+ int table_skel_init_with_mode(int n_lists, int response_mode) {
+ 	int table_created =table_skel_init(n_lists);
+ 	RESPONSE_MODE = response_mode;
+
+ 	return table_created;
  }
 
 /* Libertar toda a memória e recursos alocados pela função anterior.
@@ -99,15 +106,18 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
     //the opcode of each message will be this
  	int msgs_opcode = msg_in->opcode + 1;
 
-    //gets room for ntuples + 1 (msg with number of tuples) message_t pointers
-    int n_messages = init_response_with_message(msg_set_out, 1 + ntuples, message_create_with(msgs_opcode, CT_RESULT, &ntuples));
+    //the number of responses depends on the response mode
+    int msg_set_size = RESPONSE_MODE == SERVER_RESPONSE_MODE && message_opcode_taker(msg_in) ? 1 : 1 + ntuples;
+    /* creates a set with the proper number of response messages */ 
+    int n_messages = init_response_with_message(msg_set_out, msg_set_size, message_create_with(msgs_opcode, CT_RESULT, &ntuples));
 
     if ( n_messages == TASK_FAILED)
     	return TASK_FAILED;
 
+    /* it will only run if response mode is switch mode */
  	int i = 1;
  	int sent_successfully = YES;
- 	while ( i <= ntuples && sent_successfully ) {
+ 	while ( i <= (n_messages-1) && sent_successfully ) {
  		//saves the message with the tuple...
  		(*msg_set_out)[i] = message_create_with(msgs_opcode, CT_TUPLE, (*matching_tuples)[i-1]);
  		
