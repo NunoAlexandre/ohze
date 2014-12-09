@@ -13,13 +13,31 @@
 
 #define RTABLE_AVAILABLE YES
 #define RTABLE_UNAVAILABLE NO
-/* Remote table. A definir pelo grupo em client_stub-private.h
+/*
+ * Remote table.
  */
 struct rtable_t{
     struct server_t server_to_connect;
     char * server_address_and_port;
     int status;
 };
+
+/*
+ * Rtable connection
+ */
+struct rtable_connection {
+    char ** servers_addresses_and_ports;
+    int total_servers;
+    int switch_position;
+    struct rtable_t * rtable_switch;
+    int replica_position;
+    struct rtable_t * rtable_replica;
+};
+
+/*
+ *  Função que dado um endereço cria uma rtable inativa (sem ligação a um servidor)
+ */
+struct rtable_t * rtable_create_from_address(char* server_address_and_port);
 
 /*
  * Função que dada uma estrutura server_t cria uma rtable
@@ -57,6 +75,68 @@ struct rtable_t *rtable_rebind(struct rtable_t *rtable, char* server_address_and
 
 /*
  * Função que liberta toda a memória alocada a uma estrutura rtable
+ * (Atualizado para Projeto 5)
  */
 void rtable_destroy (struct rtable_t *rtable);
+
+/*
+ * Inicializa a estrutura rtable_connection
+ * (Projeto 5)
+ */
+struct rtable_connection* rtable_init (char * addresses_and_ports);
+
+/* Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
+ * a estrutura e aloca a memória necessária).
+ * (Projeto 5)
+ */
+struct rtable_connection * rtable_connection_create(int n_servers);
+
+/*
+ * Função para enviar mensagem OC_REPORT, CT_SFAILURE, para replica a informar que switch não está definido.
+ * Recebe mensagem OC_REPORT, CT_Running com informação do endereço do novo switch
+ * Devolve 0 (ok) ou -1 (problemas).
+ * (Projeto 5)
+ */
+char * rtable_report(struct rtable_connection *system_init);
+
+/*
+ * Função que atualiza o endereço do switch e rtable_switch
+ * Retorna TASK_SUCCEEDED em caso de sucesso
+ * (Projeto 5)
+ */
+int rtable_connection_assign_new_switch (struct rtable_connection * system_init, char * switch_address_and_port);
+
+/*
+ *  Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
+ *  Retorna a posição em caso de sucesso ou TASK_FAILED
+ * (Projeto 5)
+ */
+int rtable_connection_find_address (struct rtable_connection * system_init, char * address_and_port_to_find);
+
+/*
+ * Inicia o processo de disconectar de uma dada rtable_connection
+ * Retorna TASK_SUCCEEDED em caso de sucesso
+ * (Projeto 5)
+ */
+int rtable_disconnect (struct rtable_connection * system_init);
+
+/*
+ * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
+ * (Projeto 5)
+ */
+struct rtable_t * rtable_connection_get_switch (struct rtable_connection * system_init);
+
+/*
+ * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
+ * (Projeto 5)
+ */
+struct rtable_t * rtable_connection_get_replica (struct rtable_connection * system_init);
+
+
+/*
+ * Liberta toda a memoria alocada a uma estrutura rtable_connection
+ * (Projeto 5)
+ */
+void rtable_connection_destroy (struct rtable_connection * system_init);
+
 #endif

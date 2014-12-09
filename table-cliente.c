@@ -13,28 +13,47 @@
 #include "network_utils.h"
 #include "client_stub.h"
 
+
 /*
  *  Acts according with user command
  *  returns 0 if success, -1 otherwise
  */
-int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *message_content){
-
+int proceed_with_command (int opcode, struct rtable_connection * system_init, void *message_content){
+    
     int taskSuccess = TASK_FAILED;
     int keep_tuples = -1; //apenas para inicializar
     int one_or_all = -1; //apenas para inicializar
+    struct rtable_t * rtable_switch = system_init->rtable_switch;
+    struct rtable_t * rtable_replica = system_init->rtable_replica;
+    
     
     switch (opcode) {
-        case OC_SIZE: 
-            taskSuccess = rtable_size(rtable_to_consult); 
+        case OC_SIZE:
+            taskSuccess = rtable_size(rtable_replica);
             if (taskSuccess == TASK_FAILED){
                 return TASK_FAILED;
             }
             break;
             
         case OC_OUT:
-            taskSuccess = rtable_out(rtable_to_consult, message_content);
-            if (taskSuccess == TASK_FAILED){
-                return TASK_FAILED;
+            taskSuccess = rtable_out(rtable_switch, message_content);
+            
+            /*** REVER MUITO BEM A SITUAÇÂO DO SWITCH ***/
+            //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
+            if (taskSuccess == TASK_FAILED && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
+                puts ("SWITCH SOCKET IS CLOSED!");
+                //faz unbind do switch
+                taskSuccess = rtable_unbind(system_init->rtable_switch);
+                if (taskSuccess == TASK_FAILED)
+                    puts ("UNABLE TO UNBIND RTABLE_SWITCH!");
+                
+                char * new_switch_address = strdup (rtable_report(system_init));
+                if (new_switch_address == NULL){
+                    free(new_switch_address);
+                    return TASK_FAILED;
+                }
+                free(new_switch_address);
+                taskSuccess = rtable_out(rtable_switch, message_content);
             }
             break;
             
@@ -45,7 +64,7 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
             keep_tuples = opcode == OC_IN || opcode == OC_IN_ALL ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
             one_or_all = opcode == OC_IN || opcode == OC_COPY;
             taskSuccess = TASK_SUCCEEDED;
-            break;            
+            break;
         default:
             taskSuccess = TASK_FAILED;
             break;
@@ -53,7 +72,27 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
     
     //GETTER REQUESTS
     if ((opcode != OC_SIZE && opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
-        rtable_get(rtable_to_consult, message_content, keep_tuples, one_or_all);
+        struct tuple_t ** received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
+        
+        /*** REVER MUITO BEM A SITUAÇÂO DO SWITCH ***/
+        //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
+        if (received_tuples == NULL && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
+            puts ("SWITCH SOCKET IS CLOSED!");
+            //faz unbind do switch
+            taskSuccess = rtable_unbind(system_init->rtable_switch);
+            
+            char * new_switch_address = strdup (rtable_report(system_init));
+            if (new_switch_address == NULL){
+                free(new_switch_address);
+                return TASK_FAILED;
+            }
+            free(new_switch_address);
+            received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
+            if (received_tuples == NULL){
+                puts ("FAILLED TO RECEIVE TUPLES!");
+                taskSuccess = TASK_FAILED;
+            }
+        }
     }
     
     return taskSuccess;
@@ -63,7 +102,7 @@ int proceed_with_command (int opcode, struct rtable_t *rtable_to_consult, void *
  * Processes user command
  * Returns 0 if sucess, -1 otherwise
  */
-int process_command (const char* command, struct rtable_t* rtable_to_consult){
+int process_command (const char* command, struct rtable_connection * system_init){
     
     int taskSuccess = TASK_FAILED;
     int opcode = find_opcode(command);
@@ -81,7 +120,7 @@ int process_command (const char* command, struct rtable_t* rtable_to_consult){
         message_content = &resultValue;
     }
     
-    taskSuccess = proceed_with_command (opcode, rtable_to_consult, message_content);
+    taskSuccess = proceed_with_command (opcode, system_init, message_content);
     
     return taskSuccess;
 }
@@ -121,7 +160,7 @@ int test_input(int argc){
 }
 
 int main(int argc , char *argv[]) {
-
+    
     int taskSuccess = TASK_SUCCEEDED;
     
     /* 0. SIGPIPE Handling */
@@ -139,19 +178,18 @@ int main(int argc , char *argv[]) {
     //para guardar o comando do utilizador
     char input [MAX_MSG];
     
-    //the remote table to consult
-    struct rtable_t *rtable_to_consult;
     
-    //the server address from input
-    char * server_address_and_port = strdup(argv[1]);
+    /* 2. Obter os diversos endereços e inicializar a rtable */
+    char * file_path = strdup(argv[1]);
     
-    /* 2. BINDS WITH RTABLE_TO_CONSULT */
-    rtable_to_consult = rtable_bind(server_address_and_port);
+    struct rtable_connection * system_init;
     
-    //verifica se o rtable_bind funcionou
-    if (rtable_to_consult == NULL){
+    system_init = rtable_init(file_path); //vai inicializar a estrutura rtable_connection
+    
+    if (system_init == NULL){
         taskSuccess = TASK_FAILED;
-        }
+        puts ("FAILLED DO SYSTEM_INIT!");
+    }
     
     //ligação foi bem sucessida
     if (taskSuccess == TASK_SUCCEEDED){
@@ -162,7 +200,7 @@ int main(int argc , char *argv[]) {
             puts("\n---- Introduzir comando ----");
             //reads user command
             if (fgets (input, MAX_MSG-1, stdin) == NULL) {
-                free(server_address_and_port);
+                free(file_path);
                 return TASK_FAILED;
             }
             
@@ -178,10 +216,10 @@ int main(int argc , char *argv[]) {
                 invalid_command();
             }
             
-            else {
+            else{
                 /******* O comando foi correcto e vai proceder à consulta da tabela *******/
-                taskSuccess = process_command(input, rtable_to_consult); //processa o pedido do utilizador
- 
+                taskSuccess = process_command(input, system_init); //processa o pedido do utilizador
+                
                 //se pedido falhou e não é para repetir pedido tenta terminar de forma controlada
                 if (taskSuccess == TASK_FAILED){
                     puts("\t--- failed to consult table\n");
@@ -194,18 +232,16 @@ int main(int argc , char *argv[]) {
     puts("A terminar sessão...");
     sleep(2); //para fica mais bonito
     
-    free(server_address_and_port);
-
-    int unbind = TASK_SUCCEEDED;
+    free(file_path);
     
-    if (rtable_to_consult != NULL){
-        unbind = rtable_unbind(rtable_to_consult);
+    if (system_init != NULL){
+        taskSuccess = rtable_disconnect(system_init);
     }
-
-    if (unbind == TASK_FAILED){
+    
+    if (taskSuccess == TASK_FAILED){
         return TASK_FAILED;
     }
-
+    
     puts("\nSessão terminada!\n");
     //termina processo com sinal de successo
     return taskSuccess;

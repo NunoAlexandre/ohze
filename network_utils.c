@@ -72,18 +72,18 @@ int hostname_to_ip(char * hostname , char* ip){
 }
 
 int socket_is_open(int socket_fd ) {
-    char * buffer = malloc (1); 
+    char * buffer = malloc (1);
     if ( recv(socket_fd, buffer, 1, MSG_PEEK | MSG_DONTWAIT) == 0 ) {
         socket_fd = -1;
     }
     free(buffer);
-    //if socket is not -1 then its opened 
+    //if socket is not -1 then its opened
     return socket_fd != -1;
 }
 
 int socket_is_closed(int socket_fd ) {
     return ! socket_is_open(socket_fd);
-} 
+}
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
@@ -95,9 +95,9 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
     //checks if socket is closed...
     if ( socket_is_closed(socket_fd) )
         return TASK_FAILED;
-
+    
     int bufsize = bytesToWrite;
-
+    
     while(bytesToWrite>0 ) {
         //checks it to avoid issues
         if ( socket_is_closed(socket_fd) )
@@ -108,7 +108,7 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
             if(errno==EINTR) continue;
             return writtenBytes;
         }
-       
+        
         //moves buffer pointer
         buffer += writtenBytes;
         //bytes to write
@@ -124,11 +124,11 @@ int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
  * than nbytesToRead something went wrong.
  */
 int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
-
+    
     int bufsize = nBytesToRead;
-
+    
     while ( nBytesToRead > 0 ) {
-
+        
         int nReadedBytes = (int) read(socket_fd, buffer, nBytesToRead);
         //if nReadedBytes is -1 (error) or 0 (socket closed)
         if ( nReadedBytes <= 0 ) {
@@ -152,7 +152,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //puts("\t --- sending message ---");
     if ( messageToSend == NULL )
         return TASK_FAILED;
-
+    
     //the buffer
     char * messageToSend_buffer = NULL;
     //the message size
@@ -170,7 +170,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     if ( (writtenBytes = write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
         if ( writtenBytes == TASK_FAILED )
             printf("\t--- failed: socket is closed\n");
-
+        
         return TASK_FAILED;
     }
     //and sends the message
@@ -181,8 +181,8 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     free(messageToSend_buffer);
     
     printf("Sent message: "); message_print(messageToSend); printf(" <> %d bytes\n", message_size_bytes(messageToSend));
-
-
+    
+    
     return TASK_SUCCEEDED;
 }
 
@@ -193,14 +193,14 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  */
 struct message_t* receive_message (int connection_socket_fd) {
     //puts("\t --- receiving message ---");
-
+    
     int size_of_msg_received = 0;
-
+    
     // 1. Lê tamanho da mensagem que a ser recebida
     if ( (read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
         return NULL;
     }
-     // 1.1 Converte tamanho da mensagem para formato cliente
+    // 1.1 Converte tamanho da mensagem para formato cliente
     int size_of_msg_received_NTOHL = ntohl(size_of_msg_received);
     //safety check
     if ( size_of_msg_received_NTOHL  <= 0 || size_of_msg_received_NTOHL > MAX_MSG ) {
@@ -222,9 +222,9 @@ struct message_t* receive_message (int connection_socket_fd) {
     // 2.4 Converte buffer para Mensagem
     //printf("Message to receive has %d bytes\n", size_of_msg_received_NTOHL);
     //puts("receive_message > before buf_to_msg");
-   // printf("size_of_msg_received_NTOHL is %d\n", size_of_msg_received_NTOHL);
+    // printf("size_of_msg_received_NTOHL is %d\n", size_of_msg_received_NTOHL);
     struct message_t * message_received = buffer_to_message(message_buffer, size_of_msg_received_NTOHL );
-
+    
     // 2.5 Verifica se a mensagem foi bem criada */
     if ( message_received == NULL ) {
         puts("receive_message -> failed to buffer_to_message (returned null)\n");
@@ -236,13 +236,13 @@ struct message_t* receive_message (int connection_socket_fd) {
     
     //frees the local buffer
     free(message_buffer);
- 
+    
     return message_received;
 }
 
 
 int get_system_server(char * lineWithServerInfo, char ** system_server_info) {
-  
+    
     *system_server_info = strdup(lineWithServerInfo);
     
 	return TASK_SUCCEEDED;
@@ -264,7 +264,7 @@ int get_system_switch(char * lineWithSwitchInfo, char** system_switch) {
 	if ( strcmp(switch_identifier, SWITCH_SERVER_IDENTIFIER) == 0 ) {
         taskSuccess = get_system_server( line,  system_switch);
 	}
-
+    
     if ( line != NULL)
         free(line);
     
@@ -338,6 +338,15 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
     
 	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
+
+/*
+ * Random selection of a replica from a server list
+ */
+char* get_server_replica_address (char ** servers_list_address, int n_servers){
+    int replica_position = get_random_number(1, n_servers-1);
+    return servers_list_address[replica_position];
+}
+
 
 
 

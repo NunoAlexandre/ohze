@@ -18,8 +18,8 @@
 #define SYSTEM_CONFIGURATION_FILE "./SD15-Project/sd15_system_config"
 
 /*int extern replica_server_selected; //vai guardar qual a replica seleccionada
-int extern number_of_servers;
-int extern number_of_replicas;*/
+ int extern number_of_servers;
+ int extern number_of_replicas;*/
 
 
 char* ip_address_copy_from_server;
@@ -38,20 +38,20 @@ char * get_address (const char * address_and_port);
 
 
 /*
-* Checks, without modifying its value, if the socket_fd is open.
-*/
+ * Checks, without modifying its value, if the socket_fd is open.
+ */
 int socket_is_open(int socket_fd );
 
 /*
-* Checks if the pointed socketfd is open or not (YES or NO as return).
-* If socket got closed, then YES.
-*/
+ * Checks if the pointed socketfd is open or not (YES or NO as return).
+ * If socket got closed, then YES.
+ */
 int socket_is_closed(int socket_fd );
 
 /*
  * Ensures that all nbytesToWrite of the buffer are written to the socket_fd.
  * The only case it doesn't happen is if some EINTR EPIPE happens.
- * Returns the number of bytes written so if its different 
+ * Returns the number of bytes written so if its different
  * than nbytesToWrite something went wrong.
  */
 int write_all(int socket_fd, const void *buffer, int nbytesToWrite);
@@ -90,6 +90,6 @@ int get_system_rtables_info(char * filePath, char *** system_rtables );
 /*
  * Random selection of a replica from a server list
  */
-struct server_t* get_server_replica (struct server_t ** servers_list);
+char* get_server_replica_address (char ** servers_list_address, int n_servers);
 
 #endif

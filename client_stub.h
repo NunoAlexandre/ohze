@@ -4,7 +4,7 @@
 #include "tuple.h"
 #include "client_stub-private.h"
 
-/* Remote table. A definir pelo grupo em client_stub-private.h 
+/* Remote table. A definir pelo grupo em client_stub-private.h
  */
 struct rtable_t;
 
@@ -14,7 +14,7 @@ struct rtable_t;
  */
 struct rtable_t *rtable_bind(const char *address_port);
 
-/* Fecha a ligação com o servidor, liberta toda a memória local. 
+/* Fecha a ligação com o servidor, liberta toda a memória local.
  * Retorna 0 se tudo correr bem e -1 em caso de erro.
  */
 int rtable_unbind(struct rtable_t *rtable);
@@ -32,9 +32,5 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
 /* Devolve número de elementos da tabela.
  */
 int rtable_size(struct rtable_t *rtable);
-
-/*
- * Random selection of a replica from a rtable list
- */
 
 #endif
