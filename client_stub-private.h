@@ -13,6 +13,7 @@
 
 #define RTABLE_AVAILABLE YES
 #define RTABLE_UNAVAILABLE NO
+
 /*
  * Remote table.
  */
@@ -85,7 +86,8 @@ void rtable_destroy (struct rtable_t *rtable);
  */
 struct rtable_connection* rtable_init (char * addresses_and_ports);
 
-/* Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
+/* 
+ * Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
  * (Projeto 5)
  */
@@ -107,8 +109,8 @@ char * rtable_report(struct rtable_connection *system_init);
 int rtable_connection_assign_new_switch (struct rtable_connection * system_init, char * switch_address_and_port);
 
 /*
- *  Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
- *  Retorna a posição em caso de sucesso ou TASK_FAILED
+ * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
+ * Retorna a posição em caso de sucesso ou TASK_FAILED
  * (Projeto 5)
  */
 int rtable_connection_find_address (struct rtable_connection * system_init, char * address_and_port_to_find);
@@ -149,5 +151,14 @@ char* get_server_replica_address (char ** servers_list_address, int n_servers);
  * (Projeto 5)
  */
 int rtable_bind_new_switch (struct rtable_connection * system_init);
+
+/*
+ * Trata de todo o processo de ligação um novo switch:
+ * 0. faz unbind do switch atual
+ * 1. envia mensagem do tipo REPORT a rtable_replica
+ * 2. faz uma ligação ao novo switch
+ * (Projeto 5)
+ */
+int rtable_connection_switch_rebind (struct rtable_connection * system_init);
 
 #endif

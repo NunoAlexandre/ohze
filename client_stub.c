@@ -470,7 +470,8 @@ struct rtable_connection* rtable_init (char * addresses_and_ports){
 }
 
 
-/* Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
+/* 
+ * Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
  * (Projeto 5)
  */
@@ -523,10 +524,44 @@ int rtable_connection_assign_new_switch (struct rtable_connection * system_init,
     return TASK_SUCCEEDED;
 }
 
+/*
+ * Trata de todo o processo de ligação um novo switch:
+ * 0. faz unbind do switch atual
+ * 1. envia mensagem do tipo REPORT a rtable_replica
+ * 2. faz uma ligação ao novo switch
+ * (Projeto 5)
+ */
+int rtable_connection_switch_rebind (struct rtable_connection * system_init){
+    int taskSuccess = TASK_FAILED;
+    
+    //0. faz unbind do switch atual
+    taskSuccess = rtable_unbind(system_init->rtable_switch);
+    if (taskSuccess == TASK_FAILED) {
+        puts("FAILED TO UNBIND WITH CURRENT SWITCH!");
+    }
+
+    //1. envia mensagem do tipo REPORT
+    char * new_switch_address = strdup (rtable_report(system_init));
+    if (new_switch_address == NULL) {
+        free(new_switch_address);
+        puts ("FAILED to get new_switch_address");
+        return TASK_FAILED;
+    }
+
+    //2. faz uma ligação ao novo switch
+    taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
+    if (taskSuccess == TASK_FAILED) {
+        puts ("FAILED to connect to new_switch");
+        free(new_switch_address);
+        return TASK_FAILED;
+    }
+    
+    return taskSuccess;
+}
 
 /*
- *  Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
- *  Retorna a posição ou TASK_FAILED
+ * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
+ * Retorna a posição ou TASK_FAILED
  * (Projeto 5)
  */
 int rtable_connection_find_address (struct rtable_connection * system_init, char * address_and_port_to_find){

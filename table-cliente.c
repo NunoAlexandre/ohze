@@ -24,16 +24,38 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
     int one_or_all = -1; //apenas para inicializar
     struct rtable_t * rtable_switch = system_init->rtable_switch;
     struct rtable_t * rtable_replica = system_init->rtable_replica;
+    struct tuple_t ** received_tuples;
     
     
     switch (opcode) {
+        
+        /**************** RTABLE_REPLICA ****************/
+        /*** pedidos a rtable_replica (OC_SIZE)**/
         case OC_SIZE:
             taskSuccess = rtable_size(rtable_replica);
             if (taskSuccess == TASK_FAILED){
-                return TASK_FAILED;
+                puts ("FAILLED TO RECEIVE RTABLE_SIZE!");
             }
             break;
             
+        /*** pedidos a rtable_replica (OC_COPY or OC_COPY_ALL)**/
+        case OC_COPY:
+        case OC_COPY_ALL:
+            keep_tuples = YES;
+            one_or_all = opcode == OC_COPY ? NO:YES; //se for OC_COPY one_or_all = NO, else = YES
+            //taskSuccess = TASK_SUCCEEDED;
+            
+            //READER REQUESTS
+            received_tuples = rtable_get(rtable_replica, message_content, keep_tuples, one_or_all);
+                if (received_tuples == NULL){
+                    puts ("FAILLED TO RECEIVE TUPLES!");
+                    taskSuccess = TASK_FAILED;
+                }
+            break;
+
+
+        /**************** RTABLE_SWITCH ****************/
+        /*** pedidos a rtable_switch (OC_OUT) ***/
         case OC_OUT:
             taskSuccess = rtable_out(rtable_switch, message_content);
             
@@ -42,67 +64,73 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
             if (taskSuccess == TASK_FAILED && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
                 puts ("SWITCH SOCKET IS CLOSED!");
                 
-                //1. envia/recebe mensagem do tipo REPORT
-                char * new_switch_address = strdup (rtable_report(system_init));
-                if (new_switch_address == NULL) {
-                    puts ("FAILED to get new_switch_address");
-                    return TASK_FAILED;
+                //1. Trata de todo o processo de ligação um novo switch
+                taskSuccess = rtable_connection_switch_rebind(system_init);
+                if (taskSuccess == TASK_FAILED) {
+                    puts ("FAILLED TO CONNECT TO NEW SWITCH!");
                 }
                 
-                //2. faz uma ligação ao novo switch
-                taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
+                //2. Retoma a execução
                 if (taskSuccess == TASK_FAILED) {
-                    puts ("FAILED to connect to new_switch");
-                    return TASK_FAILED;
+                    taskSuccess = rtable_out(rtable_switch, message_content);
+                    if (taskSuccess == TASK_FAILED){
+                        puts ("FAILLED TO SEND TUPLE TO RTABLE!");
+                        taskSuccess = TASK_FAILED;
+                    }
                 }
-
-                //3. Retoma a execução
-                taskSuccess = rtable_out(rtable_switch, message_content);
             }
+            
+            if (taskSuccess == TASK_FAILED){
+                puts ("FAILLED TO RECEIVE TUPLES!");
+                taskSuccess = TASK_FAILED;
+            }
+
             break;
             
+        /*** pedidos a rtable_switch (OC_IN or OC_IN_ALL) ***/
         case OC_IN:
         case OC_IN_ALL:
-        case OC_COPY:
-        case OC_COPY_ALL:
             keep_tuples = opcode == OC_IN || opcode == OC_IN_ALL ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
-            one_or_all = opcode == OC_IN || opcode == OC_COPY;
-            taskSuccess = TASK_SUCCEEDED;
-            break;
-        default:
-            taskSuccess = TASK_FAILED;
-            break;
-    }
-    
-    //GETTER REQUESTS
-    if ((opcode != OC_SIZE && opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
-        struct tuple_t ** received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
-        
-        /*** REVER MUITO BEM A SITUAÇÃO DO SWITCH ***/
-        //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
-        if (received_tuples == NULL && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
-            puts ("SWITCH SOCKET IS CLOSED!");
-            //1. envia mensagem do tipo REPORT
-            char * new_switch_address = strdup (rtable_report(system_init));
-            if (new_switch_address == NULL) {
-                puts ("FAILED to get new_switch_address");
-                return TASK_FAILED;
+            one_or_all = opcode == OC_IN ? NO:YES; //se for OC_IN one_or_all = NO, else = YES
+            //taskSuccess = TASK_SUCCEEDED;
+            
+            //GETTER REQUESTS
+            received_tuples = rtable_get(rtable_replica, message_content, keep_tuples, one_or_all);
+            
+            /*** REVER MUITO BEM A SITUAÇÃO DO SWITCH ***/
+            //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
+            if (received_tuples == NULL && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
+                puts ("SWITCH SOCKET IS CLOSED!");
+                
+                //1. Trata de todo o processo de ligação um novo switch
+                taskSuccess = rtable_connection_switch_rebind(system_init);
+                if (taskSuccess == TASK_FAILED) {
+                    puts ("FAILLED TO CONNECT TO NEW SWITCH!");
+                }
+                
+                if (taskSuccess == TASK_SUCCEEDED) {
+                    //2. Retoma a execução
+                    received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
+                    if (received_tuples == NULL){
+                        puts ("FAILLED TO RECEIVE TUPLES!");
+                        taskSuccess = TASK_FAILED;
+                    }
+                }
+               
             }
             
-            //2. faz uma ligação ao novo switch
-            taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
-            if (taskSuccess == TASK_FAILED) {
-                puts ("FAILED to connect to new_switch");
-                return TASK_FAILED;
-            }
-            
-            //3. Retoma a execução
-            received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
             if (received_tuples == NULL){
                 puts ("FAILLED TO RECEIVE TUPLES!");
                 taskSuccess = TASK_FAILED;
             }
-        }
+
+            break;
+
+       
+        /*** tudo o resto ***/
+        default:
+            taskSuccess = TASK_FAILED;
+            break;
     }
     
     return taskSuccess;
