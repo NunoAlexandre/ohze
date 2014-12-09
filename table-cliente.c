@@ -13,6 +13,8 @@
 #include "network_utils.h"
 #include "client_stub.h"
 
+#define CONFIGURATION_FIlE "sd15_system_config"
+
 /*
  *  Acts according with user command
  *  returns 0 if success, -1 otherwise
@@ -28,9 +30,9 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
     
     
     switch (opcode) {
-        
-        /**************** RTABLE_REPLICA ****************/
-        /*** pedidos a rtable_replica (OC_SIZE)**/
+            
+            /**************** RTABLE_REPLICA ****************/
+            /*** pedidos a rtable_replica (OC_SIZE)**/
         case OC_SIZE:
             taskSuccess = rtable_size(rtable_replica);
             if (taskSuccess == TASK_FAILED){
@@ -38,7 +40,7 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
             }
             break;
             
-        /*** pedidos a rtable_replica (OC_COPY or OC_COPY_ALL)**/
+            /*** pedidos a rtable_replica (OC_COPY or OC_COPY_ALL)**/
         case OC_COPY:
         case OC_COPY_ALL:
             keep_tuples = YES;
@@ -47,15 +49,15 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
             
             //READER REQUESTS
             received_tuples = rtable_get(rtable_replica, message_content, keep_tuples, one_or_all);
-                if (received_tuples == NULL){
-                    puts ("FAILLED TO RECEIVE TUPLES!");
-                    taskSuccess = TASK_FAILED;
-                }
+            if (received_tuples == NULL){
+                puts ("FAILLED TO RECEIVE TUPLES!");
+                taskSuccess = TASK_FAILED;
+            }
             break;
-
-
-        /**************** RTABLE_SWITCH ****************/
-        /*** pedidos a rtable_switch (OC_OUT) ***/
+            
+            
+            /**************** RTABLE_SWITCH ****************/
+            /*** pedidos a rtable_switch (OC_OUT) ***/
         case OC_OUT:
             taskSuccess = rtable_out(rtable_switch, message_content);
             
@@ -84,10 +86,10 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
                 puts ("FAILLED TO RECEIVE TUPLES!");
                 taskSuccess = TASK_FAILED;
             }
-
+            
             break;
             
-        /*** pedidos a rtable_switch (OC_IN or OC_IN_ALL) ***/
+            /*** pedidos a rtable_switch (OC_IN or OC_IN_ALL) ***/
         case OC_IN:
         case OC_IN_ALL:
             keep_tuples = opcode == OC_IN || opcode == OC_IN_ALL ? DONT_KEEP_AT_ORIGIN : KEEP_AT_ORIGIN;
@@ -116,18 +118,18 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
                         taskSuccess = TASK_FAILED;
                     }
                 }
-               
+                
             }
             
             if (received_tuples == NULL){
                 puts ("FAILLED TO RECEIVE TUPLES!");
                 taskSuccess = TASK_FAILED;
             }
-
+            
             break;
-
-       
-        /*** tudo o resto ***/
+            
+            
+            /*** tudo o resto ***/
         default:
             taskSuccess = TASK_FAILED;
             break;
@@ -167,33 +169,45 @@ int process_command (const char* command, struct rtable_connection * system_init
  *  Message if port number is invalid
  */
 void invalid_client_input () {
-    puts("\n\n####### SD15-CLIENT ##############");
-    puts("Sorry, your input was not valid.");
-    puts("Uso: ./SD15_CLIENT <servidor>:<porto>");
-    puts("Exemplo de uso 1: ./SD15_CLIENT 10.10.10.10:1250");
-    puts("Exemplo de uso 2: ./SD15_CLIENT wwww.example.com:1250");
-    puts("####### SD15-CLIENT ##############\n\n");
+    puts("\n\n\t################ SD15-CLIENT ################");
+    puts("\t#                                           #");
+    puts("\t#   Sorry, your input was not valid.        #");
+    puts("\t#   Uso: ./SD15_CLIENT sd15_system_config   #");
+    //    puts("Uso: ./SD15_CLIENT <servidor>:<porto>");
+    //    puts("Exemplo de uso 1: ./SD15_CLIENT 10.10.10.10:1250");
+    //    puts("Exemplo de uso 2: ./SD15_CLIENT wwww.example.com:1250");
+    puts("\t#                                           #");
+    puts("\t################ SD15-CLIENT ################\n\n");
 }
 
 /*
  *  Message if command is invalid
  */
 void invalid_command () {
-    puts("\n\n####### SD15-CLIENT ##############");
-    puts("Sorry, your command was not valid.");
-    puts("IN | IN_ALL | COPY | COPY_ALL | OUT \"elem1\" \"elem2\" \"elem3\"");
-    puts("SIZE | QUIT");
-    puts("####### SD15-CLIENT ##############\n\n");
+    puts("\n\n\t########################### SD15-CLIENT ###########################");
+    puts("\t#                                                                 #");
+    puts("\t#   Sorry, your command was not valid.                            #");
+    puts("\t#   Exemplos de uso:                                              #");
+    puts("\t#   IN | IN_ALL | COPY | COPY_ALL | OUT \"elem1\" \"elem2\" \"elem3\"   #");
+    puts("\t#   SIZE | QUIT                                                   #");
+    puts("\t#                                                                 #");
+    puts("\t########################### SD15-CLIENT ###########################\n\n");
 }
 
 /*
  * tests input number of arguments
  */
-int test_input(int argc){
+int test_input(int argc, char *argv[]){
     if (argc != 2){
         invalid_client_input();
         return TASK_FAILED;
     }
+    
+    if (strcasecmp(argv[1], CONFIGURATION_FIlE) != 0){
+        invalid_client_input();
+        return TASK_FAILED;
+    }
+    
     return TASK_SUCCEEDED;
 }
 
@@ -209,7 +223,7 @@ int main(int argc , char *argv[]) {
     sigaction(SIGPIPE, &s, NULL);
     
     /* 1. Testar input de utilizador*/
-    if ( test_input (argc) == TASK_FAILED ) return TASK_FAILED;
+    if ( test_input (argc, argv) == TASK_FAILED ) return TASK_FAILED;
     
     //to keep the active
     int keepGoing = YES;
