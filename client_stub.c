@@ -19,7 +19,8 @@
 #include "message.h"
 #include "list-private.h"
 
-
+int current_replica_position; //guarda a posição da replica corrente
+int current_switch_position;  //guarda a posição do switch corrente
 
 /*
  * Verifica se o opcode é do tipo Getter
@@ -452,14 +453,19 @@ struct rtable_connection* rtable_init (char * addresses_and_ports){
         return NULL;
     }
     
-    //4. Preenche uma estrutura rtable_connection
+    //4. Preenche a estrutura rtable_connection com a informação obtida
     new_rtable_connection->servers_addresses_and_ports = servers_addresses_and_ports;
     new_rtable_connection->total_servers = total_servers;
     new_rtable_connection->switch_position = switch_position;
     new_rtable_connection->rtable_switch = rtable_switch;
     new_rtable_connection->replica_position = rtable_connection_find_address(new_rtable_connection, replica_address);
     new_rtable_connection->rtable_replica = rtable_replica;
-    
+ 
+    //5. Atualiza as variaveis referentes às posições da replica e do switch
+    current_switch_position = new_rtable_connection->switch_position;
+    current_replica_position = new_rtable_connection->replica_position;
+
+    //6. retorna a estrutura rtable_connection devidamente preenchida
     return new_rtable_connection;
 }
 
@@ -488,6 +494,8 @@ struct rtable_connection * rtable_connection_create(int n_servers) {
         new_rtable_connection->rtable_switch = NULL;
         new_rtable_connection->replica_position = 0;
         new_rtable_connection->rtable_switch = NULL;
+        current_switch_position = new_rtable_connection->switch_position;
+        current_replica_position = new_rtable_connection->replica_position;
     }
     return new_rtable_connection;
 }
@@ -594,6 +602,17 @@ void rtable_connection_destroy (struct rtable_connection * system_init){
     
     free (system_init->servers_addresses_and_ports);
     free (system_init);
+}
+
+/*
+ * Random selection of a replica from a server list
+ */
+char* get_server_replica_address (char ** servers_list_address, int n_servers){
+    int replica_position = current_replica_position;
+    while (replica_position == current_replica_position){ //garante que a replica escohida não é a anterior
+        replica_position = get_random_number(1, n_servers-1);
+    }
+    return servers_list_address[replica_position];
 }
 
 /*
