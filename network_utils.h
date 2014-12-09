@@ -87,5 +87,9 @@ int get_system_switch(char * lineWithSwitchInfo,  char ** system_switch);
  */
 int get_system_rtables_info(char * filePath, char *** system_rtables );
 
+/*
+ * Random selection of a replica from a server list
+ */
+char* get_server_replica_address (char ** servers_list_address, int n_servers);
 
 #endif

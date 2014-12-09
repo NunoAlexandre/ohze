@@ -132,10 +132,6 @@ struct rtable_t * rtable_connection_get_switch (struct rtable_connection * syste
  */
 struct rtable_t * rtable_connection_get_replica (struct rtable_connection * system_init);
 
-/*
- * Random selection of a replica from a server list
- */
-char* get_server_replica_address (char ** servers_list_address, int n_servers);
 
 /*
  * Liberta toda a memoria alocada a uma estrutura rtable_connection
