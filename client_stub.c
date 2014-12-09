@@ -19,6 +19,8 @@
 #include "message.h"
 #include "list-private.h"
 
+int current_replica_position;
+int current_switch_position;
 
 
 /*
@@ -460,6 +462,10 @@ struct rtable_connection* rtable_init (char * addresses_and_ports){
     new_rtable_connection->replica_position = rtable_connection_find_address(new_rtable_connection, replica_address);
     new_rtable_connection->rtable_replica = rtable_replica;
     
+    //5. Atualiza as variaveis referentes às posições da replica e switch
+    current_switch_position = switch_position;
+    current_replica_position = new_rtable_connection->replica_position;
+    
     return new_rtable_connection;
 }
 
@@ -617,7 +623,51 @@ struct rtable_t * rtable_connection_get_replica (struct rtable_connection * syst
  * (Projeto 5)
  */
 char* get_server_replica_address (char ** servers_list_address, int n_servers){
-    int replica_position = get_random_number(1, n_servers-1);
+    int replica_position = current_replica_position;
+    
+    //para garantir que o novo switch não é o anterior
+    while (replica_position == current_replica_position){
+        replica_position = get_random_number(1, n_servers-1);
+    }
+
+    //actualiza a variavel current_replica_position com a nova posição da replica
+    current_replica_position = replica_position;
     return servers_list_address[replica_position];
+}
+
+/*
+ * Procedimentos para estabelecer uma nova ligação a um novo rtable_switch
+ * (Projeto 5)
+ */
+int rtable_bind_new_switch (struct rtable_connection * system_init){
+    int task = TASK_FAILED;
+    
+    //1. Faz unbind com o switch corrente
+    task = rtable_unbind(system_init->rtable_switch);
+    if (task == TASK_FAILED) {
+        puts ("RTABLE_BIND_NEW_SWITCH -> Failed to unbind with current switch!");
+    }
+    
+    //2. Envia mensagem do tipo REPORT
+    char * new_switch_address = strdup (rtable_report(system_init));
+        if (new_switch_address == NULL){
+            free(new_switch_address);
+            return TASK_FAILED;
+        }
+    
+    //3. Atualiza rtable_connection com o novo switch_address
+    system_init->rtable_switch = rtable_bind(new_switch_address);
+    if (system_init->rtable_switch == NULL) {
+        puts ("RTABLE_BIND_NEW_SWITCH -> Failed to bind with new switch!");
+        free(new_switch_address);
+        return TASK_FAILED;
+    }
+    
+    int switch_position = rtable_connection_find_address(system_init, new_switch_address);
+    system_init->switch_position = switch_position; //actualiza posição do switch
+    current_switch_position = switch_position; //actualiza a variavel current_switch_position com a nova posição do switch
+    
+    free(new_switch_address);
+    return TASK_SUCCEEDED;
 }
 

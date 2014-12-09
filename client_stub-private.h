@@ -144,5 +144,10 @@ void rtable_connection_destroy (struct rtable_connection * system_init);
  */
 char* get_server_replica_address (char ** servers_list_address, int n_servers);
 
+/*
+ * Procedimentos para estabelecer uma nova ligação a um novo rtable_switch
+ * (Projeto 5)
+ */
+int rtable_bind_new_switch (struct rtable_connection * system_init);
 
 #endif

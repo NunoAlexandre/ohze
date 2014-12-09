@@ -13,7 +13,6 @@
 #include "network_utils.h"
 #include "client_stub.h"
 
-
 /*
  *  Acts according with user command
  *  returns 0 if success, -1 otherwise
@@ -38,21 +37,26 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
         case OC_OUT:
             taskSuccess = rtable_out(rtable_switch, message_content);
             
-            /*** REVER MUITO BEM A SITUAÇÂO DO SWITCH ***/
+            /*** REVER MUITO BEM A SITUAÇÃO DO SWITCH ***/
             //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
             if (taskSuccess == TASK_FAILED && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
                 puts ("SWITCH SOCKET IS CLOSED!");
-                //faz unbind do switch
-                taskSuccess = rtable_unbind(system_init->rtable_switch);
-                if (taskSuccess == TASK_FAILED)
-                    puts ("UNABLE TO UNBIND RTABLE_SWITCH!");
                 
+                //1. envia/recebe mensagem do tipo REPORT
                 char * new_switch_address = strdup (rtable_report(system_init));
-                if (new_switch_address == NULL){
-                    free(new_switch_address);
+                if (new_switch_address == NULL) {
+                    puts ("FAILED to get new_switch_address");
                     return TASK_FAILED;
                 }
-                free(new_switch_address);
+                
+                //2. faz uma ligação ao novo switch
+                taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
+                if (taskSuccess == TASK_FAILED) {
+                    puts ("FAILED to connect to new_switch");
+                    return TASK_FAILED;
+                }
+
+                //3. Retoma a execução
                 taskSuccess = rtable_out(rtable_switch, message_content);
             }
             break;
@@ -74,19 +78,25 @@ int proceed_with_command (int opcode, struct rtable_connection * system_init, vo
     if ((opcode != OC_SIZE && opcode != OC_OUT) && ((one_or_all != -1 ) && (keep_tuples != -1))){
         struct tuple_t ** received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
         
-        /*** REVER MUITO BEM A SITUAÇÂO DO SWITCH ***/
+        /*** REVER MUITO BEM A SITUAÇÃO DO SWITCH ***/
         //Verifica se a ligação ao SWITCH está ativa (PROJETO 5)
         if (received_tuples == NULL && socket_is_closed(rtable_switch->server_to_connect.socketfd)){
             puts ("SWITCH SOCKET IS CLOSED!");
-            //faz unbind do switch
-            taskSuccess = rtable_unbind(system_init->rtable_switch);
-            
+            //1. envia mensagem do tipo REPORT
             char * new_switch_address = strdup (rtable_report(system_init));
-            if (new_switch_address == NULL){
-                free(new_switch_address);
+            if (new_switch_address == NULL) {
+                puts ("FAILED to get new_switch_address");
                 return TASK_FAILED;
             }
-            free(new_switch_address);
+            
+            //2. faz uma ligação ao novo switch
+            taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
+            if (taskSuccess == TASK_FAILED) {
+                puts ("FAILED to connect to new_switch");
+                return TASK_FAILED;
+            }
+            
+            //3. Retoma a execução
             received_tuples = rtable_get(rtable_switch, message_content, keep_tuples, one_or_all);
             if (received_tuples == NULL){
                 puts ("FAILLED TO RECEIVE TUPLES!");
