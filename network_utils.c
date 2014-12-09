@@ -339,14 +339,5 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
 	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
 }
 
-/*
- * Random selection of a replica from a server list
- */
-char* get_server_replica_address (char ** servers_list_address, int n_servers){
-    int replica_position = get_random_number(1, n_servers-1);
-    return servers_list_address[replica_position];
-}
-
-
 
 

@@ -611,3 +611,13 @@ struct rtable_t * rtable_connection_get_switch (struct rtable_connection * syste
 struct rtable_t * rtable_connection_get_replica (struct rtable_connection * system_init){
     return system_init->rtable_replica != NULL? system_init->rtable_replica:NULL;
 }
+
+/*
+ * Random selection of a replica from a server list
+ * (Projeto 5)
+ */
+char* get_server_replica_address (char ** servers_list_address, int n_servers){
+    int replica_position = get_random_number(1, n_servers-1);
+    return servers_list_address[replica_position];
+}
+
