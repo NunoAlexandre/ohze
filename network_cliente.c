@@ -26,7 +26,7 @@
 struct server_t *network_connect(const char *address_port) {
     
     puts("Connecting to server...");
-
+    
     retry_connection = YES;
     
     //1. get server_address and server_port
@@ -36,20 +36,20 @@ struct server_t *network_connect(const char *address_port) {
     int result = hostname_to_ip(server_address, server_address_ip);
     if ( result == TASK_FAILED ) return NULL;
     char * server_port =  get_port(address_port);
- 
+    
     //2.building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
     server_to_connect->ip_address = server_address_ip;
     server_to_connect->port = atoi(server_port);
-
-
+    
+    
     // Create the TCP socket with 1) Internet domain 2) Stream socket 3) TCP protocol (0)
     if((server_to_connect->socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("\t--- network_connect > error on creating socket");
         free(server_to_connect);
         return NULL;
     }
-
+    
     
     struct sockaddr_in server;
     //Configure settings of the server address struct
@@ -71,7 +71,7 @@ struct server_t *network_connect(const char *address_port) {
     
     //coloca em memória o endereço ip!
     ip_address_copy_from_server = strdup(server_to_connect->ip_address);
-
+    
     if (connection < 0){
         
         int reconnected = NO;
@@ -83,23 +83,23 @@ struct server_t *network_connect(const char *address_port) {
             perror("\t--- network_connect > trying to reconnect");
             sleep(RETRY_TIME);
             struct server_t *server_reconnected;
-
+            
             server_reconnected = network_reconnect(server_to_connect);
             
             if (server_reconnected == NULL) return NULL; //network_reconnect FAILED!
             reconnected = YES;
             server_to_connect = server_reconnected;
-            }
+        }
         
         //(re)connection fails and returns to initial state
         if (connection < 0 && reconnected == NO){
-        //returning to starting state
 
-        shutdown(server_to_connect->socketfd, SHUT_RDWR);
-        close(server_to_connect->socketfd);
-        puts("\t--- socket is shutdown");
-        free(server_to_connect);
-        return NULL;
+            //returning to starting state
+            shutdown(server_to_connect->socketfd, SHUT_RDWR);
+            close(server_to_connect->socketfd);
+            puts("\t--- socket is shutdown");
+            free(server_to_connect);
+            return NULL;
         }
     }
     
@@ -122,29 +122,29 @@ void network_reset_retransmissions() {
 struct message_t * network_send_receive(struct server_t *server, struct message_t *msg){
     
     network_reset_retransmissions();
-
+    
     int taskSucceeded = NO;
     int retries = 0;
     struct message_t* received_msg = NULL;
-
+    
     while ( retries <= 1 && !taskSucceeded ) {
-         if (send_message(server->socketfd, msg) == TASK_SUCCEEDED){
+        if (send_message(server->socketfd, msg) == TASK_SUCCEEDED){
             sleep(2);
-             received_msg = receive_message(server->socketfd);
-             taskSucceeded = received_msg != NULL; 
-         }
+            received_msg = receive_message(server->socketfd);
+            taskSucceeded = received_msg != NULL;
+        }
         
         if ( ! taskSucceeded ) {
             if (network_retransmit(server->socketfd)){
                 sleep(RETRY_TIME);
                 network_close(server); //fecha ligação
-                server = network_reconnect(server); //faz um reconnect  
-                retries = server == NULL ? 2 : retries;          
-            } 
+                server = network_reconnect(server); //faz um reconnect
+                retries = server == NULL ? 2 : retries;
+            }
         }
         retries++;
     }
-
+    
     return taskSucceeded ? received_msg : NULL;
 }
 
@@ -156,7 +156,7 @@ int network_close(struct server_t *server){
     int task = TASK_SUCCEEDED;
     shutdown(server->socketfd, SHUT_RDWR);
     task = close(server->socketfd);
-
+    
     if (task == TASK_FAILED){
         return TASK_FAILED;
     }
