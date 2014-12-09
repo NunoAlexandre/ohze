@@ -536,7 +536,7 @@ void message_print ( struct message_t * msg ) {
             printf(" ] ");
         }
         else if ( msg->c_type == CT_ENTRY ) {
-            printf(" [%hd , %hd , <%d , ", msg->opcode, msg->c_type, msg->content.entry->timestamp);
+            printf(" [%hd , %hd , <%llu , ", msg->opcode, msg->c_type, msg->content.entry->timestamp);
             tuple_print(msg->content.entry->value);
             printf("> ] ");
         }

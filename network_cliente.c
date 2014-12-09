@@ -45,8 +45,7 @@ struct server_t *network_connect(const char *address_port) {
 
     // Create the TCP socket with 1) Internet domain 2) Stream socket 3) TCP protocol (0)
     if((server_to_connect->socketfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        perror("NETWORK_CLIENT --> NETWORK_CONNECT > ERROR while creating TCP socket!");
-        //returning to starting state
+        perror("\t--- network_connect > error on creating socket");
         free(server_to_connect);
         return NULL;
     }
@@ -60,8 +59,7 @@ struct server_t *network_connect(const char *address_port) {
     
     //converts host address to network format
     if (inet_pton(AF_INET, server_to_connect->ip_address, &server.sin_addr) < 1){
-        perror("NETWORK_CLIENT --> NETWORK_CONNECT > ERROR while converting Host address (IP) to network address structure.");
-        //returning to starting state
+        perror("\t--- network_connect > error on converting host to network address");
         close(server_to_connect->socketfd);
         free(server_to_connect);
         return NULL;
@@ -76,14 +74,13 @@ struct server_t *network_connect(const char *address_port) {
 
     if (connection < 0){
         
-
         int reconnected = NO;
         
-        perror ("NETWORK_CLIENT --> NETWORK_CONNECT > ERROR while connecting with server!");
+        perror("\t--- network_connect > error on connecting to the server.");
 
         //tries to reconnect to server if ECONNREFUSED occurred and retry_connection = YES
         if (network_retransmit(server_to_connect->socketfd)){
-            puts("NETWORK_CLIENT --> NETWORK_CONNECT > Trying to reconnect to server...");
+            perror("\t--- network_connect > trying to reconnect");
             sleep(RETRY_TIME);
             struct server_t *server_reconnected;
 
@@ -100,14 +97,14 @@ struct server_t *network_connect(const char *address_port) {
 
         shutdown(server_to_connect->socketfd, SHUT_RDWR);
         close(server_to_connect->socketfd);
-        puts("did shutdown the socket!!!!!!!!!!!!");
+        puts("\t--- socket is shutdown");
         free(server_to_connect);
         return NULL;
         }
     }
     
     /*returns the server that we want to conect with*/
-    puts("Connected to server...");
+    puts("\t--- now connected to the server");
     return server_to_connect;
 }
 
