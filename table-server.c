@@ -384,6 +384,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
 
     /** the number of proxies the switch will provide **/
     int NUMBER_OF_PROXIES = numberOfServers-1;
+    set_number_of_proxies(NUMBER_OF_PROXIES);
     /** array with data for each thread that will be provided **/
     struct thread_data threads[NUMBER_OF_PROXIES]; 
     /** array with the ids of each thread that will be provided **/
@@ -411,6 +412,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     int bucket_is_full = NO;    
     int bucket_has_requests = NO;
     int requests_counter = 0;
+    unsigned long long total_requests_count = 0;
     int index_to_store_request = 0;
     
     /** initializes each slot of the bucket **/
@@ -426,10 +428,10 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
       threads[i].bucket_has_requests = &bucket_has_requests; // bem como a esta variável de estado,
       threads[i].monitor_bucket_has_requests = &monitor_bucket_has_requests; // a este monitor,
       threads[i].bucket_access = &bucket_access;  // e ao MUTEX para acesso à tabela.
-
       // Identificar o TABLE_SERVER a que cada PROXY se ligará
       threads[i].server_address_and_port = system_rtables[i+1];
       threads[i].id = i+1; // SWITCH com id 0, PROXIES com id's >= 1
+      //threads[i].is_available = YES;
 
       // Criar cada uma das threads que serão PROXY de um TABLE_SERVER
       if (pthread_create(&thread_ids[i], NULL, &run_server_proxy, (void *) &threads[i]) != 0){
@@ -539,8 +541,6 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                     //checks error
                     failed_tasks += client_request == NULL;
 
-                    puts("\t server: received "); message_print(client_request); puts("");
-
 
                     /** If client request is a writter it's proxies work, otherwise will send report  **/
 
@@ -566,14 +566,19 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                             current_request->response = NULL;
                             current_request->flags = 5; 
                             current_request->acknowledged = NUMBER_OF_PROXIES;
-                            current_request->answered = NO;        
+                            current_request->deliveries = 0;
+                            current_request->answered = NO;   
+                            //current_request->id = total_requests_count;     
 
                             // Colocar mensagem na tabela
                             requests_bucket[index_to_store_request] = current_request; 
                             // Próxima mensagem será escrita neste índice
-                            index_to_store_request = index_to_store_request+1 % REQUESTS_BUCKET_SIZE;         
-                            // Incrementar número de mensagens na tabela       
-                            requests_counter++;                 
+                            index_to_store_request = (index_to_store_request+1) % REQUESTS_BUCKET_SIZE;         
+                            // Incrementar número de mensagens no bucket       
+                            requests_counter++;  
+                            //increments the number of requests ever received
+                            total_requests_count++;
+
 
                             // Forçar este estado
                             bucket_has_requests = YES;           
@@ -607,56 +612,67 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                     /** TIME TO CHECK FOR REPLIED REQUESTS FROM PROXIES **/
                     for ( i = 0; i < REQUESTS_BUCKET_SIZE; i++ ) {
 
-                        /* locks the access to the buffer */
+                        //resets the flag value for each request 
+                        failed_tasks = 0;
+
+                        /* locks the access to the bucket */
                         pthread_mutex_lock(&bucket_access); 
 
-                        if (requests_bucket[i] != NULL && requests_bucket[i]->response != NULL) { // Só acontece se está uma mensagem no indice i
-                                                                                   // e se já chegou a primeira resposta
                         
-                            // Em baixo, equivale a processar a mensagem em função da resposta
-                            // A flag answered indica se já houve resposta ao cliente.
+                        /** checks if the request i exists and got a response already **/
+                        if (requests_bucket[i] != NULL && requests_bucket[i]->response != NULL) { 
+                        
+                            /* checks if there is the request i wasn't answered to the requestor yet */
                             if (!requests_bucket[i]->answered){  
-                                // Se não houve, temos de fazer invocação local e resposta ao cliente:
 
                                 /** where all the response message will be stored **/
                                 struct message_t ** response_messages = NULL;
 
-                                //the table_skel will process the client request and resolve response_messages
-                                int response_messages_num = invoke(requests_bucket[i]->request, &response_messages);
-                                // error case
-                                failed_tasks+= response_messages_num <= 0 || response_messages == NULL;
+                                /** it will only invoke the request on itself if it went well on the other servers **/
+                                if ( response_with_success(requests_bucket[i]->request, requests_bucket[i]->response) ) {
 
-                                //sends the response to the client
-                                int message_was_sent = server_send_response(requests_bucket[i]->requestor_fd, response_messages_num, response_messages);
-                                //error case
-                                failed_tasks+= message_was_sent == TASK_FAILED;
+                                    int response_messages_num = invoke(requests_bucket[i]->request, &response_messages);
+                                    // error case
+                                    failed_tasks+= response_messages_num <= 0 || response_messages == NULL;
 
-
+                                    //sends the response to the client
+                                    int message_was_sent = server_send_response(requests_bucket[i]->requestor_fd, response_messages_num, response_messages);
+                                    //error case
+                                    failed_tasks+= message_was_sent == TASK_FAILED;
+                                }
+                                else {
+                                    //declares that there was (at least) one failed that task once he 
+                                    //response from the proxie was not a success response to the request.
+                                    failed_tasks = 1;
+                                } 
+                               
                                 /** IF some error happened, it will notify the client **/
                                 if ( failed_tasks > 0 ) {
                                     server_sends_error_msg(requests_bucket[i]->requestor_fd);
                                 }
 
-                                /* request was answered if no failed task on the response process */
-                                requests_bucket[i]->answered = failed_tasks == 0; 
+
+                                /* if it went well it assumes if will also go well with all other proxies and 
+                                   if went wrong we assume it also will with all other proxies,
+                                   and an error message was sent so the work for this request is done*/
+                                requests_bucket[i]->answered = YES; 
                                 
                             }
 
-                            // A flag acknowledged (com valor 0) indica se já todas as réplicas leram a mensagem.
-                            // Se isso acontecer pode-se retirar a mesma da tabela.
-                            if (requests_bucket[i]->acknowledged == 0){
-
+                            /* if the request was acknowledge by every proxy it can now be removed from the bucket */
+                            if (requests_bucket[i]->acknowledged <= 0) {
+                                puts("\t--- sent to all servers so will be removed.");
                                 free(requests_bucket[i]->response);
                                 free(requests_bucket[i]->request);
                                 free(requests_bucket[i]);
-                                requests_bucket[i] = NULL; // Posição na tabela está livre
-                                bucket_is_full = NO;      // Se estava cheia, agora a tabela já o não estará
-                                requests_counter--;     // O número de mensagens na tabela decresce uma unidade
+                                requests_bucket[i] = NULL; 
+                                bucket_is_full = NO;    
+                                requests_counter--; 
                                 bucket_has_requests = requests_counter > 0;
                             }
                         }
-
-                        pthread_mutex_unlock(&bucket_access); // Desbloquear a tabela
+                        /* by last, it unlocks the access to the bucket */
+                        pthread_mutex_unlock(&bucket_access);
              
                     }
                 }
@@ -692,11 +708,11 @@ int main ( int argc, char *argv[] ) {
 
 
     if ( switchIAM ) {
-        puts("\t ### I AM THE SWITCH ###");
+        puts("\n\t ### I AM THE SWITCH ###");
         switch_run(my_address_and_port, system_rtables, numberOfServers);
     }
     else {
-        puts("\t ### I AM A SERVER ###");
+        puts("\n\t ### I AM A SERVER ###");
         server_run(my_address_and_port, system_rtables, numberOfServers);
     }
     

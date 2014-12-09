@@ -150,7 +150,6 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
 	int number_of_msgs = TASK_FAILED;
 	//then is set to a value depending on the 
 	if ( message_opcode_setter(msg_in)) {
-		puts("invoke > message is setter");
 		number_of_msgs = table_skel_put(msg_in,msg_set_out);
 	}
 	else if ( message_opcode_getter(msg_in)) {
