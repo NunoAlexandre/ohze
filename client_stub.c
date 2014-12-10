@@ -19,8 +19,6 @@
 #include "message.h"
 #include "list-private.h"
 
-int current_replica_position;
-int current_switch_position;
 
 
 /*
@@ -346,25 +344,24 @@ int rtable_size(struct rtable_t *rtable){
  * Devolve 0 (ok) ou -1 (problemas).
  *  (Projeto 5)
  */
-char * rtable_report(struct rtable_connection *system_init){
-    
-    int replica_address = system_init->replica_position; //replica address position
-    struct server_t *connected_replica = server_create_from_rtable (system_init->rtable_replica);
+char * rtable_report(struct rtable_connection *rtable_connection){
     
     //1. cria mensagem de report com endereço do switch que falhou
-    struct message_t * report_to_send = message_create_with(OC_REPORT, CT_SFAILURE, system_init->servers_addresses_and_ports[replica_address]);
+    struct message_t * report_to_send = message_create_with(OC_REPORT, CT_SFAILURE, "give me a switch");
     
     if (report_to_send == NULL){
         puts("CLIENT-STUB > RTABLE_REPORT > Failed to create report to send...");
-        free(connected_replica);
         return NULL;
     }
     
     //    puts("CLIENT-STUB > RTABLE_OUT > Sending message to server...");
-    puts("Sending message to server...");
+    puts("--- sending report to server...");
     
     //2. envia mensagem para o servidor e recebe mensagem do servidor com o resultado da operação
-    struct message_t *received_report = network_send_receive(connected_replica, report_to_send);
+    struct server_t *connected_server = &(rtable_connection->rtable_replica->server_to_connect);
+    struct message_t *received_report = network_send_receive(connected_server, report_to_send);
+    
+    printf(">>> received report with new switch address_port: %s\n", received_report->content.token);
     
     //3. faz verificação da mensagem recebida
     if (received_report == NULL) {
@@ -375,13 +372,17 @@ char * rtable_report(struct rtable_connection *system_init){
     //4. verifica se a mensagem recebida foi de sucesso
     if (response_with_success(report_to_send, received_report) == NO){
         puts("CLIENT-STUB > RTABLE_REPORT > RECEIVED MESSAGE WITH ERROR OPCODE or OPCODE UNEXPECTED.");
-        free(report_to_send);
-        free(received_report);
+        free_message2(report_to_send,NO);
+        free_message(received_report);
         return NULL;
     }
     
-    //devolve o novo endereço
-    return received_report->content.token;
+    char * report_content = strdup(received_report->content.token);
+    
+    free_message2(report_to_send,NO);
+    free_message(received_report);
+
+    return report_content;
 }
 
 /* Função para reestabelecer uma associação com uma tabela num servidor.
@@ -423,48 +424,44 @@ void rtable_destroy (struct rtable_t *rtable){
  *  Inicializa a estrutura rtable_connection
  *  (Projeto 5)
  */
-struct rtable_connection* rtable_init (char * addresses_and_ports){
+struct rtable_connection* rtable_init (char * config_file){
     
     //1. endereços de todos os servidores
-    char ** servers_addresses_and_ports = NULL;
-    int total_servers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,&servers_addresses_and_ports);
-    if (total_servers == TASK_FAILED) {
+    char ** servers_ip_port = NULL;
+    int n_servers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,&servers_ip_port);
+    if (n_servers == TASK_FAILED) {
+        puts("n_servers not enough");
         return NULL;
     }
     
-    //2. Cria uma estrutura rtable_connection
-    struct rtable_connection* new_rtable_connection = rtable_connection_create(total_servers);
     
     //3.  Vai criar as duas rtables iniciais:
     //3.1 SWITCH
     int switch_position = 0;
-    char* switch_address = servers_addresses_and_ports[switch_position];
+    char* switch_address = servers_ip_port[switch_position];
     struct rtable_t *rtable_switch = rtable_bind(switch_address);
-    if (rtable_switch == NULL){
-        free (new_rtable_connection);
+    if (rtable_switch == NULL) {
+        puts(" if (rtable_switch == NULL)");
+
         return NULL;
     }
     
     //3.2 REPLICA
-    char* replica_address = get_server_replica_address (servers_addresses_and_ports, total_servers);
-    struct rtable_t *rtable_replica = rtable_bind(replica_address);
-    if (rtable_replica == NULL){
-        free (new_rtable_connection);
-        free (rtable_switch);
+    char* replica_address = get_random_replica_address (servers_ip_port, n_servers, -1);
+    int replica_position = rtable_connection_find_address(servers_ip_port,n_servers, replica_address);
+    
+    //2. Cria uma estrutura rtable_connection
+    struct rtable_connection* new_rtable_connection = rtable_connection_create(servers_ip_port, n_servers, switch_position, rtable_switch, replica_position, rtable_bind(replica_address) );
+
+    
+    free(replica_address);
+    
+    /* if replica or switch null any error there or before happened and returns null */
+    if ( new_rtable_connection->rtable_replica == NULL ||
+        new_rtable_connection->rtable_switch == NULL )
+    {
         return NULL;
     }
-    
-    //4. Preenche uma estrutura rtable_connection
-    new_rtable_connection->servers_addresses_and_ports = servers_addresses_and_ports;
-    new_rtable_connection->total_servers = total_servers;
-    new_rtable_connection->switch_position = switch_position;
-    new_rtable_connection->rtable_switch = rtable_switch;
-    new_rtable_connection->replica_position = rtable_connection_find_address(new_rtable_connection, replica_address);
-    new_rtable_connection->rtable_replica = rtable_replica;
-    
-    //5. Atualiza as variaveis referentes às posições da replica e switch
-    current_switch_position = switch_position;
-    current_replica_position = new_rtable_connection->replica_position;
     
     return new_rtable_connection;
 }
@@ -475,27 +472,28 @@ struct rtable_connection* rtable_init (char * addresses_and_ports){
  * a estrutura e aloca a memória necessária).
  * (Projeto 5)
  */
-struct rtable_connection * rtable_connection_create(int n_servers) {
-    //checks if required n_servers is valid
-    if ( n_servers <= 0)
-        return NULL;
-    
+struct rtable_connection * rtable_connection_create(char ** servers_ip_port, int n_servers, int switch_position, struct rtable_t *rtable_switch, int replica_position, struct rtable_t * rtable_replica)
+{
+
     //allocs memory
     struct rtable_connection * new_rtable_connection = (struct rtable_connection*) malloc (sizeof(struct rtable_connection));
     
+  
     if ( new_rtable_connection != NULL ) {
-        new_rtable_connection->servers_addresses_and_ports = (char **) malloc(n_servers * sizeof(char*));
-        if (new_rtable_connection->servers_addresses_and_ports == NULL){
-            free(new_rtable_connection);
+        new_rtable_connection->servers_addresses_and_ports = malloc (sizeof(char*) * n_servers);
+        if ( new_rtable_connection->servers_addresses_and_ports == NULL  )
             return NULL;
-        }
         
+        int i; for( i = 0; i < n_servers; i++)
+            new_rtable_connection->servers_addresses_and_ports[i] = strdup(servers_ip_port[i]);
+    
         //apenas para inicializar tudo
-        new_rtable_connection->switch_position = 0;
-        new_rtable_connection->rtable_switch = NULL;
-        new_rtable_connection->replica_position = 0;
-        new_rtable_connection->rtable_switch = NULL;
+        new_rtable_connection->switch_position = switch_position;
+        new_rtable_connection->rtable_switch = rtable_switch;
+        new_rtable_connection->replica_position = replica_position;
+        new_rtable_connection->rtable_replica = rtable_replica;
     }
+    
     return new_rtable_connection;
 }
 
@@ -505,23 +503,26 @@ struct rtable_connection * rtable_connection_create(int n_servers) {
  * Retorna TASK_SUCCEEDED se tudo correu bem
  * (Projeto 5)
  */
-int rtable_connection_assign_new_switch (struct rtable_connection * system_init, char * switch_address_and_port){
+int rtable_assign_new_server (struct rtable_t * rtable, char * switch_address_and_port){
     
     //faz bind a um novo switch
-    struct rtable_t * new_rtable_switch = rtable_bind(switch_address_and_port);
-    if (new_rtable_switch == NULL){
-        return TASK_FAILED;
-    }
-    system_init->rtable_switch = new_rtable_switch;
-    
-    //atualiza a posição do switch
-    int switch_position = rtable_connection_find_address(system_init, switch_address_and_port);
-    if (switch_position == TASK_FAILED){
-        return TASK_FAILED;
-    }
-    system_init->switch_position = switch_position;
-    
-    return TASK_SUCCEEDED;
+    rtable = rtable_bind(switch_address_and_port);
+  
+    return rtable != NULL ? TASK_SUCCEEDED : TASK_FAILED;
+}
+
+
+/* AQUIII */
+/* atualiza a posição do switch
+ int switch_position = rtable_connection_find_address(rtable_connection->servers_addresses_and_ports, rtable_connection->servers_addresses_and_ports, rtable_connection->total switch_address_and_port);
+ if (switch_position == TASK_FAILED){
+ return TASK_FAILED;
+ }*/
+//rtable_connection->switch_position = switch_position;
+
+
+int rtable_connection_server_rebind (struct rtable_connection * rtable_connection, int rebindSwitch ) {
+    return rebindSwitch ? rtable_connection_switch_rebind(rtable_connection) : rtable_connection_replica_rebind(rtable_connection);
 }
 
 /*
@@ -531,17 +532,17 @@ int rtable_connection_assign_new_switch (struct rtable_connection * system_init,
  * 2. faz uma ligação ao novo switch
  * (Projeto 5)
  */
-int rtable_connection_switch_rebind (struct rtable_connection * system_init){
+int rtable_connection_switch_rebind (struct rtable_connection * rtable_connection){
     int taskSuccess = TASK_FAILED;
     
     //0. faz unbind do switch atual
-    taskSuccess = rtable_unbind(system_init->rtable_switch);
+    taskSuccess = rtable_unbind(rtable_connection->rtable_switch);
     if (taskSuccess == TASK_FAILED) {
         puts("FAILED TO UNBIND WITH CURRENT SWITCH!");
     }
 
     //1. envia mensagem do tipo REPORT
-    char * new_switch_address = strdup (rtable_report(system_init));
+    char * new_switch_address = rtable_report(rtable_connection);
     if (new_switch_address == NULL) {
         free(new_switch_address);
         puts ("FAILED to get new_switch_address");
@@ -549,31 +550,73 @@ int rtable_connection_switch_rebind (struct rtable_connection * system_init){
     }
 
     //2. faz uma ligação ao novo switch
-    taskSuccess = rtable_connection_assign_new_switch(system_init, new_switch_address);
+    taskSuccess = rtable_assign_new_server(rtable_connection->rtable_switch, new_switch_address);
     if (taskSuccess == TASK_FAILED) {
         puts ("FAILED to connect to new_switch");
-        free(new_switch_address);
-        return TASK_FAILED;
     }
+    
+    
+    /*  updates the switch position */
+    rtable_connection->switch_position = rtable_connection_find_address(rtable_connection->servers_addresses_and_ports, rtable_connection->total_servers , new_switch_address);
+
+    
+    free(new_switch_address);
     
     return taskSuccess;
 }
+
+
+
+/*
+ * Trata de todo o processo de ligação a uma nova replica
+ * 0. faz unbind da replica atual
+ * 1. escolhe nova replica aleatoriamente
+ * 2. liga-se a nova replica escolhida
+ * (Projeto 5)
+ */
+int rtable_connection_replica_rebind (struct rtable_connection * rtable_connection) {
+    int taskSuccess = TASK_FAILED;
+    
+    //0. faz unbind do switch atual
+    taskSuccess = rtable_unbind(rtable_connection->rtable_replica);
+
+    //1. envia mensagem do tipo REPORT
+    char * new_replica_address =  get_random_replica_address(rtable_connection->servers_addresses_and_ports, rtable_connection->total_servers, rtable_connection->replica_position);
+    if (new_replica_address == NULL) {
+        free(new_replica_address);
+        puts ("FAILED to get new_switch_address");
+        return TASK_FAILED;
+    }
+    
+    //2. faz uma ligação ao novo switch
+    taskSuccess = rtable_assign_new_server(rtable_connection->rtable_replica, new_replica_address);
+    if (taskSuccess == TASK_FAILED) {
+        puts ("FAILED to connect to new replica");
+    }
+    
+    /*  updates the switch position */
+    rtable_connection->replica_position = rtable_connection_find_address(rtable_connection->servers_addresses_and_ports, rtable_connection->total_servers , new_replica_address);
+
+    
+    free(new_replica_address);
+    return taskSuccess;
+}
+
+
+
+
 
 /*
  * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
  * Retorna a posição ou TASK_FAILED
  * (Projeto 5)
  */
-int rtable_connection_find_address (struct rtable_connection * system_init, char * address_and_port_to_find){
-    
-    char ** address_and_port_list = system_init->servers_addresses_and_ports;
-    int total_servers = system_init->total_servers;
+int rtable_connection_find_address (char** addresses_and_ports, int n_servers, char * address_and_port_to_find) {
     
     int pos = 0;
-    
-    for ( pos = 0; pos < total_servers; pos++ ) {
-        printf("%s\n",address_and_port_list[pos]);
-        if (strcmp(address_and_port_list[pos], address_and_port_to_find) == 0){
+    for ( pos = 0; pos < n_servers; pos++ ) {
+        printf("%s\n", addresses_and_ports[pos]);
+        if (strcmp(addresses_and_ports[pos], address_and_port_to_find) == 0){
             printf("ENCONTREI!\n");
             return pos;
         }
@@ -589,11 +632,11 @@ int rtable_connection_find_address (struct rtable_connection * system_init, char
  * Retorna TASK_SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
-int rtable_disconnect (struct rtable_connection * system_init){
+int rtable_disconnect (struct rtable_connection * rtable_connection){
     int task = TASK_FAILED;
     
     //desligar de switch
-    struct rtable_t * rtable_switch = rtable_connection_get_switch(system_init);
+    struct rtable_t * rtable_switch = rtable_connection_get_switch(rtable_connection);
     
     task = rtable_unbind(rtable_switch);
     free(rtable_switch);
@@ -603,7 +646,7 @@ int rtable_disconnect (struct rtable_connection * system_init){
     }
     
     //desligar de replica
-    struct rtable_t * rtable_replica = rtable_connection_get_replica(system_init);
+    struct rtable_t * rtable_replica = rtable_connection_get_replica(rtable_connection);
     
     task = rtable_unbind(rtable_replica);
     free(rtable_replica);
@@ -619,90 +662,54 @@ int rtable_disconnect (struct rtable_connection * system_init){
  * Liberta toda a memoria alocada a uma estrutura rtable_connection
  * (Projeto 5)
  */
-void rtable_connection_destroy (struct rtable_connection * system_init){
+void rtable_connection_destroy (struct rtable_connection * rtable_connection){
     
-    rtable_destroy(system_init->rtable_switch);
-    rtable_destroy(system_init->rtable_replica);
+    rtable_destroy(rtable_connection->rtable_switch);
+    rtable_destroy(rtable_connection->rtable_replica);
     
-    if (system_init != NULL && system_init->servers_addresses_and_ports != NULL){
+    if (rtable_connection != NULL && rtable_connection->servers_addresses_and_ports != NULL){
         int pos;
-        for (pos = 0; pos < system_init->total_servers; pos++){
-            if (system_init->servers_addresses_and_ports[pos] != NULL){
-                free (system_init->servers_addresses_and_ports[pos]);
+        for (pos = 0; pos < rtable_connection->total_servers; pos++){
+            if (rtable_connection->servers_addresses_and_ports[pos] != NULL){
+                free (rtable_connection->servers_addresses_and_ports[pos]);
             }
         }
     }
     
-    free (system_init->servers_addresses_and_ports);
-    free (system_init);
+    free (rtable_connection->servers_addresses_and_ports);
+    free (rtable_connection);
 }
 
 /*
  * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
  * (Projeto 5)
  */
-struct rtable_t * rtable_connection_get_switch (struct rtable_connection * system_init){
-    return system_init->rtable_switch != NULL? system_init->rtable_switch:NULL;
+struct rtable_t * rtable_connection_get_switch (struct rtable_connection * rtable_connection){
+    return rtable_connection->rtable_switch != NULL? rtable_connection->rtable_switch:NULL;
 }
 
 /*
  * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
  * (Projeto 5)
  */
-struct rtable_t * rtable_connection_get_replica (struct rtable_connection * system_init){
-    return system_init->rtable_replica != NULL? system_init->rtable_replica:NULL;
+struct rtable_t * rtable_connection_get_replica (struct rtable_connection * rtable_connection){
+    return rtable_connection->rtable_replica != NULL? rtable_connection->rtable_replica:NULL;
 }
 
 /*
  * Random selection of a replica from a server list
  * (Projeto 5)
  */
-char* get_server_replica_address (char ** servers_list_address, int n_servers){
+char* get_random_replica_address (char ** servers_list_address, int n_servers, int current_replica_position) {
+    
     int replica_position = current_replica_position;
-    
     //para garantir que o novo switch não é o anterior
-    while (replica_position == current_replica_position){
-        replica_position = get_random_number(1, n_servers-1);
+    while (replica_position == current_replica_position) {
+        replica_position = get_random_number(1, n_servers);
     }
-
-    //actualiza a variavel current_replica_position com a nova posição da replica
-    current_replica_position = replica_position;
+    
+    printf("### replica_position is %d\n", replica_position);
+    
     return servers_list_address[replica_position];
-}
-
-/*
- * Procedimentos para estabelecer uma nova ligação a um novo rtable_switch
- * (Projeto 5)
- */
-int rtable_bind_new_switch (struct rtable_connection * system_init){
-    int task = TASK_FAILED;
-    
-    //1. Faz unbind com o switch corrente
-    task = rtable_unbind(system_init->rtable_switch);
-    if (task == TASK_FAILED) {
-        puts ("RTABLE_BIND_NEW_SWITCH -> Failed to unbind with current switch!");
-    }
-    
-    //2. Envia mensagem do tipo REPORT
-    char * new_switch_address = strdup (rtable_report(system_init));
-        if (new_switch_address == NULL){
-            free(new_switch_address);
-            return TASK_FAILED;
-        }
-    
-    //3. Atualiza rtable_connection com o novo switch_address
-    system_init->rtable_switch = rtable_bind(new_switch_address);
-    if (system_init->rtable_switch == NULL) {
-        puts ("RTABLE_BIND_NEW_SWITCH -> Failed to bind with new switch!");
-        free(new_switch_address);
-        return TASK_FAILED;
-    }
-    
-    int switch_position = rtable_connection_find_address(system_init, new_switch_address);
-    system_init->switch_position = switch_position; //actualiza posição do switch
-    current_switch_position = switch_position; //actualiza a variavel current_switch_position com a nova posição do switch
-    
-    free(new_switch_address);
-    return TASK_SUCCEEDED;
 }
 

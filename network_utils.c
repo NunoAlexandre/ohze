@@ -168,13 +168,14 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //sends the size of the message
     int writtenBytes = 0;
     if ( (writtenBytes = write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
-        if ( writtenBytes == TASK_FAILED )
-            printf("\t--- failed: socket is closed\n");
+       
+            printf("\t--- failed to write the buffer size into the socket channel");
         
         return TASK_FAILED;
     }
     //and sends the message
     if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
+        printf("\t--- failed to write buffer into the socket channel");
         return TASK_FAILED;
     }
     //frees the local buffer
@@ -192,12 +193,13 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
-    //puts("\t --- receiving message ---");
+    puts("\t --- receiving message ---");
     
     int size_of_msg_received = 0;
     
     // 1. Lê tamanho da mensagem que a ser recebida
     if ( (read_all(connection_socket_fd,&size_of_msg_received, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
+        puts("receive_message > failed on read message size");
         return NULL;
     }
     // 1.1 Converte tamanho da mensagem para formato cliente

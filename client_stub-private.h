@@ -86,12 +86,12 @@ void rtable_destroy (struct rtable_t *rtable);
  */
 struct rtable_connection* rtable_init (char * addresses_and_ports);
 
-/* 
+/*
  * Função que cria uma nova estrutura rtable_connection (isto é, que inicializa
  * a estrutura e aloca a memória necessária).
  * (Projeto 5)
  */
-struct rtable_connection * rtable_connection_create(int n_servers);
+struct rtable_connection * rtable_connection_create(char ** servers_ip_port, int n_servers, int switch_position, struct rtable_t *rtable_switch, int replica_position, struct rtable_t * rtable_replica);
 
 /*
  * Função para enviar mensagem OC_REPORT, CT_SFAILURE, para replica a informar que switch não está definido.
@@ -99,58 +99,64 @@ struct rtable_connection * rtable_connection_create(int n_servers);
  * Devolve 0 (ok) ou -1 (problemas).
  * (Projeto 5)
  */
-char * rtable_report(struct rtable_connection *system_init);
+char * rtable_report(struct rtable_connection *rtable_connection);
 
 /*
  * Função que atualiza o endereço do switch e rtable_switch
  * Retorna TASK_SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
-int rtable_connection_assign_new_switch (struct rtable_connection * system_init, char * switch_address_and_port);
+int rtable_connection_assign_new_switch (struct rtable_connection * rtable_connection, char * switch_address_and_port);
 
 /*
  * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
  * Retorna a posição em caso de sucesso ou TASK_FAILED
  * (Projeto 5)
  */
-int rtable_connection_find_address (struct rtable_connection * system_init, char * address_and_port_to_find);
+int rtable_connection_find_address (char** addresses_and_ports, int n_servers, char * address_and_port_to_find);
 
 /*
  * Inicia o processo de disconectar de uma dada rtable_connection
  * Retorna TASK_SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
-int rtable_disconnect (struct rtable_connection * system_init);
+int rtable_disconnect (struct rtable_connection * rtable_connection);
 
 /*
  * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
  * (Projeto 5)
  */
-struct rtable_t * rtable_connection_get_switch (struct rtable_connection * system_init);
+struct rtable_t * rtable_connection_get_switch (struct rtable_connection * rtable_connection);
 
 /*
  * Retorna o switch de uma dada rtable_connection, NULL em caso de erro
  * (Projeto 5)
  */
-struct rtable_t * rtable_connection_get_replica (struct rtable_connection * system_init);
+struct rtable_t * rtable_connection_get_replica (struct rtable_connection * rtable_connection);
 
 /*
  * Liberta toda a memoria alocada a uma estrutura rtable_connection
  * (Projeto 5)
  */
-void rtable_connection_destroy (struct rtable_connection * system_init);
+void rtable_connection_destroy (struct rtable_connection * rtable_connection);
 
 /*
  * Random selection of a replica from a server list
  * (Projeto 5)
  */
-char* get_server_replica_address (char ** servers_list_address, int n_servers);
+char* get_random_replica_address (char ** servers_list_address, int n_servers, int current_replica_position);
 
 /*
  * Procedimentos para estabelecer uma nova ligação a um novo rtable_switch
  * (Projeto 5)
  */
-int rtable_bind_new_switch (struct rtable_connection * system_init);
+int rtable_bind_new_switch (struct rtable_connection * rtable_connection);
+
+
+/*
+ * Rebinds the rtable_connection switch or replica to a new one, depending on rebindSwitch or not.
+ */
+int rtable_connection_server_rebind (struct rtable_connection * rtable_connection, int rebindSwitch );
 
 /*
  * Trata de todo o processo de ligação um novo switch:
@@ -159,6 +165,15 @@ int rtable_bind_new_switch (struct rtable_connection * system_init);
  * 2. faz uma ligação ao novo switch
  * (Projeto 5)
  */
-int rtable_connection_switch_rebind (struct rtable_connection * system_init);
+int rtable_connection_switch_rebind (struct rtable_connection * rtable_connection);
+
+/*
+ * Trata de todo o processo de ligação a uma nova replica
+ * 0. faz unbind da replica atual
+ * 1. escolhe nova replica aleatoriamente
+ * 2. liga-se a nova replica escolhida
+ * (Projeto 5)
+ */
+int rtable_connection_replica_rebind (struct rtable_connection * rtable_connection);
 
 #endif

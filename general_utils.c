@@ -27,10 +27,9 @@ int is_number (char * stringWithNumber ) {
  *      a random number between min - max.
  */
 int get_random_number(int min, int max){
-    int random_number;
-    random_number = (rand() % (max - min + 1) + min);
-    
-    return random_number;
+    srand((int) time(NULL));
+    int random_numer = rand();
+    return (random_numer % (max-min)) +1;
 }
 
 
