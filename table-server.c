@@ -135,7 +135,7 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
 
     // sets the socket reusable
     int setSocketReusable = YES;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable, sizeof(setSocketReusable)) < 0 ) {
         perror("SO_REUSEADDR setsockopt error");
         return TASK_FAILED;
     } 
@@ -203,17 +203,21 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
     
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
 
+        //puts(">> entrou while polled_fds >= 0 ");
+        //if ( polled_fds > 0 ) 
+         //   puts(">> existem sockets com conteudo ");
+
         //if there was any polled sockets fd with events
         if ( polled_fds > 0 ) { 
-
             /** enters if there is a request on the listening socket **/ 
             if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  
                 /* gets an open slot*/
                 int open_slot = get_open_slot(connections, connected_fds); 
 
-                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
+                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0) { // Ligação feita ?
                     connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
                     connected_fds++;
+                    printf(">>> nova ligacao stored em connections[%d] - socket_fd %d\n", open_slot, connections[open_slot].fd );
                     //updates the highest index connection if needed.
                     if ( open_slot > highestIndexConnection ) {
                         highestIndexConnection = open_slot;
@@ -223,31 +227,40 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
 
             //for each connected cliente it will receive a request and give a response
             int i = 0;
-            for (i = 1; i < N_MAX_CLIENTS; i++) {
+            for (i = 1; i < N_MAX_CLIENTS /*highestIndexConnection*/; i++) {
 
                 //flag to check if socket is on or was closed on client side.
-                int socket_is_on = YES;
-
-                // checks if this socket was closed on the client side. 
-                // If it's closed, it sets it to -1 and 
-                //decrements the number of connected_fds
-                if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
-                    socket_is_on = NO;
-                    //if it was not reseted yet...
-                    close(connections[i].fd);
-                    connections[i].fd = -1;
-                    connections[i].events = 0;
-                    connections[i].revents = 0;
-                    connected_fds--;
-
-                    //if this was the highestIndexConnection now its the previous one
-                    if ( i == highestIndexConnection )
-                        highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
-                }
-
-                if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
-
+               
+                if ( (connections[i].revents & POLLIN) ) { // Dados para ler ?
+                    printf(">>> connections[%d] de socket_fd %d tem conteudo\n", i, connections[i].fd );
                     connection_socket_fd = connections[i].fd;
+
+
+                    // checks if this socket was closed on the client side. 
+                    // If it's closed, it sets it to -1 and 
+                    //decrements the number of connected_fds
+                    if ( (connection_socket_fd != -1) && socket_is_closed(connection_socket_fd) ) {
+                        printf(">>> connections[%d] de socket_fd %d esta desligado\n", i, connections[i].fd );
+
+                        //socket_is_on = NO;
+                        //if it was not reseted yet...
+                        close(connections[i].fd);
+                        connections[i].fd = -1;
+                        connections[i].events = 0;
+                        connections[i].revents = 0;
+                        connected_fds--;
+
+                        printf(">>> connected_fds ficou %d \n", connected_fds );
+
+
+                        //if this was the highestIndexConnection now its the previous one
+                       /* if ( i == highestIndexConnection ) {
+                            highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
+                        }*/
+                    } 
+
+                    printf(">>> connections[%d] de socket_fd %d esta vai receber e responder a pedido\n", i, connection_socket_fd );
+
 
                     int failed_tasks = 0;
                     //flag to track errors during the request-response process
