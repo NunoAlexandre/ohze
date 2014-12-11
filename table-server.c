@@ -497,6 +497,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
             //for each connected cliente it will receive a request and give a response
             int i = 0;
             for (i = 1; i < connected_fds ; i++) {
+
                 connection_socket_fd = connections[i].fd;
                 
                 /**  checks if this socket closed on the client side and updates connections **/
@@ -510,7 +511,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                     connection_socket_fd = connections[i].fd;
                 }
 
-                if ( (connections[i].revents & POLLIN) ) { // Dados para ler ?
+                if ( (connections[i].revents & POLLIN) ) {
 
                     connection_socket_fd = connections[i].fd;
 
@@ -526,7 +527,6 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
 
 
                     /** If client request is a writter it's proxies work, otherwise will send report  **/
-
                     if ( message_is_writer(client_request) ) {
 
                         /** UPDATES THE REQUESTS_BUCKET **/

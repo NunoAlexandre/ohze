@@ -168,7 +168,6 @@ int rtable_unbind(struct rtable_t *rtable){
         return TASK_FAILED;
     }
     
-    free(connected_server);
     puts("--- disconnected from server...");
     return TASK_SUCCEEDED;
 }
@@ -277,7 +276,6 @@ int rtable_size(struct rtable_t *rtable){
     struct message_t *message_to_send = message_create_with(OC_SIZE , CT_RESULT,&value);
     
     if(message_to_send == NULL){
-        free(message_to_send);
         free(connected_server);
         return TASK_FAILED;
     }
@@ -305,7 +303,6 @@ int rtable_size(struct rtable_t *rtable){
     rtable_size = received_msg->content.result;
     free (message_to_send);
     free (received_msg);
-    free (connected_server);
     
     return rtable_size;
 }
