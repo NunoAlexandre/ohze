@@ -40,6 +40,35 @@ void monitor_signal(struct monitor_t *mon, int *predicate) {
 
 }
 
+struct request_t * create_request_with(int socket_fd, struct message_t * request_msg,
+                                       struct message_t * response_msg, int flag,int n_proxies, int deliveries, int answered )
+{
+    
+    struct request_t * new_request = malloc(sizeof(struct request_t));
+    // Alocar memória para uma mensagem local (entre thread principal e as outras)
+    if ( new_request != NULL) {
+        // Preparar mensagem local de acordo com o pedido do cliente
+        new_request->requestor_fd = socket_fd;
+        new_request->request = request_msg;
+        new_request->response = response_msg;
+        new_request->flags = flag;
+        new_request->acknowledged = n_proxies;
+        new_request->deliveries = deliveries;
+        new_request->answered = answered;
+
+    }
+    
+    return new_request;
+}
+
+void request_free(struct request_t * request ) {
+    if ( request != NULL ) {
+        free_message2(request->request,NO);
+        free_message(request->response);
+        free(request);
+    }
+}
+
 int get_number_of_proxies() {
   return number_of_proxies;
 }
@@ -60,7 +89,7 @@ void * run_server_proxy ( void *p ) {
   struct thread_data *proxy = p;
 
   /** announcing its work */
-  printf("\t--- proxy %d on work \n", proxy->id );
+  printf("\t--- proxy %d is now running \n", proxy->id );
   /** this proxy connects to its own remote table/server **/
 
   struct server_t * server_to_contact = NULL;
@@ -124,8 +153,10 @@ void * run_server_proxy ( void *p ) {
       index_to_read_request = (index_to_read_request+1) % REQUESTS_BUCKET_SIZE;
 
     }
-
     pthread_mutex_unlock(proxy->bucket_access); // Desbloquear a tabela
   }
+    
+   printf("\n\t--- error: proxie %d fell on a fatal error\n", proxy->id);
+    
   return NULL;
 }

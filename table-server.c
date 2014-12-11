@@ -72,7 +72,7 @@ struct message_t *request_to_switch_mode ( struct message_t * original ) {
     if ( message_opcode_setter(original) && original->c_type == CT_TUPLE ) {
         time_t timePassed;
         time ( &timePassed );
-        struct entry_t * entry = entry_create2(tuple_dup(original->content.tuple), (timePassed%100) );
+        struct entry_t * entry = entry_create2(tuple_dup(original->content.tuple), (timePassed) );
         return message_create_with(original->opcode, CT_ENTRY, entry);
     }
 
@@ -88,7 +88,17 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
 }
 
 
-
+void reorder_connections(struct pollfd * connections, int begin, int end ) {
+    int i;
+    for ( i = begin; i <= end; i++) {
+        if ( connections[i].fd == -1 ) {
+            connections[i].fd = connections[i+1].fd;
+            connections[i].events = connections[i+1].events;
+            connections[i].revents = connections[i+1].revents;
+            connections[i+1].fd = -1;
+        }
+    }
+}
 
 
 
@@ -104,16 +114,6 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
         invalid_input_message();
         return TASK_FAILED;
     }
-
-    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
-
-
-
-    int n = 0;
-    for ( n = 0; n < numberOfServers; n++) {
-        printf("rtable %d has address_port %s \n", n, system_rtables[n]);
-    }
-
 
 
     /** 0. SIGPIPE Handling */
@@ -192,8 +192,6 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
 
     //for now only the listening socket
     int connected_fds = 1;
-    //saves the highet connection index
-    int highestIndexConnection = 0;
     // to save the result from poll function
     int polled_fds = 0; 
 
@@ -203,63 +201,41 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
     
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
 
-        //puts(">> entrou while polled_fds >= 0 ");
-        //if ( polled_fds > 0 ) 
-         //   puts(">> existem sockets com conteudo ");
-
         //if there was any polled sockets fd with events
         if ( polled_fds > 0 ) { 
             /** enters if there is a request on the listening socket **/ 
             if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  
                 /* gets an open slot*/
-                int open_slot = get_open_slot(connections, connected_fds); 
+                int open_slot = connected_fds;
 
                 if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0) { // Ligação feita ?
                     connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
                     connected_fds++;
-                    printf(">>> nova ligacao stored em connections[%d] - socket_fd %d\n", open_slot, connections[open_slot].fd );
-                    //updates the highest index connection if needed.
-                    if ( open_slot > highestIndexConnection ) {
-                        highestIndexConnection = open_slot;
-                    }
                 }
             }
+            
 
             //for each connected cliente it will receive a request and give a response
             int i = 0;
-            for (i = 1; i < N_MAX_CLIENTS /*highestIndexConnection*/; i++) {
+            for (i = 1; i < connected_fds ; i++) {
+                connection_socket_fd = connections[i].fd;
+  
+                /**  checks if this socket closed on the client side and updates connections **/
+                if ( socket_is_closed(connection_socket_fd) ) {
+                    
+                    if ( (connection_socket_fd != -1)) {
+                        shutdown(connections[i].fd, SHUT_RDWR);
+                        connections[i].fd = -1;
+                        connected_fds--;
+                    }
+                    reorder_connections(connections, 1, connected_fds);
+                    connection_socket_fd = connections[i].fd;
+                }
+
 
                 //flag to check if socket is on or was closed on client side.
                
                 if ( (connections[i].revents & POLLIN) ) { // Dados para ler ?
-                    printf(">>> connections[%d] de socket_fd %d tem conteudo\n", i, connections[i].fd );
-                    connection_socket_fd = connections[i].fd;
-
-
-                    // checks if this socket was closed on the client side. 
-                    // If it's closed, it sets it to -1 and 
-                    //decrements the number of connected_fds
-                    if ( (connection_socket_fd != -1) && socket_is_closed(connection_socket_fd) ) {
-                        printf(">>> connections[%d] de socket_fd %d esta desligado\n", i, connections[i].fd );
-
-                        //socket_is_on = NO;
-                        //if it was not reseted yet...
-                        close(connections[i].fd);
-                        connections[i].fd = -1;
-                        connections[i].events = 0;
-                        connections[i].revents = 0;
-                        connected_fds--;
-
-                        printf(">>> connected_fds ficou %d \n", connected_fds );
-
-
-                        //if this was the highestIndexConnection now its the previous one
-                       /* if ( i == highestIndexConnection ) {
-                            highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
-                        }*/
-                    } 
-
-                    printf(">>> connections[%d] de socket_fd %d esta vai receber e responder a pedido\n", i, connection_socket_fd );
 
 
                     int failed_tasks = 0;
@@ -308,7 +284,6 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
                     /** frees memory **/
                     free_message2(client_request, NO);
                     free_message_set(response_message, response_messages_num);
-
                 }
             }
         }
@@ -336,8 +311,6 @@ struct message_t * respond_to_report ( struct message_t * report, void * useful_
 
 
 int switch_run ( char * my_address_and_port, char ** system_rtables, int numberOfServers ) {
-//    printf("\n> SD15_SERVER is waiting connections at port %d\n", portnumber);
-
 
     /** 0. SIGPIPE Handling */
     struct sigaction s;
@@ -496,63 +469,48 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
         connections[i].revents = 0;
     }
 
-    //for now, only the listening socket
+    //for now only the listening socket
     int connected_fds = 1;
-    //saves the highet connection index
-    int highestIndexConnection = 0;
     // to save the result from poll function
-    int polled_fds = 0; 
-
-
+    int polled_fds = 0;
+    
+    // Gets clients connection requests and handles its requests
     printf("\n--------- waiting for clients requests ---------\n");
-
-
+    
+    
     while ((polled_fds = poll(connections, connected_fds, 50)) >= 0) {
-
+        
         //if there was any polled sockets fd with events
-        if ( polled_fds > 0 ) { 
-
-            /** enters if there is a request on the listening socket **/ 
-            if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {  
+        if ( polled_fds > 0 ) {
+            /** enters if there is a request on the listening socket **/
+            if ( (connections[0].revents & POLLIN) && (connected_fds < N_MAX_CLIENTS) ) {
                 /* gets an open slot*/
-                int open_slot = get_open_slot(connections, connected_fds); 
-
-                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0){ // Ligação feita ?
-                    connections[open_slot].events = POLLIN; // Vamos esperar dados nesta socket
+                int open_slot = connected_fds;
+                
+                if ((connections[open_slot].fd = accept(connections[0].fd, (struct sockaddr *) &client, &client_socket_size)) > 0) {
+                    connections[open_slot].events = POLLIN;
                     connected_fds++;
-                    
-                    //updates the highest index connection if needed.
-                    if ( open_slot > highestIndexConnection ) {
-                        highestIndexConnection = open_slot;
-                    }
                 }
             }
-
+            
+            
             //for each connected cliente it will receive a request and give a response
             int i = 0;
-            for (i = 1; i <= highestIndexConnection; i++) {
+            for (i = 1; i < connected_fds ; i++) {
+                connection_socket_fd = connections[i].fd;
                 
-                //flag to check if socket is on or was closed on client side.
-                int socket_is_on = YES;
-
-                // checks if this socket was closed on the client side. 
-                // If it's closed, it sets it to -1 and 
-                //decrements the number of connected_fds
-                if ( connections[i].fd != -1 && socket_is_closed(connections[i].fd) ) {
-                    socket_is_on = NO;
-                    //if it was not reseted yet...
-                    close(connections[i].fd);
-                    connections[i].fd = -1;
-                    connections[i].events = 0;
-                    connections[i].revents = 0;
-                    connected_fds--;
-
-                    //if this was the highestIndexConnection now its the previous one
-                    if ( i == highestIndexConnection )
-                        highestIndexConnection = get_highest_open_connection(connections, highestIndexConnection);
+                /**  checks if this socket closed on the client side and updates connections **/
+                if ( socket_is_closed(connection_socket_fd) ) {
+                    if ( (connection_socket_fd != -1)) {
+                        shutdown(connections[i].fd, SHUT_RDWR);
+                        connections[i].fd = -1;
+                        connected_fds--;
+                    }
+                    reorder_connections(connections, 1, connected_fds);
+                    connection_socket_fd = connections[i].fd;
                 }
 
-                if ( (connections[i].revents & POLLIN) && socket_is_on ) { // Dados para ler ?
+                if ( (connections[i].revents & POLLIN) ) { // Dados para ler ?
 
                     connection_socket_fd = connections[i].fd;
 
@@ -577,40 +535,31 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                         pthread_mutex_lock(&bucket_access); 
 
                         /** If bucket is not full it will store the client_request **/
-                        if ( !bucket_is_full ) { 
-
-                            // Alocar memória para uma mensagem local (entre thread principal e as outras)
-                            if ((current_request = (struct request_t *) malloc(sizeof(struct request_t))) == NULL) {
-                                perror("Erro ao alocar memória para mensagem local");
-                                return -1;
+                        if ( !bucket_is_full ) {
+                            
+                            /* creates a switch recognizable request */
+                            current_request = create_request_with(connection_socket_fd, client_request, NULL,0,NUMBER_OF_PROXIES, 0,NO);
+                           
+                            /* if it was created successfully it will put it on the bucket */
+                            if ( current_request != NULL ) {
+                                // Colocar mensagem na tabela
+                                requests_bucket[index_to_store_request] = current_request;
+                                // Próxima mensagem será escrita neste índice
+                                index_to_store_request = (index_to_store_request+1) % REQUESTS_BUCKET_SIZE;
+                                // Incrementar número de mensagens no bucket
+                                requests_counter++;
+                                //increments the number of requests ever received
+                                total_requests_count++;
+                                // Forçar este estado
+                                bucket_has_requests = YES;
+                                // Sinalizar THREADS bloqueadas no estado vazio da tabela
+                                monitor_signal(&monitor_bucket_has_requests, &bucket_has_requests);
+                                /* bucket is full if the slot of the next index is not empty */
+                                bucket_is_full = requests_bucket[index_to_store_request] != NULL;
                             }
-
-                            // Preparar mensagem local de acordo com o pedido do cliente
-                            current_request->requestor_fd = connection_socket_fd; 
-                            current_request->request = client_request; 
-                            current_request->response = NULL;
-                            current_request->flags = 5; 
-                            current_request->acknowledged = NUMBER_OF_PROXIES;
-                            current_request->deliveries = 0;
-                            current_request->answered = NO;   
-                            //current_request->id = total_requests_count;     
-
-                            // Colocar mensagem na tabela
-                            requests_bucket[index_to_store_request] = current_request; 
-                            // Próxima mensagem será escrita neste índice
-                            index_to_store_request = (index_to_store_request+1) % REQUESTS_BUCKET_SIZE;         
-                            // Incrementar número de mensagens no bucket       
-                            requests_counter++;  
-                            //increments the number of requests ever received
-                            total_requests_count++;
-
-
-                            // Forçar este estado
-                            bucket_has_requests = YES;           
-                            // Sinalizar THREADS bloqueadas no estado vazio da tabela
-                            monitor_signal(&monitor_bucket_has_requests, &bucket_has_requests); 
-                            /* bucket is full if the slot of the next index is not empty */
-                            bucket_is_full = requests_bucket[index_to_store_request] != NULL;   
+                            else {
+                                puts("\t--- error on create_request_with - discarding cliente request...");
+                            }
                         }
 
                         /* unlocks the bucket */
@@ -686,11 +635,9 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
 
                             /* if the request was acknowledge by every proxy it can now be removed from the bucket */
                             if (requests_bucket[i]->acknowledged <= 0) {
-                                puts("\t--- sent to all servers so will be removed.");
-                                free(requests_bucket[i]->response);
-                                free(requests_bucket[i]->request);
-                                free(requests_bucket[i]);
-                                requests_bucket[i] = NULL; 
+                                puts("\n\t--- request sent to all servers so will be removed from the bucket.");
+                                request_free(requests_bucket[i]);
+                                requests_bucket[i] = NULL;
                                 bucket_is_full = NO;    
                                 requests_counter--; 
                                 bucket_has_requests = requests_counter > 0;
@@ -733,11 +680,11 @@ int main ( int argc, char *argv[] ) {
 
 
     if ( switchIAM ) {
-        puts("\n\t ### I AM THE SWITCH ###");
+        puts("\n\t\t ### I AM THE SWITCH ###\n");
         switch_run(my_address_and_port, system_rtables, numberOfServers);
     }
     else {
-        puts("\n\t ### I AM A SERVER ###");
+        puts("\n\t\t ### I AM A SERVER ###\n");
         server_run(my_address_and_port, system_rtables, numberOfServers);
     }
     

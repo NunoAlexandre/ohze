@@ -358,14 +358,14 @@ struct message_t * message_of_error () {
  *  Verifies if message has error code or is NULL
  */
 int message_error (struct message_t* msg){
-    return msg->opcode == OC_ERROR;
+    return msg != NULL && msg->opcode == OC_ERROR;
 }
 
 /*
  * Verifies if message is a report message
  */
 int message_report (struct message_t* msg){
-    return msg->opcode == OC_REPORT;
+    return msg != NULL && msg->opcode == OC_REPORT;
 }
 
 

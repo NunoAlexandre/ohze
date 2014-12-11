@@ -82,7 +82,7 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
                 return proceed_with_command(opcode, system_rtable_connection, message_content );
             }
             else {
-                puts("--- error consulting remote table and didnt manage to solve it.");
+                puts("\t --- error consulting remote table and didnt manage to solve it.");
             }
        // }
     }

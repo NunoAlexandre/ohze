@@ -4,7 +4,7 @@
 #include "message.h"
 
 
-#define REQUESTS_BUCKET_SIZE 2
+#define REQUESTS_BUCKET_SIZE 20
 int number_of_proxies;
 
 struct monitor_t {     // Um monitor pode ser implementado com um mutex e uma variável de condição
@@ -36,6 +36,8 @@ struct request_t{
   int answered; // Já foi dada uma resposta ao cliente?
 };
 
+
+
 int monitor_init(struct monitor_t *mon); // Para inicializar o MUTEX e a variável de condição
 
 /* Bloqueia até que o predicado seja verdadeiro.
@@ -46,11 +48,20 @@ void monitor_wait(struct monitor_t *mon, int *predicate);
 */
 void monitor_signal(struct monitor_t *mon, int *predicate);
 
+
+
+
+struct request_t * create_request_with(int socket_fd, struct message_t *request_msg,  struct message_t *response_msg, int flag,int proxies, int deliveries, int answered );
+
+void request_free(struct request_t * request );
+
+
 int get_number_of_proxies();
+
 void set_number_of_proxies( int n );
 
 /* Função que implementa um PROXY para um servidor e que será executada no âmbito
-   de uma nova THREAD do processo SERVER_SWITCH. 
+   de uma nova THREAD do processo SERVER_SWITCH.
    Recebe uma operação do SERVER_SWITCH, reencaminha-a para o servidor designado,
    recebe o resultado do servidor, e reencaminha-o para o SERVER_SWITCH.
 */

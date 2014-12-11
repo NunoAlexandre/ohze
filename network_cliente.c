@@ -25,7 +25,7 @@
  */
 struct server_t *network_connect(const char *address_port) {
     
-    puts("Connecting to server...");
+    puts("--- connecting to server...");
     
     retry_connection = YES;
     
@@ -78,11 +78,11 @@ struct server_t *network_connect(const char *address_port) {
         
         int reconnected = NO;
         
-        perror ("NETWORK_CLIENT --> NETWORK_CONNECT > ERROR while connecting with server!");
+        perror ("\t--- error while connecting to the server");
         
         //tries to reconnect to server if ECONNREFUSED occurred and retry_connection = YES
         if (network_retransmit(server_to_connect->socketfd)){
-            puts("NETWORK_CLIENT --> NETWORK_CONNECT > Trying to reconnect to server...");
+            puts("\t--- trying to reconnect to server...");
             sleep(RETRY_TIME);
             struct server_t *server_reconnected;
             
@@ -98,15 +98,14 @@ struct server_t *network_connect(const char *address_port) {
             //returning to starting state
             
             shutdown(server_to_connect->socketfd, SHUT_RDWR);
-            close(server_to_connect->socketfd);
-            puts("did shutdown the socket!!!!!!!!!!!!");
+            puts("\t--- did shutdown the socket.");
             free(server_to_connect);
             return NULL;
         }
     }
     
     /*returns the server that we want to conect with*/
-    puts("Connected to server...");
+    puts("--- connected to server...");
     return server_to_connect;
 }
 

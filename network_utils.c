@@ -169,13 +169,13 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     int writtenBytes = 0;
     if ( (writtenBytes = write_all(connection_socket_fd, &message_size_n, BUFFER_INTEGER_SIZE)) != BUFFER_INTEGER_SIZE ) {
        
-            printf("\t--- failed to write the buffer size into the socket channel");
+        puts("\t--- failed to write the buffer size into the socket channel");
         
         return TASK_FAILED;
     }
     //and sends the message
     if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
-        printf("\t--- failed to write buffer into the socket channel");
+        puts("\t--- failed to write buffer into the socket channel");
         return TASK_FAILED;
     }
     //frees the local buffer
@@ -193,7 +193,6 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
  * In error case returns NULL, otherwise returns the deserialized message.
  */
 struct message_t* receive_message (int connection_socket_fd) {
-    puts("\t --- receiving message ---");
     
     int size_of_msg_received = 0;
     
