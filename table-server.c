@@ -30,6 +30,7 @@
 #define N_MAX_CLIENTS 25
 #define POLL_TIME_OUT 10
 #define N_TABLE_SLOTS 7
+#define N_DELIVERERS 1
 
 int get_open_slot(struct pollfd * connections, int connected_fds) {
     int open_slot = connected_fds;
@@ -382,11 +383,16 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     /** the number of proxies the switch will provide **/
     int NUMBER_OF_PROXIES = numberOfServers-1;
     set_number_of_proxies(NUMBER_OF_PROXIES);
+    /* the number of total thread of the system */
+    int N_THREADS = NUMBER_OF_PROXIES + N_DELIVERERS;
     /** array with data for each thread that will be provided **/
-    struct thread_data threads[NUMBER_OF_PROXIES]; 
+    struct proxy_data proxies[NUMBER_OF_PROXIES]; 
+    /* array with deliverers mans */
+    struct deliverer_data deliverers[N_DELIVERERS];
     /** array with the ids of each thread that will be provided **/
-    pthread_t thread_ids[NUMBER_OF_PROXIES];
-
+    pthread_t proxies_ids[NUMBER_OF_PROXIES];
+    /* array with the ids of each delivered */ 
+    pthread_t deliverers_id[N_DELIVERERS];
     /** the bucket where requests will be stored and let available to all the threads **/
     struct request_t *requests_bucket[REQUESTS_BUCKET_SIZE];
 
@@ -418,25 +424,42 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     requests_bucket[i] = NULL;
 
 
-     // Criar QUEUES e THREADS
+    /* creates a thread for each proxy (thread)  */
     for(i = 0; i < NUMBER_OF_PROXIES; i++){
 
-      threads[i].requests_bucket = requests_bucket; // Cada THREAD PROXY terá acesso à tabela de mensagens,
-      threads[i].bucket_has_requests = &bucket_has_requests; // bem como a esta variável de estado,
-      threads[i].monitor_bucket_has_requests = &monitor_bucket_has_requests; // a este monitor,
-      threads[i].bucket_access = &bucket_access;  // e ao MUTEX para acesso à tabela.
+      proxies[i].requests_bucket = requests_bucket; // Cada THREAD PROXY terá acesso à tabela de mensagens,
+      proxies[i].bucket_has_requests = &bucket_has_requests; // bem como a esta variável de estado,
+      proxies[i].monitor_bucket_has_requests = &monitor_bucket_has_requests; // a este monitor,
+      proxies[i].bucket_access = &bucket_access;  // e ao MUTEX para acesso à tabela.
       // Identificar o TABLE_SERVER a que cada PROXY se ligará
-      threads[i].server_address_and_port = system_rtables[i+1];
-      threads[i].id = i+1; // SWITCH com id 0, PROXIES com id's >= 1
+      proxies[i].server_address_and_port = system_rtables[i+1];
+      proxies[i].id = i+1; // SWITCH com id 0, PROXIES com id's >= 1
       //threads[i].is_available = YES;
 
       // Criar cada uma das threads que serão PROXY de um TABLE_SERVER
-      if (pthread_create(&thread_ids[i], NULL, &run_server_proxy, (void *) &threads[i]) != 0){
+      if (pthread_create(&proxies_ids[i], NULL, &run_server_proxy, (void *) &proxies[i]) != 0){
         perror("Erro ao criar uma thread proxy");
         return -1;
       }
-      pthread_detach(thread_ids[i]);
+      pthread_detach(proxies_ids[i]);
     }
+    /* creates the thread mail officer */
+    /*for ( i = 0; i < N_DELIVERERS; i++ ) {
+        deliverers[i].requests_bucket = requests_bucket; // Cada THREAD PROXY terá acesso à tabela de mensagens,
+        deliverers[i].bucket_access = &bucket_access;  // e ao MUTEX para acesso à tabela.
+        deliverers[i].has_requests_to_send = &monitor_bucket_has_requests; // a este monitor,
+        deliverers[i].monitor_has_requests_to_send = &monitor_has_requests_to_send;
+        // Identificar o TABLE_SERVER a que cada PROXY se ligará
+        deliverers[i].server_address_and_port = system_rtables[i+1];
+        deliverers[i].id = i+1; // SWITCH com id 0, PROXIES com id's >= 1
+
+        // Criar cada uma das threads que serão PROXY de um TABLE_SERVER
+        if (pthread_create(&deliverers_id[i], NULL, &run_deliverer, (void *) &deliverers[i]) != 0){
+            perror("Erro ao criar uma thread proxy");
+            return -1;
+        }
+        pthread_detach(deliverers_id[i]);
+    }*/
 
     
     

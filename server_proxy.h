@@ -14,12 +14,22 @@ struct monitor_t {     // Um monitor pode ser implementado com um mutex e uma va
 
 /* Armazena dados relativos a uma THREAD de execução do switch.
 */
-struct thread_data{
+struct proxy_data {
   struct request_t ** requests_bucket; // Apontador para a tabela de mensagens na THREAD principal
   int *bucket_has_requests;          // Apontador para variável de estado da tabela.
   struct monitor_t *monitor_bucket_has_requests; // Apontador oara o monitor do estado vazio da tabela
   pthread_mutex_t *bucket_access; // Apontador para o MUTEX de acesso à tabela
   char * server_address_and_port;
+  short id;
+};
+
+/* 
+*/
+struct deliverer_data {
+  struct request_t ** requests_bucket; // Apontador para a tabela de mensagens na THREAD principal
+  int *has_requests_to_send;          // Apontador para variável de estado da tabela.
+  struct monitor_t *monitor_has_requests_to_send; // Apontador oara o monitor do estado vazio da tabela
+  pthread_mutex_t *bucket_access; // Apontador para o MUTEX de acesso à tabela
   short id;
 };
 

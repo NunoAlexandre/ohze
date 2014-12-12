@@ -86,7 +86,7 @@ void * run_server_proxy ( void *p ) {
   /* the slot where to read a new request */
   int index_to_read_request = 0; 
   /* stores the data of this proxy */
-  struct thread_data *proxy = p;
+  struct proxy_data *proxy = p;
 
   /** announcing its work */
   printf("\t--- proxy %d is now running \n", proxy->id );
