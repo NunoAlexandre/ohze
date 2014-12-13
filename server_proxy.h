@@ -2,6 +2,8 @@
 #define _SERVER_PROXY_H_
 
 #include "message.h"
+#include "table_skel.h"
+#include "network_server.h"
 
 
 #define REQUESTS_BUCKET_SIZE 20
@@ -59,6 +61,11 @@ void request_free(struct request_t * request );
 int get_number_of_proxies();
 
 void set_number_of_proxies( int n );
+
+
+
+void run_postman ( pthread_mutex_t * bucket_access, struct request_t ** bucket,
+                  int * bucket_is_full, int *requests_counter, int * bucket_has_requests  );
 
 /* Função que implementa um PROXY para um servidor e que será executada no âmbito
    de uma nova THREAD do processo SERVER_SWITCH.

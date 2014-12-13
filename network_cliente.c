@@ -130,7 +130,7 @@ struct message_t * network_send_receive(struct server_t *server, struct message_
     
     while ( retries <= 1 && !taskSucceeded ) {
         if (send_message(server->socketfd, msg) == TASK_SUCCEEDED){
-            sleep(2);
+            sleep(0.3);
             received_msg = receive_message(server->socketfd);
             taskSucceeded = received_msg != NULL;
         }

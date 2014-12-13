@@ -267,7 +267,7 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
                         failed_tasks+= response_messages_num <= 0 || response_message == NULL;
                         
 
-                        sleep(1);
+                        sleep(0.3);
 
                         //sends the response to the client
                         message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);
@@ -580,76 +580,18 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                         }
 
                     }
-
-                    sleep(4);
-
-                    /** TIME TO CHECK FOR REPLIED REQUESTS FROM PROXIES **/
-                    for ( i = 0; i < REQUESTS_BUCKET_SIZE; i++ ) {
-
-                        //resets the flag value for each request 
-                        failed_tasks = 0;
-
-                        /* locks the access to the bucket */
-                        pthread_mutex_lock(&bucket_access); 
-
-                        
-                        /** checks if the request i exists and got a response already **/
-                        if (requests_bucket[i] != NULL && requests_bucket[i]->response != NULL) { 
-                        
-                            /* checks if there is the request i wasn't answered to the requestor yet */
-                            if (!requests_bucket[i]->answered){  
-
-                                /** where all the response message will be stored **/
-                                struct message_t ** response_messages = NULL;
-
-                                /** it will only invoke the request on itself if it went well on the other servers **/
-                                if ( response_with_success(requests_bucket[i]->request, requests_bucket[i]->response) ) {
-
-                                    int response_messages_num = invoke(requests_bucket[i]->request, &response_messages);
-                                    // error case
-                                    failed_tasks+= response_messages_num <= 0 || response_messages == NULL;
-
-                                    //sends the response to the client
-                                    int message_was_sent = server_send_response(requests_bucket[i]->requestor_fd, response_messages_num, response_messages);
-                                    //error case
-                                    failed_tasks+= message_was_sent == TASK_FAILED;
-                                }
-                                else {
-                                    //declares that there was (at least) one failed that task once he 
-                                    //response from the proxie was not a success response to the request.
-                                    failed_tasks = 1;
-                                } 
-                               
-                                /** IF some error happened, it will notify the client **/
-                                if ( failed_tasks > 0 ) {
-                                    server_sends_error_msg(requests_bucket[i]->requestor_fd);
-                                }
-
-
-                                /* if it went well it assumes if will also go well with all other proxies and 
-                                   if went wrong we assume it also will with all other proxies,
-                                   and an error message was sent so the work for this request is done*/
-                                requests_bucket[i]->answered = YES; 
-                                
-                            }
-
-                            /* if the request was acknowledge by every proxy it can now be removed from the bucket */
-                            if (requests_bucket[i]->acknowledged <= 0) {
-                                puts("\n\t--- request sent to all servers so will be removed from the bucket.");
-                                request_free(requests_bucket[i]);
-                                requests_bucket[i] = NULL;
-                                bucket_is_full = NO;    
-                                requests_counter--; 
-                                bucket_has_requests = requests_counter > 0;
-                            }
-                        }
-                        /* by last, it unlocks the access to the bucket */
-                        pthread_mutex_unlock(&bucket_access);
-             
-                    }
+                    
+                    int timeToWaitBeforeCheck = polled_fds % 4;
+                    sleep( timeToWaitBeforeCheck );
                 }
             }
         }
+        
+        /* runs the postman to ensure that the requests responses are finalized and a response is given back */
+        run_postman ( &bucket_access, requests_bucket,
+                     &bucket_is_full, &requests_counter, &bucket_has_requests  );
+        
+        
     }
 
     //closes all the sockets socket
