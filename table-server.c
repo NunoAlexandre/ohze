@@ -585,7 +585,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                     sleep( timeToWaitBeforeCheck );
                 }
             }
-        }
+        } 
         
         /* runs the postman to ensure that the requests responses are finalized and a response is given back */
         run_postman ( &bucket_access, requests_bucket,

@@ -65,7 +65,7 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
             taskSuccess = TASK_FAILED;
             break;
             
-    }
+    } 
     
     /*** checks if some error happened because of unreachable peers and reconnects and tries again ***/
     

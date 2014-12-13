@@ -12,7 +12,7 @@ int number_of_proxies;
 struct monitor_t {     // Um monitor pode ser implementado com um mutex e uma variável de condição
   pthread_mutex_t mut; 
   pthread_cond_t cvar;
-};
+}; 
  
 /* Armazena dados relativos a uma THREAD de execução do switch.
 */

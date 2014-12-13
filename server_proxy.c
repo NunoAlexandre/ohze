@@ -162,7 +162,7 @@ void * run_server_proxy ( void *p ) {
   while ( (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL )
       sleep(1);
    
-     
+      
     // flag to check fatal error
     int fatal_error = NO;
     //communication error tolerance
