@@ -472,9 +472,9 @@ int find_opcode_as_string(const char *input ){
 
 int find_ctype (const char * input ) {
     
-        char * input_dup = strdup(input);
-        strdup(strtok(input_dup," "));
-        char * ctype_s = strdup(strtok(NULL," "));
+        char * input_dup = strndup(input, strlen(input));
+        strtok(input_dup," ");
+        char * ctype_s = strtok(NULL," ");
     
     return atoi(ctype_s);
 }
@@ -522,16 +522,17 @@ char * message_to_string ( struct message_t * msg ) {
     if ( message_opcode_setter(msg) ) {
         
         if ( msg->c_type == CT_TUPLE) {
-            msg_str = malloc(5 + 5 + tuple_size_as_string(msg->content.tuple));
-            sprintf(msg_str, "%d %d %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
+            msg_str = malloc(OPCODE_SIZE+1 + C_TYPE_SIZE+1 + tuple_size_as_string(msg->content.tuple)+5);
+            sprintf(msg_str, "%hu %hu %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
         }
         else if ( msg->c_type == CT_ENTRY ) {
-            msg_str = malloc(5 + 5 + 5 + tuple_size_as_string(msg->content.entry->value));
-            sprintf(msg_str, "%d %d %llu %s", msg->opcode, msg->c_type, msg->content.entry->timestamp, tuple_to_string(msg->content.entry->value));
+            msg_str = malloc(OPCODE_SIZE+1 + C_TYPE_SIZE+1 + TIMESTAMP_SIZE+1 + tuple_size_as_string(msg->content.entry->value)+5);
+            sprintf(msg_str, "%hu %hu %llu %s", msg->opcode, msg->c_type, msg->content.entry->timestamp, tuple_to_string(msg->content.entry->value));
         }
     }
     else if ( message_opcode_taker(msg) ) {
-        sprintf(msg_str, "%d %d %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
+        msg_str = malloc(OPCODE_SIZE+1 + C_TYPE_SIZE+1 + tuple_size_as_string(msg->content.tuple)+5);
+        sprintf(msg_str, "%hu %hu %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
     }
     
     return msg_str;

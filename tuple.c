@@ -147,8 +147,6 @@ int tuple_size_as_string (struct tuple_t* tuple) {
         //each elem size is the "" and a space after
         size+= ( 1 + strlen(tuple_elem_str(tuple, i)) + 1 + 1);
     }
-    //takes the space after the last elem
-    size-= 1;
     
     return size;
 }
