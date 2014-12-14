@@ -97,13 +97,15 @@ int table_skel_size (struct message_t * msg_in, struct message_t *** msg_set_out
 }
 int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out ) {
     
- 	//puts the new tuple or entry
- 	int successValue = msg_in->c_type == CT_TUPLE ?
-    table_put(table, msg_in->content.tuple) : table_put_entry(table, msg_in->content.entry);
+ 	//puts the entry IF its more recent than the last entered one
+ 	int successValue = FAILED;
     
     /* updates the latest_put_timestamp */
-    if ( msg_in->c_type == CT_ENTRY )
-        latest_put_timestamp = msg_in->content.entry->timestamp;
+    if ( msg_in->c_type == CT_ENTRY && msg_in->content.entry->timestamp > latest_put_timestamp ) {
+        successValue = table_put_entry(table, msg_in->content.entry);
+        if ( successValue == SUCCEEDED)
+            latest_put_timestamp = msg_in->content.entry->timestamp;
+    }
     
 	//so the first elem of the array is the message with the success value
  	return init_response_with_message(msg_set_out, 1, message_create_with(msg_in->opcode+1, CT_RESULT, &successValue));
@@ -118,6 +120,13 @@ int action_on_get_tuples (struct message_t * operation ) {
     return KEEP_AT_ORIGIN;
 }
 
+void * get_search_element ( struct message_t * msg_in ) {
+    if ( msg_in->opcode == OC_UPDATE )
+        return &(msg_in->content.result);
+    else
+        return msg_in->content.tuple;
+}
+
 int table_skel_get (struct message_t * msg_in, struct message_t *** msg_set_out ) {
     
 	//have to know if should keep the matching nodes or not
@@ -125,14 +134,14 @@ int table_skel_get (struct message_t * msg_in, struct message_t *** msg_set_out 
 	//if is IN or COPY value is 1 (just one), 0 otherwise meaning "all"
  	int one_or_all =  msg_in->opcode == OC_IN ||  msg_in->opcode == OC_COPY;
     
+    int get_mode = msg_in->opcode == OC_UPDATE ? GET_BY_TIME : GET_BY_TUPLE_MATCH;
 	//pointer to the tuple template
- 	struct tuple_t * tup_template = msg_in->content.tuple;
-	//where the matching tuples will be stored
- 	struct tuple_t ** matching_tuples = NULL;
- 	//gets the matching tuples
- 	int matching_tuples_num = table_get_array(table, tup_template, whatToDoWithTheTuples, one_or_all, &matching_tuples);
+ 	void * search_element = get_search_element(msg_in);
     
- 	int n_msgs = tuples_to_message_array(msg_in, &matching_tuples, matching_tuples_num, msg_set_out);
+    //gets the matching tuples
+    struct list_t * gotten_list = table_get_by(table, search_element, get_mode, whatToDoWithTheTuples, one_or_all);
+    
+    int n_msgs = list_to_message_array(msg_in, gotten_list, get_mode, msg_set_out);
     
  	return n_msgs;
 }
@@ -140,31 +149,40 @@ void table_skel_print() {
  	table_print(table);
 }
 
-int tuples_to_message_array( struct message_t * msg_in, struct tuple_t *** matching_tuples, int ntuples, struct message_t *** msg_set_out) {
-    
+int list_to_message_array( struct message_t * msg_in, struct list_t * list, int gotBy, struct message_t *** msg_set_out) {
     
     //the opcode of each message will be this
- 	int msgs_opcode = msg_in->opcode + 1;
+ 	int fist_msg_opcode = msg_in->opcode == OC_UPDATE ?  OC_UPDATE +1 :  msg_in->opcode + 1;
     
+    int n_elems = list_size(list);
     //the number of responses depends on the response mode
-    int msg_set_size = RESPONSE_MODE == SERVER_RESPONSE_MODE && message_opcode_taker(msg_in) ? 1 : 1 + ntuples;
+    int msg_set_size = RESPONSE_MODE == SERVER_RESPONSE_MODE && message_opcode_taker(msg_in) ? 1 : 1 + n_elems;
     /* creates a set with the proper number of response messages */
-    int n_messages = init_response_with_message(msg_set_out, msg_set_size, message_create_with(msgs_opcode, CT_RESULT, &ntuples));
+    int n_messages = init_response_with_message(msg_set_out, msg_set_size, message_create_with(fist_msg_opcode, CT_RESULT, &n_elems));
     
     if ( n_messages == FAILED)
     	return FAILED;
     
-    /* it will only run if response mode is switch mode */
+    /* common values for all the tuple/entry messages */
+    int msgs_opcode = msg_in->opcode == OC_UPDATE ?  OC_OUT :  msg_in->opcode + 1;
+    int msgs_ctype = msg_in->opcode == OC_UPDATE ? CT_ENTRY : CT_TUPLE;
+    
+    /* iterates over the list to create the response */
+    node_t * currentNode = list_head(list);
  	int i = 1;
  	int sent_successfully = YES;
  	while ( i <= (n_messages-1) && sent_successfully ) {
  		//saves the message with the tuple...
- 		(*msg_set_out)[i] = message_create_with(msgs_opcode, CT_TUPLE, (*matching_tuples)[i-1]);
+        
+        void * msg_content = msgs_ctype == CT_ENTRY ? (void*) node_entry(currentNode) : (void*) entry_value(node_entry(currentNode));
+
+ 		(*msg_set_out)[i] = message_create_with(msgs_opcode, msgs_ctype, msg_content);
  		
  		//if error stops
  		if ((*msg_set_out)[i] == NULL )
 			sent_successfully = NO;
         
+        currentNode = currentNode->next;
 		//moves forward
  		i++;
  	}

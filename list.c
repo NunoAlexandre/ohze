@@ -13,6 +13,7 @@
 #include "general_utils.h"
 #include <stdlib.h>
 #include <string.h>
+#include "message-private.h"
 
 /* Cria uma nova lista. Em caso de erro, retorna NULL.
  */
@@ -55,7 +56,23 @@ struct list_t *list_create() {
     return numberOfFreedNodes == numberOfNodes ? 0 : -1;
 }
 
-int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion ) {
+// nodeToAdd fica antes do currentNode se...
+int node_matches_criterion( node_t * nodeToAdd, node_t * currentNode, int criterion, long long reference_timestamp) {
+    int matches = NO;
+    if ( criterion == ADD_WITH_CRITERION_TIME ) {
+        matches = (nodeToAdd->entry->timestamp < currentNode->entry->timestamp)
+            && (nodeToAdd->entry->timestamp > reference_timestamp);
+    }
+    else if ( criterion == ADD_WITH_CRITERION_KEY )
+        matches = entry_keys_compare(node_entry(nodeToAdd), node_entry(currentNode)) > 0 ;
+    else
+        matches = NO;
+    
+    return matches;
+}
+
+
+int  list_add_node (struct list_t *list, node_t * newNode, int add_criterion, long long reference_timestamp ) {
 
     //flag to return task success
     int taskSucess = -1;
@@ -66,17 +83,17 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     
     //pointer iterate
 
-    node_t * currentNode = addWithCriterion ? list_head(list) : list_tail(list);
+    node_t * currentNode = add_criterion ? list_head(list) : list_tail(list);
 
     //flag to indicate if the new node must be inserted before (0) or after (1)
     unsigned int positionToPut = 1;
     //while the new entry is not frist (DESC alfabethic order)
-    unsigned int nodesToCheck = addWithCriterion ? list_size(list) : 0;
+    unsigned int nodesToCheck = add_criterion ? list_size(list) : 0;
     //searches for the node proper node to choose where to be inserted.
     while ( positionToPut != 0 && nodesToCheck > 0 ) {
         //if new node has key higher than current node, it must me put before it
-        if ( entry_keys_compare(node_entry(newNode), node_entry(currentNode)) > 0 ) {
-            positionToPut = 0;
+        if ( node_matches_criterion(newNode, currentNode, add_criterion, reference_timestamp)  ) {
+                       positionToPut = 0;
         }
         else {
             //moves forward, unless this was the last node to check
@@ -92,14 +109,16 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     
 }
 
+
+
 /* Adiciona uma entry na lista. Como a lista deve ser ordenada,
  * a nova entry deve ser colocada no local correto.
  *  A ordenação da lista deve ser por ordem decrescente das
  * chaves alfanuméricas dos valores inseridos.
  * Retorna 0 (OK) ou -1 (erro)
  */
- int list_add(struct list_t *list, struct entry_t *entry) {
-
+int list_add_with_criterion(struct list_t *list, struct entry_t *entry, int move_criterion, long long reference_timestamp) {
+    
     //flag to return task success
     int taskSucess = FAILED;
     //safety check
@@ -109,17 +128,26 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     //creates new node empty
     node_t * newNode = node_create(NULL, NULL, entry);
     //adds the nodes and saves task success
-    taskSucess = list_add_node(list, newNode, MOVE_WITH_CRITERION);
+    taskSucess = list_add_node(list, newNode, move_criterion, reference_timestamp);
     //if something went wrong it frees the new node
-     if ( taskSucess == FAILED) {
+    if ( taskSucess == FAILED) {
         node_destroy(newNode);
-     }
+    }
     
     return taskSucess;
 }
 
-int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
+/* Adiciona uma entry na lista. Como a lista deve ser ordenada,
+ * a nova entry deve ser colocada no local correto.
+ *  A ordenação da lista deve ser por ordem decrescente das
+ * chaves alfanuméricas dos valores inseridos.
+ * Retorna 0 (OK) ou -1 (erro)
+ */
+int list_add(struct list_t *list, struct entry_t *entry) {
+    return list_add_with_criterion(list, entry, MOVE_WITH_CRITERION_KEY, 0 );
+}
 
+int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestroy ) {
 
     //safety check
     if ( list == NULL || nodeToRemove == NULL)
@@ -197,6 +225,13 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
  */
  int node_matches_template(node_t * node, struct tuple_t* template ) {
     return tuple_matches_template(entry_value(node_entry(node)), template);
+}
+/*
+ * Method that cheks if a certain node matches a template.
+ * Returns 1 if it matches, 0 otherwise.
+ */
+int node_newer_than(node_t * nodeA, long long timestamp ) {
+    return entry_newer_than(node_entry(nodeA), timestamp);
 }
 
 /* Obtem um elemento (tuplo) da lista de acordo com o padrão
@@ -396,7 +431,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
  * The way to move it depends on the mustMoveWithCriterium:
  * se 1/YES - uses list_add that uses its own insert criterium, 0/NO - moves to the tail of toList.
  */
- int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int mustMoveWithCriterium, int whatToDoWithTheNode ) {
+ int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int move_criterium, long long reference_timestamp, int whatToDoWithTheNode ) {
 
     if ( fromList == NULL || toList == NULL )
         return FAILED;
@@ -406,7 +441,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
     
     while ( nodesToMove-- > 0 ) {
         //moves currentNode to toList and if error (-1) returns it.
-        if ( list_move_node(fromList, toList, currentNode, mustMoveWithCriterium, whatToDoWithTheNode ) == -1 ) {
+        if ( list_move_node(fromList, toList, currentNode, move_criterium, reference_timestamp, whatToDoWithTheNode ) == -1 ) {
             return FAILED;
         }
         //once we are iterating from head to tail the currentNode is now the new fromList head
@@ -424,7 +459,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
  * Returns 0 if moved successfully, -1 if error.
  */
  int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
-    int moveWithCriterium,  int whatToDoWithTheNode ) {
+    int move_criterium, long long reference_timestamp, int whatToDoWithTheNode ) {
 
     //safety checks
     if ( fromList == NULL || toList == NULL || node == NULL)
@@ -436,7 +471,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
     if ( whatToDoWithTheNode == KEEP_AT_ORIGIN ) {
         //if node must be kept at the fromList (origin) we use list_add that
         //adds to toList a new node with the entry of node
-        taskSuccess+=list_add(toList, node_entry(node));
+        taskSuccess+=list_add_with_criterion(toList, node_entry(node), move_criterium, reference_timestamp);
     }
     else if ( whatToDoWithTheNode == DONT_KEEP_AT_ORIGIN ) {
         //if it must be removed from the original list we only need to
@@ -444,7 +479,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
         taskSuccess+= list_remove_node(fromList, node, NOT_DESTROY );
         //now the matchedNode is out of the list and can be inserted
         //or added (depending on mustMoveWithCritirion option ) to the matching nodes list
-        taskSuccess+= list_add_node(toList, node, moveWithCriterium);
+        taskSuccess+= list_add_node(toList, node, move_criterium, reference_timestamp);
     }
     else if ( whatToDoWithTheNode == JUST_DELETE_NODES ) {
         taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
@@ -477,7 +512,7 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
         if ( node_matches_template(matchedNode, tup_template) ) {
             //if moves the matchedNode from list to matching_nodes
             // with adding criterion and matchedNode whatToDoWithTheNode or not.
-            list_move_node(list, matching_nodes, matchedNode, MOVE_WITH_CRITERION, whatToDoWithTheNode);
+            list_move_node(list, matching_nodes, matchedNode, MOVE_WITH_CRITERION_KEY, 0, whatToDoWithTheNode);
             
             //if it must get just one it stops to check.
             if ( getJustOne ) {
@@ -490,6 +525,41 @@ struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_te
     //if there was match it returns the entry of the matchedNode, NULL otherwise.
     return matching_nodes;
     
+}
+
+struct list_t * list_entries_newer_than (struct list_t *list, long long timestamp, int whatToDoWithTheNode, int getJustOne ) {
+    //safety check
+    if ( list_isEmpty(list) )
+        return NULL;
+    
+    
+    //the list where to save all the matching nodes found on this list.
+    struct list_t * newer_entries = list_create();
+    
+    //pointer node to iterare
+    node_t * currentNode = list_head(list);
+    //number of nodes to check matching
+    unsigned int nodesToCheck = list_size(list);
+    
+    //It will move forward until it currentNode matches the template
+    while ( nodesToCheck-- > 0 ) {
+        
+        //in case of a match and a node is removed
+        node_t * nextNode = currentNode->next;
+        if ( node_newer_than(currentNode, timestamp) ) {
+            //if moves the matchedNode from list to matching_nodes
+            list_move_node(list, newer_entries, currentNode, MOVE_WITH_CRITERION_TIME, timestamp, whatToDoWithTheNode);
+            
+            //if it must get just one it stops to check.
+            if ( getJustOne ) {
+                nodesToCheck = 0;
+            }
+        }
+        //since the currentNode didnt match it moves forward
+        currentNode = nextNode;
+    }
+    //if there was match it returns the entry of the matchedNode, NULL otherwise.
+    return newer_entries;
 }
 
 
@@ -580,7 +650,7 @@ node_t* list_get_one ( struct list_t * list, struct tuple_t * tup_template, int 
     printf("list_print : list has size %d \n", list_size(list));
     int nodesToPrint = list->size;
     while ( nodesToPrint--  > 0 ) {
-       tuple_print(entry_value(node_entry(nodeToPrint)));
+        message_print(message_create_with(OC_UPDATE, CT_ENTRY, nodeToPrint->entry));puts("");
        nodeToPrint = nodeToPrint->next;
    }   
 }

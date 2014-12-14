@@ -16,6 +16,7 @@
 
 #define TABLE_DIMENSION 12
 
+
 typedef struct table_t {
     //the size of the table: numbero of slots
     unsigned int size;
@@ -28,6 +29,10 @@ int table_put_entry(struct table_t *table, struct entry_t *entry);
 
 void table_print( struct table_t * table );
 int table_slot_index ( table_t * table, char * key );
+
+struct list_t *table_get_entries(struct table_t *table, long long timestamp, int keep_tuples, int one_or_all);
+
+struct list_t *table_get_by(struct table_t *table, void * search_element, int get_criterion, int keep_tuples, int one_or_all);
 
 /*
  * Method that gets a table and a tuple key and returns the proper table index.

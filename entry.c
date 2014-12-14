@@ -70,6 +70,13 @@ struct tuple_t * entry_value ( struct entry_t * entry ) {
     return entry->value;
 }
 
+/*
+ * Returns the value (tuple) of a given entry.
+ */
+int entry_newer_than ( struct entry_t * entryA, long long timestamp) {
+    return entryA->timestamp > timestamp;
+}
+
 long long entry_timestamp (struct entry_t * entry ) {
     if ( entry == NULL )
         return -1;

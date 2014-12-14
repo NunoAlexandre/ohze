@@ -26,6 +26,8 @@ char * entry_key (struct entry_t * entry);
  */
 struct tuple_t * entry_value ( struct entry_t * entry );
 
+int entry_newer_than ( struct entry_t * entryA, long long timestamp) ;
+
 long long entry_timestamp (struct entry_t * entry );
 
 int entry_serialize(struct entry_t * entry, char **buffer);

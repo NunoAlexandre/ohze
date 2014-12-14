@@ -1,6 +1,8 @@
 #ifndef SD15_Product_table_skel_private_h
 #define SD15_Product_table_skel_private_h
 
+#include "list.h"
+
 #define SERVER_RESPONSE_MODE 0
 #define SWITCH_RESPONSE_MODE 1
 #define MUTE_RESPONSE_MODE 2
@@ -45,6 +47,7 @@ int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out 
 */
 int tuples_to_message_array( struct message_t * msg_in, struct tuple_t *** matching_tuples, int ntuples, struct message_t *** msg_set_out);
 
+int list_to_message_array( struct message_t * msg_in, struct list_t * list, int gotBy, struct message_t *** msg_set_out);
 /*
 * Prints the table
 */

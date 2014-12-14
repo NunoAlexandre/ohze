@@ -36,10 +36,16 @@ typedef struct node_t {
  * Defining constants
  */
 //constants on Adding/Moving nodes
-#define ADD_WITH_CRITERION 1
-#define MOVE_WITH_CRITERION ADD_WITH_CRITERION
+#define ADD_WITH_CRITERION_KEY 1
+#define MOVE_WITH_CRITERION_KEY ADD_WITH_CRITERION_KEY
 #define ADD_WITHOUT_CRITERION 0
 #define MOVE_WITHOUT_CRITERION ADD_WITHOUT_CRITERION
+#define ADD_WITH_CRITERION_TIME 2
+#define MOVE_WITH_CRITERION_TIME ADD_WITH_CRITERION_TIME
+
+#define GET_BY_TIME 1
+#define GET_BY_TUPLE_MATCH 2
+
 #define KEEP_AT_ORIGIN 2
 #define DONT_KEEP_AT_ORIGIN 1
 #define JUST_DELETE_NODES 0
@@ -112,6 +118,8 @@ char * node_key( node_t * node );
  * Method that returns the entry of a given node.
  */
 struct entry_t * node_entry(node_t* node);
+
+
 /*
  * Method that compares two entry keys with strcmp 
  * on the same order than the parameters are received.
@@ -120,6 +128,9 @@ int entry_keys_compare(struct entry_t * entryA, struct entry_t* entryB);
 /*
  * Method that increments +1 to the size of the the given list.
  */
+
+int node_matches_criterion( node_t * nodeToAdd, node_t * currentNode, int criterion, long long reference_timestamp);
+
 void list_size_inc(struct list_t * list);
 /*
  * Method that decrements -1 to the size of the given list.
@@ -149,11 +160,16 @@ struct list_t * list_get_all ( struct list_t * list, struct tuple_t * tup_templa
 
 struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template, int mustRemove, int getJustOne );
 
+struct list_t * list_entries_newer_than (struct list_t *list, long long timestamp,
+                                         int whatToDoWithTheNode, int getJustOne );
+
 int list_move_node (struct  list_t * fromList, struct list_t * toList, node_t * node,
-                    int mustMoveWithCriterium, int mustRemoveFromOrigin );
+                    int mustMoveWithCriterium, long long reference_timestamp, int mustRemoveFromOrigin );
 
 int list_move_nodes (struct  list_t * fromList, struct list_t * toList,
-                     int mustMoveWithCriterium,  int mustRemoveFromOrigin);
+                     int mustMoveWithCriterium,  long long reference_timestamp, int mustRemoveFromOrigin);
+
+int list_add_with_criterion(struct list_t *list, struct entry_t *entry, int move_criterion, long long reference_timestamp);
 
 #endif /* defined(__SD15_Project__list_private__) */
 

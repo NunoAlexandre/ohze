@@ -86,16 +86,37 @@ int table_put(struct table_t *table, struct tuple_t *tuple) {
  * os tuplos que estejam de acordo com o template.
  * Em caso de erro, devolve NULL
  */
-struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int whatToDOWithTheNodes, int one_or_all) {
+struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int keep_tuples, int one_or_all) {
     
-    if ( table == NULL || tup_template == NULL ) {
+   return table_get_by(table, tup_template, GET_BY_TUPLE_MATCH, keep_tuples, one_or_all);
+}
 
+struct list_t *table_get_entries(struct table_t *table, long long timestamp, int keep_tuples, int one_or_all) {
+    
+    return table_get_by(table, &timestamp, GET_BY_TIME, keep_tuples, one_or_all);
+}
+
+
+
+/* Função para obter um ou todos os tuplos da tabela que
+ * estejam de acordo com o template tup_template.
+ * Retorna uma lista contendo os tuplos.
+ * O argumento keep_tuples indica se o(s) tuplo(s) encontrado(s)
+ * deve(m) ser mantido(s) na tabela após a operação.
+ * O argumento one_or_all indica se a função deve obter um ou todos
+ * os tuplos que estejam de acordo com o template.
+ * Em caso de erro, devolve NULL
+ */
+struct list_t *table_get_by(struct table_t *table, void * search_element, int get_criterion, int keep_tuples, int one_or_all) {
+    
+    if ( table == NULL || search_element == NULL ) {
         puts("table == NULL");
         return NULL;
     }
-
-    //gets the slot index where to search or -1 (must search on every slots)
-    int slotIndex =  table_slot_index(table, tuple_key(tup_template));
+    
+    //gets the slot index where to search or -1 (must search on every slots) (if get_by_time is always -1)
+    int slotIndex = get_criterion == GET_BY_TUPLE_MATCH ?
+        table_slot_index(table, tuple_key(search_element)) : -1 ;
     
     //the list with all matching nodes that will then be returned
     struct list_t * allMatchingNodes = NULL;
@@ -109,13 +130,16 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
         while ( slotsToCheck-- > 0 ) {
             //gets the list to search from
             struct list_t * list_to_search = table_slot_list(table, index);
-
-            struct list_t * this_slot_matching_nodes = list_matching_nodes(list_to_search, tup_template, 
-                    whatToDOWithTheNodes, one_or_all);
             
+            struct list_t * this_slot_matching_nodes = get_criterion == GET_BY_TUPLE_MATCH ?
+                        list_matching_nodes(list_to_search, (struct tuple_t *) search_element, keep_tuples, one_or_all)
+                        : list_entries_newer_than(list_to_search,  *((long long *) search_element), keep_tuples, one_or_all);
+            
+            long long reference_timestamp = get_criterion == GET_BY_TIME ? *((long long *) search_element) : 0;
             //moves all this_slot_matching_nodes to the matching_nodes list using list_add criterium
             // and not keeping the matching nodes at origin once this_slot_matching_nodes is temporary.
-            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITH_CRITERION, DONT_KEEP_AT_ORIGIN );
+            int move_criterion = get_criterion == GET_BY_TIME ? MOVE_WITH_CRITERION_TIME : MOVE_WITH_CRITERION_KEY;
+            list_move_nodes (this_slot_matching_nodes , allMatchingNodes , move_criterion, reference_timestamp, DONT_KEEP_AT_ORIGIN );
             
             //if its just to get one and list is not empty it found one so it stops
             if ( one_or_all == 1 && !list_isEmpty(allMatchingNodes) ) {
@@ -127,14 +151,20 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
     else {
         //this is the only slot list to search from
         struct list_t * list_to_search = table_slot_list(table, slotIndex);
+        
         //once this slot was the only to be searched from,
         //allMatchingNodes is this table_slot_list matching nodes.
-        allMatchingNodes = list_matching_nodes(list_to_search, tup_template, whatToDOWithTheNodes, one_or_all);
+        allMatchingNodes = get_criterion == GET_BY_TUPLE_MATCH ?
+            list_matching_nodes(list_to_search, (struct tuple_t *) search_element, keep_tuples, one_or_all)
+            : list_entries_newer_than(list_to_search,  *((long long *) search_element), keep_tuples, one_or_all);
     }
 
-
+    
     return allMatchingNodes;
 }
+
+
+
 
 int table_get_array(struct table_t *table, struct tuple_t *tup_template, 
     int whatToDOWithTheNodes, int one_or_all, struct tuple_t *** matching_tuples)

@@ -12,6 +12,7 @@
 #define OC_COPY_ALL	50 //lê e copia TODOS
 #define OC_SIZE		60 //
 #define OC_REPORT   70 //mensagem com informação acerca do estado do switch
+#define OC_UPDATE 80 // asks an update  
 
 /* Define códigos para os possíveis conteúdos da mensagem */
 #define CT_TUPLE    100 //mensagem de tuplo

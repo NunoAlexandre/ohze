@@ -31,6 +31,7 @@ int table_put(struct table_t *table, struct tuple_t *tuple);
  */
 struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, int keep_tuples, int one_or_all);
 
+
 /* Função para remover um ou todos os tuplos da tabela que estejam
  * de acordo com o template tup_template, e libertar a memória
  * utilizada no armazenamento desse(s) tuplo(s).

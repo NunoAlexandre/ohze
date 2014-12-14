@@ -633,7 +633,8 @@ int message_opcode_setter (struct message_t * msg ) {
  */
 int message_opcode_getter ( struct message_t * msg) {
     return msg != NULL && (msg->opcode == OC_IN || msg->opcode == OC_IN_ALL
-                           || msg->opcode == OC_COPY || msg->opcode == OC_COPY_ALL );
+                           || msg->opcode == OC_COPY || msg->opcode == OC_COPY_ALL
+                           || msg->opcode == OC_UPDATE );
 }
 
 /*
