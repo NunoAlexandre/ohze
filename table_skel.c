@@ -196,6 +196,13 @@ long long tabke_skel_latest_put_timestamp() {
     return latest_put_timestamp;
 }
 
+void table_skel_set_response_mode(int mode ) {
+    RESPONSE_MODE = mode;
+}
+int table_skel_get_response_mode( ) {
+    return RESPONSE_MODE;
+}
+
 
 /* Executa uma operação (indicada pelo opcode na msg_in) e retorna o(s)
  * resultado(s) num array de mensagens (struct message_t **msg_set_out).

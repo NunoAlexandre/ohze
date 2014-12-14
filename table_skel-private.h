@@ -16,6 +16,10 @@ int logging_on;
 
 long long tabke_skel_latest_put_timestamp();
 
+void table_skel_set_response_mode(int mode );
+int table_skel_get_response_mode() ;
+long long tabke_skel_latest_put_timestamp();
+
 void table_skel_init_log( char * filepath );
 
 int table_skel_init_with(int n_lists, int response_mode, int checklog, int logging, char * address_and_port );

@@ -127,13 +127,16 @@ int server_update_from_neighbor(long long my_last_timestamp, char * my_address_a
         struct message_t * response = network_send_receive(neighbor, update_request);
         
         int n_entries = response->content.result;
-        
+        int prevResponseMode = table_skel_get_response_mode();
+        table_skel_set_response_mode(MUTE_RESPONSE_MODE);
         int i = 0;
         for ( i = 0; i < n_entries; i++) {
             struct message_t **msg_set_out = NULL;
+
             invoke(receive_message( neighbor->socketfd ), &msg_set_out);
         }
-        
+        table_skel_set_response_mode(prevResponseMode);
+
         network_close(neighbor);
     }
     
