@@ -739,7 +739,7 @@ char* token_deserialize(char* buffer, int size) {
     char * token_rcvd = (char*) malloc(size_of_token);
     //2.1 copia para token_rcvd o que recebe do buffer
     memcpy(token_rcvd, (buffer+offset), size_of_token);
-
+    token_rcvd[size_of_token] = '\0';
     
     offset+= size_of_token;
     //2.2 Verifica se o que recebeu é maior do que a memória disponivel

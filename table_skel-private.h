@@ -14,7 +14,7 @@ int RESPONSE_MODE;
 int logging_on;
 
 
-
+long long tabke_skel_latest_put_timestamp();
 
 void table_skel_init_log( char * filepath );
 

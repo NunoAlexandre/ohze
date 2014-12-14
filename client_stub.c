@@ -410,7 +410,7 @@ struct rtable_connection* rtable_init (char * config_file){
     char* switch_address = servers_ip_port[switch_position];
     struct rtable_t *rtable_switch = rtable_bind(switch_address);
     if (rtable_switch == NULL) {
-        puts(" if (rtable_switch == NULL)");
+        puts("\t--- rtable_init > rtable_switch is nulll)");
 
         return NULL;
     }
@@ -559,6 +559,7 @@ int rtable_connection_replica_rebind (struct rtable_connection * rtable_connecti
         return FAILED;
     }
     
+    printf("rtable_connection_replica_rebind > new_replica_address is %s\n", new_replica_address);
     //2. faz uma ligação ao novo switch
     taskSuccess = rtable_assign_new_server(rtable_connection->rtable_replica, new_replica_address);
     if (taskSuccess == FAILED) {
@@ -569,7 +570,6 @@ int rtable_connection_replica_rebind (struct rtable_connection * rtable_connecti
     rtable_connection->replica_position = rtable_connection_find_address(rtable_connection->servers_addresses_and_ports, rtable_connection->total_servers , new_replica_address);
 
     
-    free(new_replica_address);
     return taskSuccess;
 }
 

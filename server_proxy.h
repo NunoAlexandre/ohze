@@ -23,6 +23,7 @@ struct thread_data{
     struct monitor_t *monitor_bucket_has_requests; // Apontador oara o monitor do estado vazio da tabela
     pthread_mutex_t *bucket_access; // Apontador para o MUTEX de acesso à tabela
     char * server_address_and_port;
+    int is_available;
     short id;
 };
 
@@ -37,6 +38,7 @@ struct request_t {
     short deliveries;
     int acknowledged;  // Cada proxy, ao receber resposta decrementa esta
     int answered; // Já foi dada uma resposta ao cliente?
+    int delivered_to_n;
 };
 
 
@@ -50,8 +52,6 @@ void monitor_wait(struct monitor_t *mon, int *predicate);
 /* Sinaliza as threads que estiverem bloqueadas à espera que o predicado se verifique
  */
 void monitor_signal(struct monitor_t *mon, int *predicate);
-
-
 
 
 struct request_t * create_request_with(int socket_fd, struct message_t *request_msg,  struct message_t *response_msg, int flag,int proxies, int deliveries, int answered );

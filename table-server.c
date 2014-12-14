@@ -101,7 +101,46 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
 }
 
 
+int server_update_from_neighbor(long long my_last_timestamp, char * my_address_and_port, char ** system_rtables, int numberOfServers )
+{
+   
+    puts("\n\t\t ###    Will try to update from another server    \t\t\n");
+    /* asks to another server to update him */
+    struct message_t * update_request = message_create_with(OC_UPDATE, CT_RESULT, &my_last_timestamp);
+    
+    int i = 1;
+    int isConnected = NO;
+    struct server_t * neighbor = NULL;
+    while ( i < numberOfServers && !isConnected ) {
+        if ( strncmp(my_address_and_port, system_rtables[i], strlen(my_address_and_port)) != 0) {
+            neighbor = network_connect(strdup(system_rtables[i]));
+        }
+        i++;
+        isConnected = neighbor != NULL;
+    }
+    
+    if ( !isConnected ) {
+        puts("--- update failed on connecting to another server");
+        return FAILED;
+    }
+    else {
+        struct message_t * response = network_send_receive(neighbor, update_request);
+        
+        int n_entries = response->content.result;
+        
+        int i = 0;
+        for ( i = 0; i < n_entries; i++) {
+            struct message_t **msg_set_out = NULL;
+            invoke(receive_message( neighbor->socketfd ), &msg_set_out);
+        }
+        
+        network_close(neighbor);
+    }
+    
+    puts("\n\t\t ###   I'm updated    \t\t\n");
 
+    return SUCCEEDED;
+}
 
 
 
@@ -172,12 +211,17 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
             //the cliente socket size
     socklen_t  client_socket_size = sizeof (client);
 
-            // initializes the table_skel
+     
+     
+     /****     Initializes the table from the log and asks a neighboor for to get updated           ******/
      if ( table_skel_init_with(N_TABLE_SLOTS, SERVER_RESPONSE_MODE, YES, YES, my_address_and_port) == FAILED)
         return FAILED;
      
+     server_update_from_neighbor( tabke_skel_latest_put_timestamp(), my_address_and_port, system_rtables, numberOfServers );
+     
 
-            /** creates a pollfd **/ 
+
+            /** creates a pollfd **/
     struct pollfd connections[N_MAX_CLIENTS];
             //the socket_fd is at first
     connections[0].fd = socket_fd;
@@ -255,7 +299,8 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
                     int message_was_sent = NO;
                     
                     if ( message_report(client_request) ) {
-                        struct message_t * report_response = respond_to_report(client_request, system_rtables[0]);
+                        char * server_address_port = strndup(system_rtables[0], strlen(system_rtables[0]));
+                        struct message_t * report_response = respond_to_report(client_request, server_address_port);
                         response_messages_num = 1;
                         message_was_sent = server_send_response(connection_socket_fd, response_messages_num, &report_response);
                         failed_tasks = message_was_sent == FAILED;
@@ -452,7 +497,9 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     if ( table_skel_init_with( N_TABLE_SLOTS, SWITCH_RESPONSE_MODE, YES, YES, my_address_and_port ) == FAILED )
         return FAILED;
 
-
+    server_update_from_neighbor( tabke_skel_latest_put_timestamp(), my_address_and_port, system_rtables, numberOfServers );
+    
+    
 
     /** creates a pollfd **/ 
     struct pollfd connections[N_MAX_CLIENTS];

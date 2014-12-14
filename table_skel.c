@@ -45,9 +45,11 @@ int table_skel_init_with(int n_lists, int response_mode, int checklog, int loggi
     if ( table_skel_init(n_lists) == FAILED )
         return FAILED;
     
+    latest_put_timestamp = 0;
+    
     if ( logging )
         table_skel_init_log(address_and_port);
-
+    
     if ( checklog ) {
         RESPONSE_MODE = MUTE_RESPONSE_MODE;
         logging_on = NO;
@@ -55,7 +57,6 @@ int table_skel_init_with(int n_lists, int response_mode, int checklog, int loggi
     }
     logging_on = logging;
     RESPONSE_MODE = response_mode;
-    latest_put_timestamp = 0;
     
     return SUCCEEDED;
 }
@@ -75,7 +76,7 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
         *msg_set_out = message_create_set(set_size);
         //error case
         if ( *msg_set_out == NULL) return FAILED;
-    
+        
         //so the first elem of the array is the message with the table size
         (*msg_set_out)[0] = first_message;
         //error case
@@ -83,7 +84,7 @@ int init_response_with_message(struct message_t *** msg_set_out, int set_size, s
     }
     else
         set_size = 0;
-
+    
  	return set_size;
 }
 
@@ -103,8 +104,9 @@ int table_skel_put (struct message_t * msg_in, struct message_t *** msg_set_out 
     /* updates the latest_put_timestamp */
     if ( msg_in->c_type == CT_ENTRY && msg_in->content.entry->timestamp > latest_put_timestamp ) {
         successValue = table_put_entry(table, msg_in->content.entry);
-        if ( successValue == SUCCEEDED)
+        if ( successValue == SUCCEEDED) {
             latest_put_timestamp = msg_in->content.entry->timestamp;
+        }
     }
     
 	//so the first elem of the array is the message with the success value
@@ -116,7 +118,7 @@ int action_on_get_tuples (struct message_t * operation ) {
         return DONT_KEEP_AT_ORIGIN;
     else if ( message_opcode_taker(operation) )
         return DONT_KEEP_AT_ORIGIN;
-
+    
     return KEEP_AT_ORIGIN;
 }
 
@@ -175,7 +177,7 @@ int list_to_message_array( struct message_t * msg_in, struct list_t * list, int 
  		//saves the message with the tuple...
         
         void * msg_content = msgs_ctype == CT_ENTRY ? (void*) node_entry(currentNode) : (void*) entry_value(node_entry(currentNode));
-
+        
  		(*msg_set_out)[i] = message_create_with(msgs_opcode, msgs_ctype, msg_content);
  		
  		//if error stops
@@ -190,7 +192,9 @@ int list_to_message_array( struct message_t * msg_in, struct list_t * list, int 
  	return  sent_successfully ? n_messages : FAILED;
 }
 
-
+long long tabke_skel_latest_put_timestamp() {
+    return latest_put_timestamp;
+}
 
 
 /* Executa uma operação (indicada pelo opcode na msg_in) e retorna o(s)
@@ -221,9 +225,9 @@ int invoke(struct message_t *msg_in, struct message_t ***msg_set_out) {
 	}
     
     if ( logging_on && (msg_in->opcode == OC_OUT || msg_in->opcode == OC_IN || msg_in->opcode == OC_IN_ALL) ) {
-            server_log_message(msg_in);
+        server_log_message(msg_in);
     }
-        
+    
 	return number_of_msgs;
 }
 

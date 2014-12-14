@@ -39,7 +39,7 @@ struct server_t *network_connect(const char *address_port) {
     
     //2.building struct server_t server_to_connect
     struct server_t *server_to_connect = (struct server_t*) malloc(sizeof(struct server_t));
-    server_to_connect->ip_address = server_address_ip;
+    server_to_connect->ip_address = server_address;
     server_to_connect->port = atoi(server_port);
     
     

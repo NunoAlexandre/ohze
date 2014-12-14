@@ -70,12 +70,9 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
     /*** checks if some error happened because of unreachable peers and reconnects and tries again ***/
     
     if ( taskSuccess == FAILED && consulted_rtable != NULL ) {
-        puts(" if ( taskSuccess == FAILED && consulted_rtable != NULL");
         /* which rtable was consulted */
         int switchWasTheConsulted = consulted_rtable == rtable_switch;
         
-//        if ( socket_is_closed(consulted_rtable->server_to_connect.socketfd) ) {
-//            puts(" socket is closed");
             int rebindSuccess = rtable_connection_server_rebind(system_rtable_connection, switchWasTheConsulted);
             
             if ( rebindSuccess == SUCCEEDED ) {
@@ -84,7 +81,6 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
             else {
                 puts("\t --- error consulting remote table and didnt manage to solve it.");
             }
-       // }
     }
     
     
@@ -176,9 +172,7 @@ int main(int argc , char *argv[]) {
     /* 2. Obter os diversos endereços e inicializar a rtable */
     char * file_path = strdup(argv[1]);
     
-    struct rtable_connection * system_rtable_connection;
-    
-    system_rtable_connection = rtable_init(file_path); //vai inicializar a estrutura rtable_connection
+    struct rtable_connection * system_rtable_connection = rtable_init(file_path); //vai inicializar a estrutura rtable_connection
     
     if (system_rtable_connection == NULL){
         taskSuccess = FAILED;
