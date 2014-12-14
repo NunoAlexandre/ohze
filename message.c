@@ -516,12 +516,17 @@ int assign_ctype (int opcode, int callFromServer ){
 }
 
 char * message_to_string ( struct message_t * msg ) {
-    char * msg_str = malloc(400);
+    
+    char * msg_str = NULL;
+    
     if ( message_opcode_setter(msg) ) {
+        
         if ( msg->c_type == CT_TUPLE) {
+            msg_str = malloc(5 + 5 + tuple_size_as_string(msg->content.tuple));
             sprintf(msg_str, "%d %d %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
         }
         else if ( msg->c_type == CT_ENTRY ) {
+            msg_str = malloc(5 + 5 + 5 + tuple_size_as_string(msg->content.entry->value));
             sprintf(msg_str, "%d %d %llu %s", msg->opcode, msg->c_type, msg->content.entry->timestamp, tuple_to_string(msg->content.entry->value));
         }
     }

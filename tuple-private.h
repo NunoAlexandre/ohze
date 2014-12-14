@@ -21,6 +21,7 @@ char * tuple_elem_str(struct tuple_t * tuple, int i);
 char * tuple_key (struct tuple_t * tuple );
 int tuple_size( struct tuple_t * tuple );
 int tuple_size_bytes ( struct tuple_t* tuple);
+int tuple_size_as_string (struct tuple_t* tuple) ;
 char * tuple_to_string( struct tuple_t * tuple );
 int tuple_serialize(struct tuple_t *tuple, char **buffer);
 struct tuple_t *tuple_deserialize(char *buffer, int size);

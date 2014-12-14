@@ -139,6 +139,20 @@ int tuple_size_bytes ( struct tuple_t* tuple) {
     return nBytes;
 }
 
+int tuple_size_as_string (struct tuple_t* tuple) {
+    int size = 0;
+    
+    int i;
+    for ( i = 0; i < tuple_size(tuple); i++ ) {
+        //each elem size is the "" and a space after
+        size+= ( 1 + strlen(tuple_elem_str(tuple, i)) + 1 + 1);
+    }
+    //takes the space after the last elem
+    size-= 1;
+    
+    return size;
+}
+
 //format has to be:
 // [dim][size_e1][bytes_e1][size_e2][bytes_e2][size_e3][bytes_e3]
 //    4       4             var         4               var          4          4
