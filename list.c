@@ -44,7 +44,7 @@ struct list_t *list_create() {
     while ( current != NULL && numberOfFreedNodes < numberOfNodes-1 ) {
         if ( current->prev != NULL ) {
             //if node is destroyed it increments the freed nodes number
-            if ( node_destroy(current->prev)  == TASK_SUCCEEDED ) {
+            if ( node_destroy(current->prev)  == SUCCEEDED ) {
                 numberOfFreedNodes++;
             }
         }
@@ -101,7 +101,7 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
  int list_add(struct list_t *list, struct entry_t *entry) {
 
     //flag to return task success
-    int taskSucess = TASK_FAILED;
+    int taskSucess = FAILED;
     //safety check
     if ( list == NULL || entry == NULL )
         return taskSucess;
@@ -111,7 +111,7 @@ int  list_add_node (struct list_t *list, node_t * newNode, int addWithCriterion 
     //adds the nodes and saves task success
     taskSucess = list_add_node(list, newNode, MOVE_WITH_CRITERION);
     //if something went wrong it frees the new node
-     if ( taskSucess == TASK_FAILED) {
+     if ( taskSucess == FAILED) {
         node_destroy(newNode);
      }
     
@@ -123,10 +123,10 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
 
     //safety check
     if ( list == NULL || nodeToRemove == NULL)
-        return TASK_FAILED;
+        return FAILED;
     
     //success flag, fail as a start since nothing was done yet
-    int taskSuccess = TASK_FAILED;
+    int taskSuccess = FAILED;
     
     if ( list_size(list) == 1 ) {
         list->head = NULL;
@@ -166,7 +166,7 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
         taskSuccess = node_destroy(nodeToRemove);
     }
     else {
-        taskSuccess = TASK_SUCCEEDED;
+        taskSuccess = SUCCEEDED;
     }
     
     //returns the taskSucess
@@ -181,14 +181,14 @@ int list_remove_node (struct list_t * list, node_t * nodeToRemove, int mustDestr
     //as a start the taskSuccess is failed (nothing done yet)
     //safety check
     if ( list == NULL || tup_template == NULL)
-        return TASK_FAILED;
+        return FAILED;
     
     //searchs on the list 1 Node matching tup_template and
     //simply deletes it when finds it, returning null if succedded
     node_t * removedNode = list_get_one (list, tup_template, JUST_DELETE_NODES);
     
     //if the removedNode is null then it was removed successfully.
-    return removedNode == NULL ? TASK_SUCCEEDED : TASK_FAILED;
+    return removedNode == NULL ? SUCCEEDED : FAILED;
 }
 
 /*
@@ -255,12 +255,12 @@ struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
  int node_destroy (struct node_t* node ) {
     //safety checks in error case
     if ( node == NULL || node->entry == NULL )
-        return TASK_FAILED;
+        return FAILED;
     
     free(node);
     
     //success
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 /*
@@ -307,7 +307,7 @@ struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
     //safety check
     if ( list == NULL || newNode == NULL ||  (aNode == NULL && list_size(list) > 0) ) {
         perror("Error: list_insert_node with list or newNode or relative node null\n");
-        return TASK_SUCCEEDED;
+        return SUCCEEDED;
     }
     
     //if list is empty...
@@ -381,7 +381,7 @@ struct entry_t *list_get(struct list_t *list, struct tuple_t *tup_template) {
 
 list_size_inc(list);
 //return with success
-return TASK_SUCCEEDED;
+return SUCCEEDED;
 }
 
 int list_insert_to_tail ( struct list_t * list, node_t* node) {
@@ -399,7 +399,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
  int list_move_nodes (struct  list_t * fromList, struct list_t * toList, int mustMoveWithCriterium, int whatToDoWithTheNode ) {
 
     if ( fromList == NULL || toList == NULL )
-        return TASK_FAILED;
+        return FAILED;
     
     int nodesToMove = list_size(fromList);
     node_t * currentNode = list_head(fromList);
@@ -407,7 +407,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
     while ( nodesToMove-- > 0 ) {
         //moves currentNode to toList and if error (-1) returns it.
         if ( list_move_node(fromList, toList, currentNode, mustMoveWithCriterium, whatToDoWithTheNode ) == -1 ) {
-            return TASK_FAILED;
+            return FAILED;
         }
         //once we are iterating from head to tail the currentNode is now the new fromList head
         currentNode = whatToDoWithTheNode == KEEP_AT_ORIGIN ? currentNode->next : list_head(fromList);
@@ -428,7 +428,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
 
     //safety checks
     if ( fromList == NULL || toList == NULL || node == NULL)
-        return TASK_FAILED;
+        return FAILED;
     
     //if taskSuccess keeps 0 means all taks succeded
     int taskSuccess = 0;
@@ -450,7 +450,7 @@ int list_insert_to_head ( struct list_t * list, node_t* node) {
         taskSuccess+= list_remove_node(fromList, node, MUST_DESTROY );
     }
     //returns the taskSuccess (0 ok, -1 error)
-    return taskSuccess == 0 ? TASK_SUCCEEDED : TASK_FAILED;
+    return taskSuccess == 0 ? SUCCEEDED : FAILED;
 }
 
 struct list_t * list_matching_nodes (struct list_t *list, struct tuple_t *tup_template,

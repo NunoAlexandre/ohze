@@ -10,8 +10,8 @@
 
 #include <unistd.h>
 
-#define TASK_FAILED -1
-#define TASK_SUCCEEDED 0
+#define FAILED -1
+#define SUCCEEDED 0
 #define YES 1
 #define NO  0
 

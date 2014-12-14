@@ -158,3 +158,32 @@ struct entry_t *entry_deserialize(char *buffer, int buffer_size) {
     return entry;
 }
 
+struct entry_t * entry_create_from_string(const char * input ) {
+    
+    
+    char *search = " ";
+    long long timestamp = 0;
+
+    
+    char * inception = strdup(input);
+    char * rest;
+    // passa o opcode
+    strtok_r(inception, search, &rest );
+    //passa o ctype
+    strtok_r(NULL, search, &rest);
+    //gets the timestamp
+    char * timestamp_s = strtok_r(NULL, search, &rest);
+    //saves it has a long long
+    timestamp = atoll(timestamp_s);
+
+    free(inception);
+    
+    return entry_create2(create_tuple_from_input(input), timestamp);
+}
+
+
+
+
+
+
+

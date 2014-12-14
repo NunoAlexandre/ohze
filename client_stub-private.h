@@ -103,21 +103,21 @@ char * rtable_report(struct rtable_connection *rtable_connection);
 
 /*
  * Função que atualiza o endereço do switch e rtable_switch
- * Retorna TASK_SUCCEEDED em caso de sucesso
+ * Retorna SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
 int rtable_connection_assign_new_switch (struct rtable_connection * rtable_connection, char * switch_address_and_port);
 
 /*
  * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
- * Retorna a posição em caso de sucesso ou TASK_FAILED
+ * Retorna a posição em caso de sucesso ou FAILED
  * (Projeto 5)
  */
 int rtable_connection_find_address (char** addresses_and_ports, int n_servers, char * address_and_port_to_find);
 
 /*
  * Inicia o processo de disconectar de uma dada rtable_connection
- * Retorna TASK_SUCCEEDED em caso de sucesso
+ * Retorna SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
 int rtable_disconnect (struct rtable_connection * rtable_connection);

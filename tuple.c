@@ -103,6 +103,10 @@ char * tuple_element ( struct tuple_t * tuple, int iElement ) {
     return tuple->tuple[iElement];
 }
 
+char * tuple_elem_str(struct tuple_t * tuple, int i) {
+    return tuple_element(tuple,i) == NULL ? TUPLE_ELEM_NULL :  tuple_element(tuple,i);
+}
+
 /*
  * Method that returns the key of a given tuple.
  */
@@ -142,7 +146,7 @@ int tuple_size_bytes ( struct tuple_t* tuple) {
 int tuple_serialize(struct tuple_t *tuple, char **buffer) {
     
     if ( tuple == NULL)
-        return TASK_FAILED;
+        return FAILED;
     
     //bytes size needed to be alloc
     int buffer_size = tuple_size_bytes(tuple);
@@ -250,11 +254,26 @@ struct tuple_t *tuple_deserialize(char *buffer, int size) {
 }
 
 
+char * tuple_to_string( struct tuple_t * tuple ) {
+    int size = 0;
+    int i;
+    for (i = 0; i < tuple_size(tuple); i++)
+        size+= strlen(tuple_elem_str(tuple, i)) + 3 ; //+3 is the two " " and the space
+    
+    char * tuple_string = malloc (size);
+    sprintf(tuple_string, "\"%s\" \"%s\" \"%s\"", tuple_elem_str(tuple,0), tuple_elem_str(tuple,1), tuple_elem_str(tuple,2));
+    tuple_string[size-1] = '\0';
+    
+    return tuple_string;
+}
+//
+
+
 /*
  *  Creates a tuple from user input.
  *
  */
-struct tuple_t* create_tuple_from_input (const char *user_input){
+struct tuple_t* create_tuple_from_input (const char *user_input) {
     
     char *token;
     char *search = "\"";

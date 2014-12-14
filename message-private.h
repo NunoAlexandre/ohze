@@ -85,15 +85,19 @@ void free_message2(struct  message_t * message, int free_content);
  */
 struct message_t * command_to_message (const char * command);
 
+
+int find_ctype (const char * input );
 /*
  * Given an opcode returns/assigns a proper c_type.
  */
-int assign_ctype (int opcode);
+int assign_ctype (int opcode, int mode);
 
 /*
  * Returns the opcode from the input, assuming its valid.
  */
-int find_opcode(const char *input);
+int find_opcode_as_string(const char *input);
+
+int find_opcode_as_int(const char * input);
 
 /*
  * Prints a given message.
@@ -168,6 +172,8 @@ int message_opcode_report (struct message_t * msg);
  *  Serializes content of a given message_t
  */
 int message_serialize_content ( struct message_t * message, char ** buffer );
+
+char * message_to_string ( struct message_t * msg );
 
 /*
  * Returns the size (bytes) of a given token

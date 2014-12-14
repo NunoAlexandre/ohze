@@ -19,6 +19,7 @@
 #include "general_utils.h"
 #include "inet.h"
 
+
 /*
  * Creates a message_t
  */
@@ -109,7 +110,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
     
     if ( msg == NULL) {
         puts ("message_content_size_bytes but msg is NULL");
-        return TASK_FAILED;
+        return FAILED;
         
     }
     
@@ -132,7 +133,7 @@ int message_content_size_bytes ( struct message_t * msg ) {
     else {
         printf("Unrecognized message content type : value is %d\n", msg->c_type);
         
-        content_size_bytes = TASK_FAILED;
+        content_size_bytes = FAILED;
     }
     
     return content_size_bytes;
@@ -167,7 +168,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
     }
     else {
         printf("message_serialize_content : invalide C_TYPE\n");
-        buffer_size=TASK_FAILED;
+        buffer_size=FAILED;
     }
     
     return buffer_size;
@@ -175,7 +176,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
 
 /* Converte o conteúdo de uma message_t num char*, retornando o tamanho do
  * buffer alocado para a mensagem serializada como um array de
- * bytes, ou TASK_FAILED em caso de erro.
+ * bytes, ou FAILED em caso de erro.
  *
  * A mensagem serializada deve ter o seguinte formato:
  *
@@ -201,7 +202,7 @@ int message_serialize_content ( struct message_t * message, char ** buffer ) {
 int message_to_buffer(struct message_t *msg, char **msg_buf) {
     
     if ( msg == NULL )
-        return TASK_FAILED;
+        return FAILED;
     
     //gets the memory amount needed to be alloced
     int msg_buffer_size = message_size_bytes ( msg );
@@ -232,8 +233,8 @@ int message_to_buffer(struct message_t *msg, char **msg_buf) {
     // serializes the content message
     int message_serialized_content_size = message_serialize_content ( msg, &message_serialized_content);
     
-    if ( message_serialized_content_size == TASK_FAILED || message_serialized_content == NULL) {
-        return TASK_FAILED;
+    if ( message_serialized_content_size == FAILED || message_serialized_content == NULL) {
+        return FAILED;
     }
     
     //adds the content into the buffer
@@ -350,7 +351,7 @@ void free_message2(struct message_t * message, int free_content) {
  * Creates an error message
  */
 struct message_t * message_of_error () {
-    int taskFailedFlag = TASK_FAILED;
+    int taskFailedFlag = FAILED;
     return message_create_with(OC_ERROR, CT_RESULT, &taskFailedFlag);
 }
 
@@ -393,10 +394,19 @@ int response_with_success ( struct message_t* request_msg, struct message_t* res
     return YES;
 }
 
+int find_opcode_as_int(const char *input ){
+    
+    char * input_dup = strdup(input);
+    char *user_task = strdup(strtok(input_dup," "));
+    int opcode = atoi(user_task);
+    free(input_dup);
+    free(user_task);
+    return opcode;
+} 
 /*
  *  Find opcode form user input
  */
-int find_opcode(const char *input ){
+int find_opcode_as_string(const char *input ){
     
     char * input_dup = strdup(input);
     char *user_task = strdup(strtok(input_dup," "));
@@ -408,7 +418,7 @@ int find_opcode(const char *input ){
     char *copy_all = "copy_all";
     char *size = "size\n";
     char *quit = "quit\n";
-    
+        
     if (strcasecmp(user_task, out) == 0) {
         free(user_task);
         free(input_dup);
@@ -459,12 +469,21 @@ int find_opcode(const char *input ){
     }
 }
 
+
+int find_ctype (const char * input ) {
+    
+        char * input_dup = strdup(input);
+        strdup(strtok(input_dup," "));
+        char * ctype_s = strdup(strtok(NULL," "));
+    
+    return atoi(ctype_s);
+}
 /*
  *  Assigns CTCODE according with OPCODE
  */
-int assign_ctype (int opcode){
+int assign_ctype (int opcode, int callFromServer ){
     
-    int ctcode = TASK_FAILED;
+    int ctcode = FAILED;
     
     switch (opcode) {
             
@@ -473,11 +492,13 @@ int assign_ctype (int opcode){
         case OC_COPY:
         case OC_IN_ALL:
         case OC_COPY_ALL:
-        case OC_OUT:
         {
             ctcode = CT_TUPLE;
             break;
         }
+        case OC_OUT:
+            ctcode = callFromServer ? CT_ENTRY : CT_TUPLE;
+            break;
             
         /* operation that envolves returning a value */
         case OC_SIZE:
@@ -487,11 +508,28 @@ int assign_ctype (int opcode){
         }
             
         default:
-            ctcode = TASK_FAILED;
+            ctcode = FAILED;
             break;
     }
     
     return ctcode;
+}
+
+char * message_to_string ( struct message_t * msg ) {
+    char * msg_str = malloc(400);
+    if ( message_opcode_setter(msg) ) {
+        if ( msg->c_type == CT_TUPLE) {
+            sprintf(msg_str, "%d %d %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
+        }
+        else if ( msg->c_type == CT_ENTRY ) {
+            sprintf(msg_str, "%d %d %llu %s", msg->opcode, msg->c_type, msg->content.entry->timestamp, tuple_to_string(msg->content.entry->value));
+        }
+    }
+    else if ( message_opcode_taker(msg) ) {
+        sprintf(msg_str, "%d %d %s", msg->opcode, msg->c_type, tuple_to_string(msg->content.tuple));
+    }
+    
+    return msg_str;
 }
 
 /*
@@ -500,15 +538,19 @@ int assign_ctype (int opcode){
  */
 struct message_t * command_to_message (const char * command) {
     //get opcode
-    int opcode = find_opcode(command);
+    int opcode = find_opcode_as_string(command);
     
     //get ctype
-    int ctype = assign_ctype(opcode);
+    int ctype = find_ctype(command);
+
     
     void * message_content = NULL;
     
     if ( ctype == CT_TUPLE ) {
         message_content = create_tuple_from_input (command);
+    }
+    else if ( ctype == CT_ENTRY ) {
+        message_content = entry_create_from_string(command);
     }
     
     else if ( ctype == CT_RESULT ) {
@@ -542,7 +584,7 @@ void message_print ( struct message_t * msg ) {
         }
         
         // * (Atualizado para Projeto 5)
-        else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING || msg->c_type == CT_INVCMD ){
+        else if (msg->c_type == CT_SFAILURE || msg->c_type == CT_SRUNNING || msg->c_type == CT_INVCMD ) {
             printf (" [ %hd , %hd , %s ]", msg->opcode, msg->c_type, msg->content.token);
         }
         
@@ -627,7 +669,7 @@ int token_as_serialized_size(char* token) {
 int token_serialize(char* token, char **buffer) {
     
     if ( token == NULL)
-        return TASK_FAILED;
+        return FAILED;
     
     //1. Alocar memória para token (n bytes para alocar)
     int size_of_token = token_size_bytes(token);
@@ -655,7 +697,7 @@ int token_serialize(char* token, char **buffer) {
     //4.1 Verifica se o que recebeu é maior do que a memória disponivel
     if ( offset > serialized_token_size) {
         free (*buffer);
-        return TASK_FAILED;
+        return FAILED;
     }
     
 

@@ -57,7 +57,7 @@ int hostname_to_ip(char * hostname , char* ip){
     if ( (host_entry = gethostbyname( hostname ) ) == NULL){
         // get the host info
         puts("HOSTNAME TO IP ERROR: ");
-        return TASK_FAILED;
+        return FAILED;
     }
     
     addr_list = (struct in_addr **) host_entry->h_addr_list;
@@ -68,7 +68,7 @@ int hostname_to_ip(char * hostname , char* ip){
         return ip[i];
     }
     
-    return TASK_FAILED;
+    return FAILED;
 }
 
 int socket_is_open(int socket_fd ) {
@@ -94,14 +94,14 @@ int socket_is_closed(int socket_fd ) {
 int write_all(int socket_fd, const void *buffer, int bytesToWrite) {
     //checks if socket is closed...
     if ( socket_is_closed(socket_fd) )
-        return TASK_FAILED;
+        return FAILED;
     
     int bufsize = bytesToWrite;
     
     while(bytesToWrite>0 ) {
         //checks it to avoid issues
         if ( socket_is_closed(socket_fd) )
-            return TASK_FAILED;
+            return FAILED;
         //if its open then it can write into it.
         int writtenBytes = (int) write(socket_fd, buffer, bytesToWrite);
         if(writtenBytes<0) {
@@ -133,7 +133,7 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
         //if nReadedBytes is -1 (error) or 0 (socket closed)
         if ( nReadedBytes <= 0 ) {
             if(errno==EINTR) continue;
-            return TASK_SUCCEEDED;
+            return SUCCEEDED;
         }
         //moves buffer pointer
         buffer += nReadedBytes;
@@ -146,12 +146,12 @@ int read_all( int socket_fd, void *buffer, int nBytesToRead ) {
 /*
  * Sends a given message to the connection_socket_fd.
  * First sends an integer with the message buffer size and then the message itself.
- * In error case returns TASK_FAILED, TASK_SUCCEEDED otherwise.
+ * In error case returns FAILED, SUCCEEDED otherwise.
  */
 int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //puts("\t --- sending message ---");
     if ( messageToSend == NULL )
-        return TASK_FAILED;
+        return FAILED;
     
     //the buffer
     char * messageToSend_buffer = NULL;
@@ -160,7 +160,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     //fills buffer with the serialized messageToSend
     if ( (message_size = message_to_buffer(messageToSend, &messageToSend_buffer)) == -1 ) {
         printf("send message > error on message_to_buffer\n");
-        return TASK_FAILED;
+        return FAILED;
     }
     
     //converts it to network format
@@ -171,12 +171,12 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
        
         puts("\t--- failed to write the buffer size into the socket channel");
         
-        return TASK_FAILED;
+        return FAILED;
     }
     //and sends the message
     if ( write_all(connection_socket_fd, messageToSend_buffer, message_size ) != message_size ) {
         puts("\t--- failed to write buffer into the socket channel");
-        return TASK_FAILED;
+        return FAILED;
     }
     //frees the local buffer
     free(messageToSend_buffer);
@@ -184,7 +184,7 @@ int send_message (int connection_socket_fd, struct message_t * messageToSend) {
     printf("Sent message: "); message_print(messageToSend); printf(" <> %d bytes\n", message_size_bytes(messageToSend));
     
     
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 
@@ -246,18 +246,18 @@ int get_system_server(char * lineWithServerInfo, char ** system_server_info) {
     
     *system_server_info = strdup(lineWithServerInfo);
     
-	return TASK_SUCCEEDED;
+	return SUCCEEDED;
 }
 
 int get_system_switch(char * lineWithSwitchInfo, char** system_switch) {
     
-    int taskSuccess = TASK_FAILED;
+    int taskSuccess = FAILED;
 	char * line = strdup(lineWithSwitchInfo);
 	char * switch_identifier = NULL;
 	strtok_r(line, " ", &switch_identifier);
     if ( switch_identifier == NULL) {
         free(line);
-        return TASK_FAILED;
+        return FAILED;
     }
 	char * breakLine = NULL;
 	strtok_r(switch_identifier, "\n", &breakLine);
@@ -280,7 +280,7 @@ int get_system_switch(char * lineWithSwitchInfo, char** system_switch) {
  * Gets all the rtables from the system_configuration_file and saves them into system_rtables.
  * Saves the switch server at the first position (0) and the other servers on the following ones.
  * IF there is no switch defined or the number of servers found is not equal to what is announced,
- * returns TASK_FAILED, otherwise returns the number of rtables of the system;
+ * returns FAILED, otherwise returns the number of rtables of the system;
  */
 int get_system_rtables_info(char * system_configuration_file, char *** system_rtables ) {
 	FILE * fp;
@@ -290,14 +290,14 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
     
 	fp = fopen(system_configuration_file, "r");
 	if (fp == NULL)
-		return TASK_FAILED;
+		return FAILED;
     
     
 	char * pointer = NULL;
     
 	//reads the first line that informs the number of servers
-	if ( (read = getline(&line, &len, fp)) == TASK_FAILED ) {
-		return TASK_FAILED;
+	if ( (read = getline(&line, &len, fp)) == FAILED ) {
+		return FAILED;
 	}
 	//gets the number of servers itself
 	strtok_r(line,"=", &pointer);
@@ -317,7 +317,7 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
         
 		if ( switchNotFoundYet ) {
             //switchNotFoundYet if it failed to get it from this line
-			switchNotFoundYet = get_system_switch(line, &(*system_rtables)[0]) == TASK_FAILED;
+			switchNotFoundYet = get_system_switch(line, &(*system_rtables)[0]) == FAILED;
             
             if ( !switchNotFoundYet ) {
                 serversFound++;
@@ -325,7 +325,7 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
             }
 		}
 		if ( !switchWasFoundNow ) {
-            if ( get_system_server(line, &(*system_rtables)[iServer]) == TASK_SUCCEEDED ) {
+            if ( get_system_server(line, &(*system_rtables)[iServer]) == SUCCEEDED ) {
                 iServer++;
                 serversFound++;
             }
@@ -337,7 +337,7 @@ int get_system_rtables_info(char * system_configuration_file, char *** system_rt
 	if (line)
 		free(line);
     
-	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : TASK_FAILED;
+	return (!switchNotFoundYet) && (serversFound == number_of_servers) ? number_of_servers : FAILED;
 }
 
 

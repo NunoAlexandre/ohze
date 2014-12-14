@@ -17,9 +17,7 @@
 #define SWITCH_SERVER_IDENTIFIER "S"
 #define SYSTEM_CONFIGURATION_FILE "./SD15-Project/sd15_system_config"
 
-/*int extern replica_server_selected; //vai guardar qual a replica seleccionada
- int extern number_of_servers;
- int extern number_of_replicas;*/
+
 
 
 char* ip_address_copy_from_server;
@@ -83,7 +81,7 @@ int get_system_switch(char * lineWithSwitchInfo,  char ** system_switch);
  * Gets all the rtables from the system_configuration_file and saves them into system_rtables.
  * Saves the switch server at the first position (0) and the other servers on the following ones.
  * IF there is no switch defined or the number of servers found is not equal to what is announced,
- * returns TASK_FAILED, otherwise returns the number of rtables of the system;
+ * returns FAILED, otherwise returns the number of rtables of the system;
  */
 int get_system_rtables_info(char * filePath, char *** system_rtables );
 

@@ -3,12 +3,20 @@
 
 #define SERVER_RESPONSE_MODE 0
 #define SWITCH_RESPONSE_MODE 1
+#define MUTE_RESPONSE_MODE 2
 
-/** Module Property - defines the way that the table operates or responds to operations **/
+/** Module Properties */
+//defines the way that the table operates or responds to operations **/
 int RESPONSE_MODE;
+//sets if it must log operations or not
+int logging_on;
 
-int table_skel_init_with_mode(int n_lists, int response_mode);
 
+
+
+void table_skel_init_log( char * filepath );
+
+int table_skel_init_with(int n_lists, int response_mode, int checklog, int logging, char * address_and_port );
 /*
 * Initiliazes the msg_set_out array with set_size and sets its first_message as its first message.
 */

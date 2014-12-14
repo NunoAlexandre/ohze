@@ -34,7 +34,7 @@ struct server_t *network_connect(const char *address_port) {
     //if server_address is a hostname converts to IP, if alredy IP keeps the same.
     char server_address_ip[200];
     int result = hostname_to_ip(server_address, server_address_ip);
-    if ( result == TASK_FAILED ) return NULL;
+    if ( result == FAILED ) return NULL;
     char * server_port =  get_port(address_port);
     
     //2.building struct server_t server_to_connect
@@ -129,8 +129,8 @@ struct message_t * network_send_receive(struct server_t *server, struct message_
     struct message_t* received_msg = NULL;
     
     while ( retries <= 1 && !taskSucceeded ) {
-        if (send_message(server->socketfd, msg) == TASK_SUCCEEDED){
-            sleep(0.3);
+        if (send_message(server->socketfd, msg) == SUCCEEDED){
+            sleep(1);
             received_msg = receive_message(server->socketfd);
             taskSucceeded = received_msg != NULL;
         }
@@ -154,12 +154,12 @@ struct message_t * network_send_receive(struct server_t *server, struct message_
  * deve libertar essa memoria.
  */
 int network_close(struct server_t *server){
-    int task = TASK_SUCCEEDED;
+    int task = SUCCEEDED;
     shutdown(server->socketfd, SHUT_RDWR);
     task = close(server->socketfd);
     
-    if (task == TASK_FAILED){
-        return TASK_FAILED;
+    if (task == FAILED){
+        return FAILED;
     }
     return task;
 }

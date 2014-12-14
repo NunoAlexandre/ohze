@@ -149,7 +149,7 @@ struct rtable_t *rtable_bind(const char *address_port) {
  * Retorna 0 se tudo correr bem e -1 em caso de erro.
  */
 int rtable_unbind(struct rtable_t *rtable){
-    int task = TASK_FAILED;
+    int task = FAILED;
     
     //cria server_t com base em rtable
     struct server_t *connected_server = rtable_get_server(rtable);
@@ -157,19 +157,19 @@ int rtable_unbind(struct rtable_t *rtable){
     //verifica se server_t foi bem criado
     if (connected_server == NULL) {
         perror ("CLIENT_STUB > RTABLE_UNBIND > Unable to disconnect from server!");
-        return TASK_FAILED;
+        return FAILED;
     }
     
     puts("--- disconnecting from server...");
     
     //faz um network_close ao servidor
     task = network_close(connected_server);
-    if(task == TASK_FAILED){
-        return TASK_FAILED;
+    if(task == FAILED){
+        return FAILED;
     }
     
     puts("--- disconnected from server...");
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 /* Função para adicionar um tuplo na tabela.
@@ -188,7 +188,7 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
     if (message_to_send == NULL){
         puts("CLIENT-STUB > RTABLE_OUT > Failed to create message to send...");
         free(connected_server);
-        return TASK_FAILED;
+        return FAILED;
     }
     
     //envia mensagem para o servidor e recebe mensagem do servidor com o resultado da operação
@@ -197,7 +197,7 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
     //faz verificação da mensagem recebida
     if (received_msg == NULL) {
         puts ("CLIENT-STUB > RTABLE_OUT > Failed to send/receive message");
-        return TASK_FAILED;
+        return FAILED;
     }
     
     //verifica se a mensagem recebida foi de sucesso
@@ -205,36 +205,36 @@ int rtable_out(struct rtable_t *rtable, struct tuple_t *tuple){
         puts("CLIENT-STUB > RTABLE_OUT > RECEIVED MESSAGE WITH ERROR OPCODE or OPCODE UNEXPECTED.");
         free(message_to_send);
         free(received_msg);
-        return TASK_FAILED;
+        return FAILED;
     }
     
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 /* Função para obter tuplos da tabela.
  * Em caso de erro, devolve NULL.
  */
-struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, int keep_tuples, int one_or_all){
+struct tuple_t **rtable_get( struct rtable_t *rtable, struct tuple_t *template, int keep_tuples, int one_or_all ) {
     
-    int opcode;
-    int content_type;
-    void * message_content = template;
-    
-    opcode = assign_opcode(keep_tuples, one_or_all);
-    content_type = assign_ctype(opcode);
+    int opcode = assign_opcode(keep_tuples, one_or_all);
+    int content_type = assign_ctype(opcode, NO );
     
     //cria server_t com base em rtable
     struct server_t *connected_server = rtable_get_server(rtable);
     
     //cria mensagem a enviar ao servidor
-    struct message_t *message_to_send = message_create_with(opcode, content_type, message_content);
+    struct message_t *message_to_send = message_create_with(opcode, content_type, template);
     
     //envia mensagem para o servidor e recebe mensagem do servidor com o resultado da operação
     struct message_t *received_msg = network_send_receive(connected_server, message_to_send);
     
     //faz verificação da mensagem recebida
     if (received_msg == NULL) {
-        puts ("CLIENT-STUB > RTABLE_GET > Failed to send/receive message");
+        if ( message_to_send)
+            free_message(message_to_send);
+        if (received_msg )
+            free_message(received_msg);
+        
         return NULL;
     }
     
@@ -267,7 +267,7 @@ struct tuple_t **rtable_get(struct rtable_t *rtable, struct tuple_t *template, i
 int rtable_size(struct rtable_t *rtable){
     
     int value = 0; //elem to send
-    int rtable_size = TASK_FAILED;
+    int rtable_size = FAILED;
     
     //cria server_t com base em rtable
     struct server_t *connected_server = rtable_get_server(rtable);
@@ -277,7 +277,7 @@ int rtable_size(struct rtable_t *rtable){
     
     if(message_to_send == NULL){
         free(connected_server);
-        return TASK_FAILED;
+        return FAILED;
     }
     
     puts("Sending message to server...");
@@ -288,7 +288,7 @@ int rtable_size(struct rtable_t *rtable){
     
     //faz verificação da mensagem recebida
     if (received_msg == NULL) {
-        return TASK_FAILED;
+        return FAILED;
     }
     
     //verifica se a mensagem recebida foi de sucesso
@@ -296,7 +296,7 @@ int rtable_size(struct rtable_t *rtable){
         free(message_to_send);
         free(received_msg);
         free(connected_server);
-        return TASK_FAILED;
+        return FAILED;
     }
     
     //coloca o tamanho da tabela na variavel rtable_size
@@ -360,13 +360,13 @@ char * rtable_report(struct rtable_connection *rtable_connection){
  */
 struct rtable_t *rtable_rebind(struct rtable_t *rtable, char* server_address_and_port ){
     
-    int task = TASK_SUCCEEDED;
+    int task = SUCCEEDED;
     
     if (rtable != NULL){
         task = rtable_unbind(rtable); //faz unbind da rtable corrente
     }
     
-    if(task == TASK_FAILED){
+    if(task == FAILED){
         return NULL;
     }
     
@@ -398,7 +398,7 @@ struct rtable_connection* rtable_init (char * config_file){
     //1. endereços de todos os servidores
     char ** servers_ip_port = NULL;
     int n_servers = get_system_rtables_info(SYSTEM_CONFIGURATION_FILE,&servers_ip_port);
-    if (n_servers == TASK_FAILED) {
+    if (n_servers == FAILED) {
         puts("n_servers not enough");
         return NULL;
     }
@@ -471,7 +471,7 @@ struct rtable_connection * rtable_connection_create(char ** servers_ip_port, int
 
 /*
  * Função que atualiza o endereço do switch e rtable_switch
- * Retorna TASK_SUCCEEDED se tudo correu bem
+ * Retorna SUCCEEDED se tudo correu bem
  * (Projeto 5)
  */
 int rtable_assign_new_server (struct rtable_t * rtable, char * switch_address_and_port) {
@@ -479,15 +479,15 @@ int rtable_assign_new_server (struct rtable_t * rtable, char * switch_address_an
     //faz bind a um novo switch
     rtable = rtable_bind(switch_address_and_port);
   
-    return rtable != NULL ? TASK_SUCCEEDED : TASK_FAILED;
+    return rtable != NULL ? SUCCEEDED : FAILED;
 }
 
 
 /* AQUIII */
 /* atualiza a posição do switch
  int switch_position = rtable_connection_find_address(rtable_connection->servers_addresses_and_ports, rtable_connection->servers_addresses_and_ports, rtable_connection->total switch_address_and_port);
- if (switch_position == TASK_FAILED){
- return TASK_FAILED;
+ if (switch_position == FAILED){
+ return FAILED;
  }*/
 //rtable_connection->switch_position = switch_position;
 
@@ -504,11 +504,11 @@ int rtable_connection_server_rebind (struct rtable_connection * rtable_connectio
  * (Projeto 5)
  */
 int rtable_connection_switch_rebind (struct rtable_connection * rtable_connection){
-    int taskSuccess = TASK_FAILED;
+    int taskSuccess = FAILED;
     
     //0. faz unbind do switch atual
     taskSuccess = rtable_unbind(rtable_connection->rtable_switch);
-    if (taskSuccess == TASK_FAILED) {
+    if (taskSuccess == FAILED) {
         puts("\t--- failed to unbind with current switch");
     }
 
@@ -517,12 +517,12 @@ int rtable_connection_switch_rebind (struct rtable_connection * rtable_connectio
     if (new_switch_address == NULL) {
         free(new_switch_address);
         puts("\t--- failed to get new switch");
-        return TASK_FAILED;
+        return FAILED;
     }
 
     //2. faz uma ligação ao novo switch
     taskSuccess = rtable_assign_new_server(rtable_connection->rtable_switch, new_switch_address);
-    if (taskSuccess == TASK_FAILED) {
+    if (taskSuccess == FAILED) {
         puts ("\t--- failed to connect to new_switch");
     }
     
@@ -546,7 +546,7 @@ int rtable_connection_switch_rebind (struct rtable_connection * rtable_connectio
  * (Projeto 5)
  */
 int rtable_connection_replica_rebind (struct rtable_connection * rtable_connection) {
-    int taskSuccess = TASK_FAILED;
+    int taskSuccess = FAILED;
     
     //0. faz unbind do switch atual
     rtable_unbind(rtable_connection->rtable_replica);
@@ -555,14 +555,14 @@ int rtable_connection_replica_rebind (struct rtable_connection * rtable_connecti
     char * new_replica_address =  get_random_replica_address(rtable_connection->servers_addresses_and_ports, rtable_connection->total_servers, rtable_connection->replica_position);
     if (new_replica_address == NULL) {
         free(new_replica_address);
-        puts ("FAILED to get new_switch_address");
-        return TASK_FAILED;
+        puts ("\t--- failed to get new_switch_address");
+        return FAILED;
     }
     
     //2. faz uma ligação ao novo switch
     taskSuccess = rtable_assign_new_server(rtable_connection->rtable_replica, new_replica_address);
-    if (taskSuccess == TASK_FAILED) {
-        puts ("FAILED to connect to new replica");
+    if (taskSuccess == FAILED) {
+        puts ("\t--- failed to connect to new replica");
     }
     
     /*  updates the switch position */
@@ -579,7 +579,7 @@ int rtable_connection_replica_rebind (struct rtable_connection * rtable_connecti
 
 /*
  * Encontra em que posição da lista de servers_addresses_and_ports se encontra determinado address_and_port_to_find
- * Retorna a posição ou TASK_FAILED
+ * Retorna a posição ou FAILED
  * (Projeto 5)
  */
 int rtable_connection_find_address (char** addresses_and_ports, int n_servers, char * address_and_port_to_find) {
@@ -592,23 +592,23 @@ int rtable_connection_find_address (char** addresses_and_ports, int n_servers, c
     }
     
     //não encontrou na lista
-    return TASK_FAILED;
+    return FAILED;
 }
 
 /*
  * Inicia o processo de disconectar de uma dada rtable_connection
- * Retorna TASK_SUCCEEDED em caso de sucesso
+ * Retorna SUCCEEDED em caso de sucesso
  * (Projeto 5)
  */
 int rtable_disconnect (struct rtable_connection * rtable_connection){
-    int task = TASK_FAILED;
+    int task = FAILED;
     
     //desligar de switch
     struct rtable_t * rtable_switch = rtable_connection_get_switch(rtable_connection);
     
     task = rtable_unbind(rtable_switch);
     free(rtable_switch);
-    if (task == TASK_FAILED){
+    if (task == FAILED){
         puts("FAILLED TO UNBIND to SWITCH");
         return task;
     }
@@ -618,7 +618,7 @@ int rtable_disconnect (struct rtable_connection * rtable_connection){
     
     task = rtable_unbind(rtable_replica);
     free(rtable_replica);
-    if (task == TASK_FAILED){
+    if (task == FAILED){
         puts("FAILLED TO UNBIND to REPLICA");
         return task;
     }

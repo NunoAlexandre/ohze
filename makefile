@@ -64,6 +64,7 @@ $(EXECUTABLE_SERVER) : \
 		./network_server.o\
 		./client_stub.o\
 		./network_cliente.o\
+		./server_log.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
@@ -78,6 +79,7 @@ $(EXECUTABLE_SERVER) : \
 		./client_stub.o\
 		./network_server.o\
 		./network_cliente.o\
+		./server_log.o\
 		./general_utils.o\
 		./network_utils.o\
 		./message.o\
@@ -162,5 +164,8 @@ install : $(EXECUTABLE_SERVER) $(EXECUTABLE_CLIENT)
 
 ./table_skel.o : SD15-Project/table_skel.c
 	$(CC) $(CC_OPTIONS) SD15-Project/table_skel.c -c $(INCLUDE) -o ./table_skel.o
+
+./server_log.o : SD15-Project/server_log.c
+	$(CC) $(CC_OPTIONS) SD15-Project/server_log.c -c $(INCLUDE) -o ./server_log.o
 
 ##### END RUN ####

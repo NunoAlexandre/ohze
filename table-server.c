@@ -112,7 +112,7 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
     //case its invalid
     if ( portnumber_is_invalid(portnumber) ) {
         invalid_input_message();
-        return TASK_FAILED;
+        return FAILED;
     }
 
 
@@ -130,14 +130,14 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
     if (  (socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
                 //error case
         perror("server > server_run > error creating socket\n");
-        return TASK_FAILED;
+        return FAILED;
     }
 
     // sets the socket reusable
     int setSocketReusable = YES;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable, sizeof(setSocketReusable)) < 0 ) {
         perror("SO_REUSEADDR setsockopt error");
-        return TASK_FAILED;
+        return FAILED;
     } 
 
     // 2. Bind
@@ -152,13 +152,13 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
     if (bind(socket_fd, (struct sockaddr *) &server, sizeof(server)) < 0){
         perror("server > server_run > error binding socket\n");
         close(socket_fd);
-        return TASK_FAILED;
+        return FAILED;
     };
     //3. Listen
     if (listen(socket_fd, 0) < 0 ) {
         perror("server > server_run > error on listen() \n");
         close(socket_fd);
-        return TASK_FAILED;
+        return FAILED;
     };
 
 
@@ -173,9 +173,9 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
     socklen_t  client_socket_size = sizeof (client);
 
             // initializes the table_skel
-    if ( table_skel_init_with_mode( N_TABLE_SLOTS, SERVER_RESPONSE_MODE ) == TASK_FAILED )
-        return -1;
-
+     if ( table_skel_init_with(N_TABLE_SLOTS, SERVER_RESPONSE_MODE, YES, YES, my_address_and_port) == FAILED)
+        return FAILED;
+     
 
             /** creates a pollfd **/ 
     struct pollfd connections[N_MAX_CLIENTS];
@@ -258,21 +258,18 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
                         struct message_t * report_response = respond_to_report(client_request, system_rtables[0]);
                         response_messages_num = 1;
                         message_was_sent = server_send_response(connection_socket_fd, response_messages_num, &report_response);
-                        failed_tasks = message_was_sent == TASK_FAILED;
+                        failed_tasks = message_was_sent == FAILED;
                     }
                     else {
                         //the table_skel will process the client request and resolve response_message
                         int response_messages_num = invoke(client_request, &response_message);
                         // error case
-                        failed_tasks+= response_messages_num <= 0 || response_message == NULL;
-                        
-
-                        sleep(0.3);
+                        failed_tasks+= response_messages_num < 0 || response_message == NULL;
 
                         //sends the response to the client
                         message_was_sent = server_send_response(connection_socket_fd, response_messages_num, response_message);
                         //error case
-                        failed_tasks+= message_was_sent == TASK_FAILED;
+                        failed_tasks+= message_was_sent == FAILED;
                     }
 
 
@@ -299,7 +296,7 @@ void reorder_connections(struct pollfd * connections, int begin, int end ) {
             //destroys the table_skel
         table_skel_destroy();
 
-        return TASK_SUCCEEDED;
+        return SUCCEEDED;
     }
 
 
@@ -328,7 +325,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     /* if port or address invalid*/
     if ( portnumber_is_invalid(portnumber) || my_address == NULL ) {
         invalid_input_message();
-        return TASK_FAILED;
+        return FAILED;
     }
 
    
@@ -336,7 +333,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     /* if there is not at least one switch and one server */
     if ( numberOfServers <= 1 ) {
         puts("--- ERROR: starting server: no minimum services provided (switch and servers number).");
-        return TASK_FAILED;
+        return FAILED;
     }
 
 
@@ -346,14 +343,14 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     //creates a server socket
     if (  (socket_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
         perror("server > server_run > error creating socket\n");
-        return TASK_FAILED;
+        return FAILED;
     }
 
     //sets the socket reusable
     int setSocketReusable = YES;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (int *)&setSocketReusable,sizeof(setSocketReusable)) < 0 ) {
         perror("SO_REUSEADDR setsockopt error");
-        return TASK_FAILED;
+        return FAILED;
     } 
 
     //2. Bind
@@ -368,14 +365,14 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     if (bind(socket_fd, (struct sockaddr *) &server, sizeof(server)) < 0){
         perror("server > server_run > error binding socket\n");
         close(socket_fd);
-        return TASK_FAILED;
+        return FAILED;
     };
 
     //3. Listen
     if (listen(socket_fd, 0) < 0 ) {
         perror("server > server_run > error on listen() \n");
         close(socket_fd);
-        return TASK_FAILED;
+        return FAILED;
     };
 
 
@@ -452,8 +449,8 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     socklen_t  client_socket_size = sizeof (client);
    
     /* initializes the table_skel */
-    if ( table_skel_init_with_mode( N_TABLE_SLOTS, SWITCH_RESPONSE_MODE ) == TASK_FAILED )
-        return TASK_FAILED;
+    if ( table_skel_init_with( N_TABLE_SLOTS, SWITCH_RESPONSE_MODE, YES, YES, my_address_and_port ) == FAILED )
+        return FAILED;
 
 
 
@@ -572,7 +569,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
                         //sends the response to the client
                         int message_was_sent = server_send_response(connection_socket_fd, 1, &server_response);
                         //error case
-                        failed_tasks+= message_was_sent == TASK_FAILED;
+                        failed_tasks+= message_was_sent == FAILED;
 
                         /** IF some error happened, it will notify the client **/
                         if ( failed_tasks > 0 ) {
@@ -604,7 +601,7 @@ int switch_run ( char * my_address_and_port, char ** system_rtables, int numberO
     //destroys the table_skel
     table_skel_destroy();
 
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 
@@ -632,5 +629,5 @@ int main ( int argc, char *argv[] ) {
     
 
 
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }

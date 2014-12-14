@@ -25,7 +25,7 @@
 int proceed_with_command (int opcode, struct rtable_connection * system_rtable_connection, void *message_content)
 {
     
-    int taskSuccess = TASK_FAILED;
+    int taskSuccess = FAILED;
     struct rtable_t * rtable_switch = system_rtable_connection->rtable_switch;
     struct rtable_t * rtable_replica = system_rtable_connection->rtable_replica;
     
@@ -62,15 +62,15 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
         }
             
         default:
-            taskSuccess = TASK_FAILED;
+            taskSuccess = FAILED;
             break;
             
     } 
     
     /*** checks if some error happened because of unreachable peers and reconnects and tries again ***/
     
-    if ( taskSuccess == TASK_FAILED && consulted_rtable != NULL ) {
-        puts(" if ( taskSuccess == TASK_FAILED && consulted_rtable != NULL");
+    if ( taskSuccess == FAILED && consulted_rtable != NULL ) {
+        puts(" if ( taskSuccess == FAILED && consulted_rtable != NULL");
         /* which rtable was consulted */
         int switchWasTheConsulted = consulted_rtable == rtable_switch;
         
@@ -78,7 +78,7 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
 //            puts(" socket is closed");
             int rebindSuccess = rtable_connection_server_rebind(system_rtable_connection, switchWasTheConsulted);
             
-            if ( rebindSuccess == TASK_SUCCEEDED ) {
+            if ( rebindSuccess == SUCCEEDED ) {
                 return proceed_with_command(opcode, system_rtable_connection, message_content );
             }
             else {
@@ -98,14 +98,14 @@ int proceed_with_command (int opcode, struct rtable_connection * system_rtable_c
  */
 int process_command (const char* command, struct rtable_connection * system_rtable_connection){
     
-    int taskSuccess = TASK_FAILED;
-    int opcode = find_opcode(command);
-    int ctype = assign_ctype(opcode);
+    int taskSuccess = FAILED;
+    int opcode = find_opcode_as_string(command);
+    int ctype = assign_ctype(opcode, NO);
     
     void * message_content = NULL;
     
     //defines message type content - CT_TUPLE
-    if (ctype == CT_TUPLE){
+    if (ctype == CT_TUPLE) {
         message_content = create_tuple_from_input(command);
     }
     //defines message type content - CT_RESULT
@@ -148,14 +148,14 @@ void invalid_command () {
 int test_input(int argc){
     if (argc != 2){
         invalid_client_input();
-        return TASK_FAILED;
+        return FAILED;
     }
-    return TASK_SUCCEEDED;
+    return SUCCEEDED;
 }
 
 int main(int argc , char *argv[]) {
     
-    int taskSuccess = TASK_SUCCEEDED;
+    int taskSuccess = SUCCEEDED;
     
     /* 0. SIGPIPE Handling */
     struct sigaction s;
@@ -165,7 +165,7 @@ int main(int argc , char *argv[]) {
     sigaction(SIGPIPE, &s, NULL);
     
     /* 1. Testar input de utilizador*/
-    if ( test_input (argc) == TASK_FAILED ) return TASK_FAILED;
+    if ( test_input (argc) == FAILED ) return FAILED;
     
     //to keep the active
     int keepGoing = YES;
@@ -181,12 +181,12 @@ int main(int argc , char *argv[]) {
     system_rtable_connection = rtable_init(file_path); //vai inicializar a estrutura rtable_connection
     
     if (system_rtable_connection == NULL){
-        taskSuccess = TASK_FAILED;
+        taskSuccess = FAILED;
         puts ("FAILLED DO system_rtable_connection!");
     }
     
     //ligação foi bem sucessida
-    if (taskSuccess == TASK_SUCCEEDED){
+    if (taskSuccess == SUCCEEDED){
         
         /* 3. LÊ COMANDO DO UTILIZADOR E FAZ CONSULTAS À TABELA */
         while ( keepGoing ) {
@@ -195,11 +195,11 @@ int main(int argc , char *argv[]) {
             //reads user command
             if (fgets (input, MAX_MSG-1, stdin) == NULL) {
                 free(file_path);
-                return TASK_FAILED;
+                return FAILED;
             }
             
             // Processes user command according with objectives - OUT, GET, SIZE
-            int command_opcode = find_opcode(input);
+            int command_opcode = find_opcode_as_string(input);
             
             // User wants to quit
             if (command_opcode == OC_QUIT) {
@@ -214,7 +214,7 @@ int main(int argc , char *argv[]) {
                 /******* O comando foi correcto e vai proceder à consulta da tabela *******/
                 taskSuccess = process_command(input, system_rtable_connection);
                 //se pedido falhou discarta este pedido e pede outro
-                if (taskSuccess == TASK_FAILED){
+                if (taskSuccess == FAILED){
                     puts("\t--- failed to consult table\n");
                 }
             } //termina o processamento do user_command
@@ -231,8 +231,8 @@ int main(int argc , char *argv[]) {
         taskSuccess = rtable_disconnect(system_rtable_connection);
     }
     
-    if (taskSuccess == TASK_FAILED){
-        return TASK_FAILED;
+    if (taskSuccess == FAILED){
+        return FAILED;
     }
     
     puts("\nSessão terminada!\n");

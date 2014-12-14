@@ -112,7 +112,7 @@ void run_postman ( pthread_mutex_t * bucket_access, struct request_t ** bucket,
                         //sends the response to the client
                         int message_was_sent = server_send_response(bucket[i]->requestor_fd, response_messages_num, response_messages);
                         //error case
-                        failed_tasks+= message_was_sent == TASK_FAILED;
+                        failed_tasks+= message_was_sent == FAILED;
                     }
                     else {
                         //declares that there was (at least) one failed that task once he
@@ -162,11 +162,10 @@ void * run_server_proxy ( void *p ) {
   while ( (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL )
       sleep(1);
    
-      
     // flag to check fatal error
     int fatal_error = NO;
     //communication error tolerance
-    int communication_failure_tolerance = 5;
+    int communication_failure_tolerance;
     // where each request_t to process will be stored
     struct request_t *request = NULL;
     //where each client request of each request_t will be stored
@@ -176,12 +175,11 @@ void * run_server_proxy ( void *p ) {
     // where the server response will be stored
     struct message_t *server_response = NULL;
     
-
   
   while(!fatal_error) {
     
     //communication error tolerance
-    communication_failure_tolerance = 5;
+    communication_failure_tolerance = 10;
       
     /* waits until the bucket has requests to process */
     monitor_wait(proxy->monitor_bucket_has_requests, proxy->bucket_has_requests);
@@ -207,14 +205,14 @@ void * run_server_proxy ( void *p ) {
             server_response = network_send_receive(server_to_contact, client_request);
             error = server_response == NULL;
             if ( error ) {
-                while ( (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL ) {
-                    communication_failure_tolerance--;
+                while (communication_failure_tolerance-- > 0
+                       && (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL ) {
                     sleep(1);
+                    printf("\t\t --- failed to connect to server. Will try %d more times\n", communication_failure_tolerance);
                 }
             }
         }
         
-      
 
       /* it will commit the server_response to the bucket only if none error not socket caused occured */
       if ( server_response != NULL ) {

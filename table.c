@@ -118,7 +118,7 @@ struct list_t *table_get(struct table_t *table, struct tuple_t *tup_template, in
             list_move_nodes (this_slot_matching_nodes , allMatchingNodes , MOVE_WITH_CRITERION, DONT_KEEP_AT_ORIGIN );
             
             //if its just to get one and list is not empty it found one so it stops
-            if ( one_or_all == 1 && list_isEmpty(allMatchingNodes) == 0) {
+            if ( one_or_all == 1 && !list_isEmpty(allMatchingNodes) ) {
                 slotsToCheck = 0;
             }
             index++;
@@ -141,10 +141,7 @@ int table_get_array(struct table_t *table, struct tuple_t *tup_template,
 {
 
     //gets the matching nodes on a list_t
-    //puts("table_get_array > tup_template is ");
-    //tuple_print(tup_template); printf("\n");
     struct list_t * matching_nodes = table_get(table, tup_template, whatToDOWithTheNodes, one_or_all);
-    //puts("matching nodes is "); list_print(matching_nodes); printf("\n");
     //gets the number of matching nodes
     int matching_tuples_num = list_size(matching_nodes);
 
@@ -154,7 +151,6 @@ int table_get_array(struct table_t *table, struct tuple_t *tup_template,
     int i =0;
     node_t * currentNode = list_head(matching_nodes);
     for (i = 0; i < matching_tuples_num; i++ ) {
-        //printf("will copy tuple %d\n",i );
         //saves the tuple
         (*matching_tuples)[i] = entry_value(node_entry(currentNode));
         //moves to list next node
@@ -195,7 +191,7 @@ int table_del(struct table_t *table, struct tuple_t *tup_template, int one_or_al
     struct list_t * allMatchingNodes = table_get(table, tup_template, JUST_DELETE_NODES, one_or_all);
     
     //since we choosed to JUST_DELETE_NODES on get, allMatchingNodes must be empty
-    return list_isEmpty(allMatchingNodes) ? TASK_SUCCEEDED : TASK_FAILED;
+    return list_isEmpty(allMatchingNodes) ? SUCCEEDED : FAILED;
 }
 
 int table_slots ( struct table_t * table ) {

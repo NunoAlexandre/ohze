@@ -27,15 +27,15 @@ struct message_t * server_receive_request(int socketfd ) {
 
 int server_send_response(int socketfd, int number_of_messages, struct message_t ** response_messages) {
     if ( number_of_messages <= 0 || response_messages == NULL ) {
-        return TASK_FAILED;
+        return FAILED;
     }
     
-    int taskSuccess = TASK_SUCCEEDED;
+    int taskSuccess = SUCCEEDED;
     int index = 0;
     //sends each message. in error case stops to send.
     while ( index >= 0 && index < number_of_messages ) {
-        if ( send_message(socketfd, response_messages[index]) == TASK_FAILED ) {
-            taskSuccess = TASK_FAILED;
+        if ( send_message(socketfd, response_messages[index]) == FAILED ) {
+            taskSuccess = FAILED;
             index = -1;
         }
         else {
