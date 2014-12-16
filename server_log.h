@@ -37,6 +37,7 @@ int server_log_message( struct message_t * message );
 
 int server_log_invoke_over_table(struct table_t * table);
 
+int server_log_send_to (int addressee_fd, int from_operation_n);
 
 void server_log_print();
 

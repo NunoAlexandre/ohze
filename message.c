@@ -365,8 +365,11 @@ int message_error (struct message_t* msg){
 /*
  * Verifies if message is a report message
  */
-int message_report (struct message_t* msg){
+int message_report (struct message_t* msg) {
     return msg != NULL && msg->opcode == OC_REPORT;
+}
+int message_update_request (struct message_t* msg) {
+    return msg != NULL && msg->opcode == OC_UPDATE;
 }
 
 
@@ -387,7 +390,7 @@ int response_with_success ( struct message_t* request_msg, struct message_t* res
         return NO;
     }
     else if ( opcode_resp != (opcode_req+1) ) {
-        puts(" (received message has not the expected opcode)");
+        printf(" (received message has not the expected opcode - sent %d - got %d)\n", opcode_req, opcode_resp);
         return NO;
     }
     

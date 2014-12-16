@@ -133,6 +133,8 @@ int message_error (struct message_t* tested_msg);
  */
 int message_report (struct message_t* msg); 
 
+int message_update_request (struct message_t* msg);
+
 /*
   * Check if message is writer
   */

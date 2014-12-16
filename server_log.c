@@ -129,6 +129,31 @@ int server_log_invoke_over_table(struct table_t * table) {
     return SUCCEEDED;
 }
 
+int server_log_send_to ( int addressee_fd, int from_operation_n ) {
+    
+    char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+    
+    FILE* fp = fopen(_log_file, "r");
+    if (fp == NULL)
+		return 0;
+    
+    int n_operation = 0;
+    
+    while ( (read = getline(&line, &len, fp) ) != -1 ) {
+        n_operation++;
+        if ( n_operation > from_operation_n ) {
+            struct message_t * operation = server_log_to_message(line, YES);
+            if ( send_message(addressee_fd, operation) == SUCCEEDED )
+                free_message(operation);
+        }
+    }
+    
+    return SUCCEEDED;
+}
+//table_skel_update_neighboor
+
 void server_log_print() {
 	char * line = NULL;
 	size_t len = 0;

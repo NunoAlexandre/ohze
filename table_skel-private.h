@@ -8,17 +8,25 @@
 #define MUTE_RESPONSE_MODE 2
 
 /** Module Properties */
-//defines the way that the table operates or responds to operations **/
+// defines the way that the table operates or responds to operations **/
 int RESPONSE_MODE;
-//sets if it must log operations or not
+// sets if it must log operations or not
 int logging_on;
+// the timestam of the last timestamp
+long long latest_put_timestamp;
+// number of operations made
+int n_write_operations;
 
 
-long long tabke_skel_latest_put_timestamp();
+int table_skel_write_operations();
+
+void table_skel_update_neighboor (int neighbor_fd, struct message_t * msg_in );
+
+long long table_skel_latest_put_timestamp();
 
 void table_skel_set_response_mode(int mode );
 int table_skel_get_response_mode() ;
-long long tabke_skel_latest_put_timestamp();
+long long table_skel_latest_put_timestamp();
 
 void table_skel_init_log( char * filepath );
 

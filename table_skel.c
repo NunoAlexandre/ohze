@@ -8,13 +8,13 @@
 #include <stdlib.h>
 #include "table.h"
 #include "server_log.h"
+#include "network_utils.h"
 
 /*
  * The table where everything will happen
  */
 struct table_t * table = NULL;
 
-long long latest_put_timestamp;
 
 
 void table_skel_init_log( char * filepath ) {
@@ -46,6 +46,7 @@ int table_skel_init_with(int n_lists, int response_mode, int checklog, int loggi
         return FAILED;
     
     latest_put_timestamp = 0;
+    n_write_operations = 0;
     
     if ( logging )
         table_skel_init_log(address_and_port);
@@ -188,11 +189,12 @@ int list_to_message_array( struct message_t * msg_in, struct list_t * list, int 
 		//moves forward
  		i++;
  	}
+    
     //number of message is the first message saying number of nodes followed by each tuple message
  	return  sent_successfully ? n_messages : FAILED;
 }
 
-long long tabke_skel_latest_put_timestamp() {
+long long table_skel_latest_put_timestamp() {
     return latest_put_timestamp;
 }
 
@@ -203,6 +205,16 @@ int table_skel_get_response_mode( ) {
     return RESPONSE_MODE;
 }
 
+int table_skel_write_operations() {
+    return n_write_operations;
+}
+
+void table_skel_update_neighboor (int neighbor_fd, struct message_t * msg_in ) {
+    int updates_being_sent = n_write_operations - msg_in->content.result;
+    send_message(neighbor_fd, message_create_with(msg_in->opcode+1, CT_RESULT, &updates_being_sent));
+    if ( updates_being_sent > 0 )
+        server_log_send_to(neighbor_fd, msg_in->content.result);
+}
 
 /* Executa uma operação (indicada pelo opcode na msg_in) e retorna o(s)
  * resultado(s) num array de mensagens (struct message_t **msg_set_out).
@@ -231,8 +243,10 @@ int invoke(struct message_t *msg_in, struct message_t ***msg_set_out) {
 		number_of_msgs = table_skel_size(msg_in, msg_set_out);
 	}
     
-    if ( logging_on && (msg_in->opcode == OC_OUT || msg_in->opcode == OC_IN || msg_in->opcode == OC_IN_ALL) ) {
-        server_log_message(msg_in);
+    if ( (msg_in->opcode == OC_OUT || msg_in->opcode == OC_IN || msg_in->opcode == OC_IN_ALL) ) {
+        n_write_operations++;
+        if ( logging_on )
+            server_log_message(msg_in);
     }
     
 	return number_of_msgs;

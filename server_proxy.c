@@ -179,8 +179,8 @@ void * run_server_proxy ( void *p ) {
   while(!fatal_error) {
     
     //communication error tolerance
-    communication_failure_tolerance = 10;
-      
+    communication_failure_tolerance = 3;
+  
     /* waits until the bucket has requests to process */
     monitor_wait(proxy->monitor_bucket_has_requests, proxy->bucket_has_requests);
 
@@ -200,22 +200,25 @@ void * run_server_proxy ( void *p ) {
      
       /* tries to get the server response while it fails to get it because the server socket is closed 
        and it doesnt manage to reconnect or it didnt cross the failure tolerance */
-        int error = 1;
-        while ( (communication_failure_tolerance-- > 0 ) && error ) {
+        //int error = 1;
+        //while ( (communication_failure_tolerance-- > 0 ) && error ) {
+        if ( server_to_contact == NULL || socket_is_open(server_to_contact->socketfd) )
             server_response = network_send_receive(server_to_contact, client_request);
-            error = server_response == NULL;
-            if ( error ) {
-                while (communication_failure_tolerance-- > 0
-                       && (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL ) {
-                    sleep(1);
-                    printf("\t\t --- failed to connect to server. Will try %d more times\n", communication_failure_tolerance);
-                }
-            }
-        }
         
-
+                   // error = server_response == NULL;
+            //if ( error ) {
+               // while (communication_failure_tolerance-- > 0
+                 //      && (server_to_contact = network_connect(proxy->server_address_and_port)) == NULL ) {
+                  //  sleep(1);
+                 //   printf("\t\t --- failed to connect to server. Will try %d more times\n", communication_failure_tolerance);
+               // }
+           // }
+        //}
+        
+        
       /* it will commit the server_response to the bucket only if none error not socket caused occured */
       if ( server_response != NULL ) {
+          printf("MESSAGE IS "); message_print(server_response); puts("");
         pthread_mutex_lock(proxy->bucket_access);
         /* if none proxy has given an answer so far, it will store it on the bucket */
         if ( request->response == NULL ) { 
@@ -227,6 +230,9 @@ void * run_server_proxy ( void *p ) {
       request->acknowledged--;
       /* goes a place forward in a cicular way */
       index_to_read_request = (index_to_read_request+1) % REQUESTS_BUCKET_SIZE;
+
+        if ( server_response == NULL || server_to_contact == NULL || socket_is_closed(server_to_contact->socketfd))
+            server_to_contact = network_connect(proxy->server_address_and_port);
 
     }
     pthread_mutex_unlock(proxy->bucket_access); // Desbloquear a tabela
