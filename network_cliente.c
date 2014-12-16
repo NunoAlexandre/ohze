@@ -99,7 +99,9 @@ struct server_t *network_connect(const char *address_port) {
             
             shutdown(server_to_connect->socketfd, SHUT_RDWR);
             puts("\t--- did shutdown the socket.");
-            free(server_to_connect);
+            if ( server_to_connect != NULL)
+                free(server_to_connect);
+
             return NULL;
         }
     }
@@ -130,7 +132,7 @@ struct message_t * network_send_receive(struct server_t *server, struct message_
     
     while ( retries <= 1 && !taskSucceeded ) {
         if (send_message(server->socketfd, msg) == SUCCEEDED){
-            sleep(1);
+            usleep(200);
             received_msg = receive_message(server->socketfd);
             taskSucceeded = received_msg != NULL;
         }
